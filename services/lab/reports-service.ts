@@ -16,6 +16,7 @@ export interface UploadReportParams {
   mimeType: string;
   fileSizeBytes: number;
   storagePath: string;
+  checksumSha256?: string;
   releasedNow?: boolean;
 }
 
@@ -131,6 +132,7 @@ export async function uploadLabReport(
         originalFileName: params.originalFileName,
         mimeType: params.mimeType,
         fileSizeBytes: BigInt(params.fileSizeBytes),
+        checksumSha256: params.checksumSha256 ?? null,
         accessClassification: FileAccessClassification.RESTRICTED_PATIENT_LAB,
         status: FileStatus.ACTIVE,
         createdByUserId: actorUserId ?? null,
@@ -223,6 +225,7 @@ export async function amendLabReport(
         originalFileName: params.originalFileName,
         mimeType: params.mimeType,
         fileSizeBytes: BigInt(params.fileSizeBytes),
+        checksumSha256: params.checksumSha256 ?? null,
         accessClassification: FileAccessClassification.RESTRICTED_PATIENT_LAB,
         status: FileStatus.ACTIVE,
         createdByUserId: actorUserId ?? null,

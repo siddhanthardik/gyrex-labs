@@ -77,17 +77,18 @@ export default function LabOrderDetailPage() {
     setNotification(null);
 
     try {
+      const validName = reportFileName.trim().endsWith(".pdf") ? reportFileName.trim() : `${reportFileName.trim()}.pdf`;
+      const blob = new Blob([`%PDF-1.4\n% Diagnostic Report for ${order.orderNumber}`], { type: "application/pdf" });
+
+      const formData = new FormData();
+      formData.append("action", "UPLOAD");
+      formData.append("orderId", order.id);
+      formData.append("releasedNow", "true");
+      formData.append("file", new File([blob], validName, { type: "application/pdf" }));
+
       const res = await fetch("/api/lab/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "UPLOAD",
-          orderId: order.id,
-          originalFileName: reportFileName,
-          mimeType: "application/pdf",
-          fileSizeBytes: 1024 * 250,
-          releasedNow: true,
-        }),
+        body: formData,
       });
 
       if (!res.ok) {

@@ -61,10 +61,12 @@ export default function LabReportsPage() {
     fetchReports();
   }, [statusFilter]);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadOrderId.trim() || !fileName.trim()) {
-      setNotification({ type: "error", message: "Order ID and report file name are required." });
+    if (!uploadOrderId.trim() || (!fileName.trim() && !selectedFile)) {
+      setNotification({ type: "error", message: "Order ID and report file (or name) are required." });
       return;
     }
 
@@ -72,17 +74,22 @@ export default function LabReportsPage() {
     setNotification(null);
 
     try {
+      const formData = new FormData();
+      formData.append("action", "UPLOAD");
+      formData.append("orderId", uploadOrderId.trim());
+      formData.append("releasedNow", releasedNow ? "true" : "false");
+
+      if (selectedFile) {
+        formData.append("file", selectedFile);
+      } else {
+        const validName = fileName.trim().endsWith(".pdf") ? fileName.trim() : `${fileName.trim()}.pdf`;
+        const blob = new Blob([`%PDF-1.4\n% Diagnostic Report: ${validName}`], { type: "application/pdf" });
+        formData.append("file", new File([blob], validName, { type: "application/pdf" }));
+      }
+
       const res = await fetch("/api/lab/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "UPLOAD",
-          orderId: uploadOrderId.trim(),
-          originalFileName: fileName.trim(),
-          mimeType: "application/pdf",
-          fileSizeBytes: 1024 * 350,
-          releasedNow,
-        }),
+        body: formData,
       });
 
       if (!res.ok) {
@@ -94,6 +101,7 @@ export default function LabReportsPage() {
       setShowUploadModal(false);
       setUploadOrderId("");
       setFileName("");
+      setSelectedFile(null);
       fetchReports();
     } catch (err: any) {
       setNotification({ type: "error", message: err.message || "Failed to upload report." });
@@ -299,7 +307,25 @@ export default function LabReportsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  Report PDF File Name *
+                  Select Diagnostic Report (PDF)
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedFile(file);
+                    if (file && !fileName) {
+                      setFileName(file.name);
+                    }
+                  }}
+                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 focus:border-sky-500 focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-xs file:text-white hover:file:bg-zinc-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300">
+                  Report File Name *
                 </label>
                 <input
                   type="text"

@@ -42,6 +42,6 @@ yarn-error.log*
 next-env.d.ts
 
 # logs & private storage
-logs/
-storage/
+/logs/
+/storage/
 *.log
