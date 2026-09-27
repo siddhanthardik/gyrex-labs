@@ -1,0 +1,89 @@
+name: Gyrex Labs Production CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test_and_build:
+    name: Test & Build Quality Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Type Check (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Run Integrations Test Suite
+        run: npx tsx scripts/test-integrations.ts
+        env:
+          AUTH_SECRET: "test-auth-secret-for-ci-pipeline-minimum-32-chars!"
+          ENCRYPTION_SECRET: "test-encryption-secret-for-ci-32-chars-long!"
+          STORAGE_SIGNING_SECRET: "test-storage-secret-for-ci-32-chars-long!"
+
+      - name: Run Security & RBAC Test Suite
+        run: npx tsx scripts/test-security.ts
+
+      - name: Next.js Production Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: "https://labs.gyrex.in"
+          NEXT_PUBLIC_PATIENT_DOMAIN: "labs.gyrex.in"
+          NEXT_PUBLIC_SUPERADMIN_DOMAIN: "admin-labs.gyrex.in"
+
+  deploy:
+    name: Deploy to Production VPS
+    needs: test_and_build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_USER }}
+          key: ${{ secrets.PROD_VPS_SSH_KEY }}
+          port: ${{ secrets.PROD_VPS_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            echo "[$(date)] Deploying Gyrex Labs..."
+            cd /opt/gyrex-labs
+
+            # Fetch latest git revision
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Install dependencies
+            npm ci
+
+            # Database Migration
+            npx prisma generate
+            npx prisma migrate deploy
+
+            # Build application
+            npm run build
+
+            # Zero-downtime PM2 reload for Gyrex Labs only
+            pm2 reload ecosystem.config.cjs --only gyrex-labs --update-env
+
+            # Local Health Check Validation
+            sleep 3
+            curl -fsS http://127.0.0.1:3005/api/health > /dev/null || (echo "[ERROR] Health check failed after deployment" && exit 1)
+            echo "[$(date)] Gyrex Labs successfully deployed and verified healthy."

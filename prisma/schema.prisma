@@ -1,0 +1,943 @@
+// Gyrex Labs - Master Database Schema
+// Approved Foundation v1.0
+// Multi-Tenant Diagnostic Laboratory Commerce & Patient-Service Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  SUPERADMIN
+  PLATFORM_ADMIN
+  OPERATIONS_ADMIN
+  FINANCE_ADMIN
+  SUPPORT_ADMIN
+  CATALOGUE_ADMIN
+  LAB_OWNER
+  LAB_ADMIN
+  LAB_STAFF
+}
+
+enum LabStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  COLLECTION_SCHEDULED
+  SAMPLE_COLLECTED
+  PROCESSING
+  REPORT_READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CASH_ON_COLLECTION
+}
+
+enum CollectionType {
+  HOME_COLLECTION
+  LAB_VISIT
+}
+
+enum PrescriptionStatus {
+  PENDING_EXTRACTION
+  EXTRACTED
+  REVIEWED
+  REJECTED
+}
+
+enum ReportStatus {
+  DRAFT
+  FINAL
+  AMENDED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum PaymentGateway {
+  RAZORPAY
+  DIRECT_CASH
+  BANK_TRANSFER
+  MANUAL
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  CASH_ON_COLLECTION
+  UPI
+  CARD
+  NETBANKING
+}
+
+enum FileCategory {
+  PRESCRIPTION
+  REPORT
+  SUBSCRIPTION_INVOICE
+  LAB_DOCUMENT
+  OTHER
+}
+
+enum FileAccessClassification {
+  RESTRICTED_PATIENT_LAB
+  RESTRICTED_LAB_ONLY
+  RESTRICTED_SUPERADMIN_ONLY
+}
+
+enum StorageProvider {
+  LOCAL_SECURE
+  S3_COMPLIANT
+  VPS_DISK
+}
+
+enum FileStatus {
+  PENDING
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum OrderItemType {
+  TEST
+  PACKAGE
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificationRecipientType {
+  PATIENT
+  LAB_STAFF
+  PLATFORM_ADMIN
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum AuditAction {
+  LAB_APPROVED
+  LAB_SUSPENDED
+  TEST_MASTER_UPDATED
+  ORDER_STATUS_CHANGED
+  REPORT_UPLOADED
+  REPORT_ACCESSED
+  SUBSCRIPTION_CHANGED
+  PAYMENT_REFUNDED
+  USER_PERMISSION_CHANGED
+  FILE_DOWNLOADED
+  LOGIN_FAILED
+  SECURITY_ALERT
+}
+
+// ============================================================
+// 1. AUTHENTICATION & USERS
+// ============================================================
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String
+  fullName        String
+  phone           String?
+  role            UserRole     @default(LAB_STAFF)
+  isActive        Boolean      @default(true)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relationships
+  labUsers        LabUser[]
+  auditLogs       AuditLog[]   @relation("UserAuditLogs")
+  createdTickets  SupportTicket[] @relation("TicketsCreated")
+  assignedTickets SupportTicket[] @relation("TicketsAssigned")
+  uploadedReports Report[]     @relation("ReportUploader")
+
+  @@index([email])
+  @@index([role])
+}
+
+// ============================================================
+// 2. TENANTS & LAB USERS
+// ============================================================
+
+model Lab {
+  id                      String       @id @default(cuid())
+  slug                    String       @unique // e.g. "sharma-diagnostics"
+  name                    String       // e.g. "Sharma Diagnostics"
+  legalName               String?
+  code                    String       @unique // short code e.g. "SDPL"
+  email                   String
+  phone                   String
+  emergencyPhone          String?
+  addressLine1            String
+  addressLine2            String?
+  city                    String
+  state                   String
+  postalCode              String
+  country                 String       @default("IN")
+  latitude                Float?
+  longitude               Float?
+  gstin                   String?
+  pan                     String?
+  licenseNumber           String?
+  nablAccreditationNumber String?
+  status                  LabStatus    @default(PENDING_VERIFICATION)
+  isVerified              Boolean      @default(false)
+  verifiedAt              DateTime?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  // Tenant Relationships
+  users                   LabUser[]
+  storeSettings           LabStoreSettings?
+  paymentSettings         LabPaymentSettings?
+  labTests                LabTest[]
+  packages                Package[]
+  patients                LabPatient[]
+  orders                  Order[]
+  reports                 Report[]
+  collections             Collection[]
+  prescriptions           Prescription[]
+  patientPayments         PatientPayment[]
+  subscription            Subscription?
+  subscriptionInvoices    SubscriptionInvoice[]
+  subscriptionPayments    SubscriptionPayment[]
+  fileAssets              FileAsset[]
+  notifications           Notification[]
+  supportTickets          SupportTicket[]
+  auditLogs               AuditLog[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([city])
+}
+
+model LabUser {
+  id          String    @id @default(cuid())
+  labId       String
+  userId      String
+  role        UserRole  // LAB_OWNER, LAB_ADMIN, LAB_STAFF
+  permissions String[]  @default([])
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lab         Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, userId])
+  @@index([labId])
+  @@index([userId])
+}
+
+// ============================================================
+// 3. CENTRALIZED TEST MASTER & LAB CATALOGUE
+// ============================================================
+
+model TestCategory {
+  id           String        @id @default(cuid())
+  name         String        @unique // e.g. "Hematology", "Biochemistry"
+  slug         String        @unique
+  description  String?
+  displayOrder Int           @default(0)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  testMasters  TestMaster[]
+
+  @@index([slug])
+}
+
+model TestMaster {
+  id                      String        @id @default(cuid())
+  code                    String        @unique // standardized code e.g. "CBC", "LFT"
+  name                    String        // standardized name e.g. "Complete Blood Count"
+  slug                    String        @unique
+  synonyms                String[]      @default([]) // e.g. ["Hemogram", "CBC with ESR"]
+  categoryId              String
+  sampleType              String        // e.g. "EDTA Whole Blood", "Serum"
+  standardTatHours        Int           @default(24)
+  fastingRequired         Boolean       @default(false)
+  preparationInstructions String?
+  description             String?
+  standardizedCode        String?       // LOINC or national registry code
+  isActive                Boolean       @default(true)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  category                TestCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  labTests                LabTest[]
+  prescriptionMatches     PrescriptionExtractedItem[]
+
+  @@index([code])
+  @@index([categoryId])
+  @@index([name])
+}
+
+model LabTest {
+  id                         String         @id @default(cuid())
+  labId                      String
+  masterTestId               String
+  sellingPrice               Decimal        @db.Decimal(10, 2)
+  mrpPrice                   Decimal?       @db.Decimal(10, 2)
+  isActive                   Boolean        @default(true)
+  isHomeCollectionAvailable  Boolean        @default(true)
+  customTatHours             Int?
+  customPreparation          String?
+  labSpecificNotes           String?
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+
+  lab                        Lab            @relation(fields: [labId], references: [id], onDelete: Cascade)
+  masterTest                 TestMaster     @relation(fields: [masterTestId], references: [id], onDelete: Restrict)
+  packageTests               PackageTest[]
+  orderItems                 OrderItem[]
+  prescriptionMatches        PrescriptionExtractedItem[]
+
+  @@unique([labId, masterTestId])
+  @@index([labId])
+  @@index([masterTestId])
+  @@index([labId, isActive])
+}
+
+model Package {
+  id                         String         @id @default(cuid())
+  labId                      String
+  name                       String         // e.g. "Comprehensive Full Body Checkup"
+  slug                       String
+  code                       String?
+  description                String?
+  sellingPrice               Decimal        @db.Decimal(10, 2)
+  mrpPrice                   Decimal?       @db.Decimal(10, 2)
+  fastingRequired            Boolean        @default(false)
+  preparationInstructions    String?
+  sampleTypes                String[]       @default([])
+  estimatedTatHours          Int?           @default(24)
+  isActive                   Boolean        @default(true)
+  isHomeCollectionAvailable  Boolean        @default(true)
+  isPopular                  Boolean        @default(false)
+  templateId                 String?        // optional reference to platform package template
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+
+  lab                        Lab            @relation(fields: [labId], references: [id], onDelete: Cascade)
+  packageTests               PackageTest[]
+  orderItems                 OrderItem[]
+
+  @@unique([labId, slug])
+  @@index([labId])
+  @@index([labId, isActive])
+}
+
+model PackageTest {
+  id           String    @id @default(cuid())
+  packageId    String
+  labTestId    String
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  package      Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  labTest      LabTest   @relation(fields: [labTestId], references: [id], onDelete: Restrict)
+
+  @@unique([packageId, labTestId])
+  @@index([packageId])
+  @@index([labTestId])
+}
+
+// ============================================================
+// 4. PATIENT MODEL (CROSS-TENANT SAFE)
+// ============================================================
+
+model Patient {
+  id              String           @id @default(cuid())
+  fullName        String
+  phone           String
+  email           String?
+  dateOfBirth     DateTime?
+  ageYears        Int?
+  gender          Gender           @default(PREFER_NOT_TO_SAY)
+  bloodGroup      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  labAssociations LabPatient[]
+  addresses       PatientAddress[]
+  prescriptions   Prescription[]
+  orders          Order[]
+  reports         Report[]
+
+  @@index([phone])
+  @@index([email])
+}
+
+model LabPatient {
+  id                String    @id @default(cuid())
+  labId             String
+  patientId         String
+  uhid              String?   // Lab's internal Unique Health ID
+  notes             String?
+  firstVisitAt      DateTime  @default(now())
+  lastVisitAt       DateTime  @default(now())
+  totalOrdersCount  Int       @default(0)
+  totalSpent        Decimal   @default(0.00) @db.Decimal(12, 2)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  lab               Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@unique([labId, patientId])
+  @@index([labId])
+  @@index([patientId])
+  @@index([labId, uhid])
+}
+
+model PatientAddress {
+  id            String    @id @default(cuid())
+  patientId     String
+  label         String    @default("Home") // Home, Office, Other
+  addressLine1  String
+  addressLine2  String?
+  landmark      String?
+  city          String
+  state         String
+  postalCode    String
+  latitude      Float?
+  longitude     Float?
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+// ============================================================
+// 5. PRESCRIPTION & GEMINI EXTRACTION
+// ============================================================
+
+model Prescription {
+  id              String                      @id @default(cuid())
+  patientId       String
+  labId           String?
+  fileAssetId     String
+  status          PrescriptionStatus          @default(PENDING_EXTRACTION)
+  aiExtractedRaw  Json?                       // Strictly extracted test names & confidence only
+  reviewNotes     String?
+  reviewedAt      DateTime?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  patient         Patient                     @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  lab             Lab?                        @relation(fields: [labId], references: [id], onDelete: SetNull)
+  fileAsset       FileAsset                   @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  extractedItems  PrescriptionExtractedItem[]
+  orders          Order[]
+
+  @@index([patientId])
+  @@index([labId])
+  @@index([fileAssetId])
+}
+
+model PrescriptionExtractedItem {
+  id                   String       @id @default(cuid())
+  prescriptionId       String
+  rawTestName          String       // Name explicitly written on prescription
+  confidence           Float?
+  matchedMasterTestId  String?
+  labTestId            String?
+  isConfirmedByPatient Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+
+  prescription         Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  matchedMasterTest    TestMaster?  @relation(fields: [matchedMasterTestId], references: [id], onDelete: SetNull)
+  labTest              LabTest?     @relation(fields: [labTestId], references: [id], onDelete: SetNull)
+
+  @@index([prescriptionId])
+  @@index([matchedMasterTestId])
+  @@index([labTestId])
+}
+
+// ============================================================
+// 6. ORDERS & ORDER ITEMS
+// ============================================================
+
+model Order {
+  id                 String           @id @default(cuid())
+  orderNumber        String           @unique // e.g. "GYR-2026-0001"
+  labId              String
+  patientId          String
+  prescriptionId     String?
+  collectionType     CollectionType   @default(HOME_COLLECTION)
+  orderStatus        OrderStatus      @default(PENDING_PAYMENT)
+  paymentStatus      PaymentStatus    @default(PENDING)
+  subtotal           Decimal          @db.Decimal(10, 2)
+  collectionFee      Decimal          @default(0.00) @db.Decimal(10, 2)
+  discountAmount     Decimal          @default(0.00) @db.Decimal(10, 2)
+  totalAmount        Decimal          @db.Decimal(10, 2)
+  cancellationReason String?
+  cancelledAt        DateTime?
+  confirmedAt        DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  lab                Lab              @relation(fields: [labId], references: [id], onDelete: Restrict)
+  patient            Patient          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  prescription       Prescription?    @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  items              OrderItem[]
+  collection         Collection?
+  payments           PatientPayment[]
+  reports            Report[]
+  auditLogs          AuditLog[]
+
+  @@index([labId])
+  @@index([patientId])
+  @@index([labId, orderStatus])
+  @@index([labId, createdAt])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id            String        @id @default(cuid())
+  orderId       String
+  itemType      OrderItemType
+  labTestId     String?
+  packageId     String?
+  itemName      String        // Snapshot at time of booking
+  itemCode      String?       // Snapshot code
+  quantity      Int           @default(1)
+  unitPrice     Decimal       @db.Decimal(10, 2)
+  totalDiscount Decimal       @default(0.00) @db.Decimal(10, 2)
+  totalPrice    Decimal       @db.Decimal(10, 2)
+  createdAt     DateTime      @default(now())
+
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  labTest       LabTest?      @relation(fields: [labTestId], references: [id], onDelete: Restrict)
+  package       Package?      @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([labTestId])
+  @@index([packageId])
+}
+
+model Collection {
+  id                     String         @id @default(cuid())
+  orderId                String         @unique
+  labId                  String
+  collectionType         CollectionType
+  scheduledDate          DateTime
+  scheduledSlot          String         // e.g. "07:00 AM - 08:00 AM"
+  collectionAddressLine1 String?
+  collectionAddressLine2 String?
+  landmark               String?
+  city                   String?
+  state                  String?
+  postalCode             String?
+  latitude               Float?
+  longitude              Float?
+  phlebotomistName       String?
+  phlebotomistPhone      String?
+  sampleCollectedAt      DateTime?
+  specialInstructions    String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  order                  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  lab                    Lab            @relation(fields: [labId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([labId])
+  @@index([labId, scheduledDate])
+}
+
+// ============================================================
+// 7. PAYMENTS (FLOW A: PATIENT -> LABORATORY)
+// ============================================================
+
+model PatientPayment {
+  id                String         @id @default(cuid())
+  paymentNumber     String         @unique // e.g. "PAY-PAT-2026-0001"
+  orderId           String
+  labId             String
+  amount            Decimal        @db.Decimal(10, 2)
+  currency          String         @default("INR")
+  method            PaymentMethod  @default(RAZORPAY)
+  status            PaymentStatus  @default(PENDING)
+  gateway           PaymentGateway @default(RAZORPAY)
+  gatewayOrderId    String?        // Razorpay order id
+  gatewayPaymentId  String?        // Razorpay payment id
+  gatewaySignature  String?
+  refundId          String?
+  refundedAmount    Decimal?       @db.Decimal(10, 2)
+  failureReason     String?
+  paidAt            DateTime?
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  order             Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  lab               Lab            @relation(fields: [labId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([labId])
+  @@index([gatewayPaymentId])
+  @@index([status])
+}
+
+// ============================================================
+// 8. DIAGNOSTIC REPORTS & SECURE ASSETS
+// ============================================================
+
+model Report {
+  id                    String        @id @default(cuid())
+  reportNumber          String        @unique // e.g. "RPT-2026-0001"
+  orderId               String
+  labId                 String
+  patientId             String
+  fileAssetId           String
+  status                ReportStatus  @default(FINAL)
+  uploadedByUserId      String?
+  uploadedAt            DateTime      @default(now())
+  releasedAt            DateTime?
+  deliveredViaEmailAt   DateTime?
+  deliveredViaWhatsappAt DateTime?
+  accessPasscode        String?       // Optional PIN/OTP for extra report security
+  viewCount             Int           @default(0)
+  lastAccessedAt        DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  lab                   Lab           @relation(fields: [labId], references: [id], onDelete: Restrict)
+  patient               Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  fileAsset             FileAsset     @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  uploadedByUser        User?         @relation("ReportUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([labId])
+  @@index([patientId])
+  @@index([fileAssetId])
+}
+
+model FileAsset {
+  id                   String                   @id @default(cuid())
+  labId                String?
+  category             FileCategory
+  storageProvider      StorageProvider          @default(LOCAL_SECURE)
+  storagePath          String                   // Private storage key/path
+  originalFileName     String
+  mimeType             String
+  fileSizeBytes        BigInt
+  checksumSha256       String?
+  accessClassification FileAccessClassification @default(RESTRICTED_PATIENT_LAB)
+  status               FileStatus               @default(ACTIVE)
+  createdByUserId      String?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  lab                  Lab?                     @relation(fields: [labId], references: [id], onDelete: SetNull)
+  prescriptions        Prescription[]
+  reports              Report[]
+  subscriptionInvoices SubscriptionInvoice[]
+
+  @@index([labId])
+  @@index([category])
+  @@index([storagePath])
+}
+
+// ============================================================
+// 9. SUBSCRIPTIONS (FLOW B: LAB -> GYREX)
+// ============================================================
+
+model SubscriptionPlan {
+  id                          String         @id @default(cuid())
+  name                        String         // e.g. "Growth", "Professional", "Enterprise"
+  code                        String         @unique // e.g. "PLAN_GROWTH", "PLAN_PRO"
+  description                 String?
+  priceMonthly                Decimal        @db.Decimal(10, 2)
+  priceYearly                 Decimal        @db.Decimal(10, 2)
+  maxOrdersPerMonth           Int?           // null = unlimited
+  maxStaffAccounts            Int            @default(5)
+  customBrandingEnabled       Boolean        @default(true)
+  geminiPrescriptionAiEnabled Boolean        @default(true)
+  isActive                    Boolean        @default(true)
+  displayOrder                Int            @default(0)
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+
+  subscriptions               Subscription[]
+
+  @@index([code])
+}
+
+model Subscription {
+  id                     String                @id @default(cuid())
+  labId                  String                @unique // 1 active subscription per lab
+  planId                 String
+  status                 SubscriptionStatus    @default(TRIALING)
+  billingCycle           BillingCycle          @default(MONTHLY)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  trialEndsAt            DateTime?
+  cancelAtPeriodEnd      Boolean               @default(false)
+  cancelledAt            DateTime?
+  gracePeriodEndsAt      DateTime?
+  providerCustomerId     String?               // Gyrex Razorpay Customer ID
+  providerSubscriptionId String?               // Gyrex Razorpay Subscription ID
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  lab                    Lab                   @relation(fields: [labId], references: [id], onDelete: Restrict)
+  plan                   SubscriptionPlan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoices               SubscriptionInvoice[]
+
+  @@index([labId])
+  @@index([planId])
+  @@index([status])
+}
+
+model SubscriptionInvoice {
+  id                     String                @id @default(cuid())
+  invoiceNumber          String                @unique // e.g. "GYR-INV-2026-0001"
+  subscriptionId         String
+  labId                  String
+  amountDue              Decimal               @db.Decimal(10, 2)
+  amountPaid             Decimal               @default(0.00) @db.Decimal(10, 2)
+  currency               String                @default("INR")
+  status                 InvoiceStatus         @default(ISSUED)
+  dueDate                DateTime
+  paidAt                 DateTime?
+  fileAssetId            String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  subscription           Subscription          @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  lab                    Lab                   @relation(fields: [labId], references: [id], onDelete: Restrict)
+  fileAsset              FileAsset?            @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
+  payments               SubscriptionPayment[]
+
+  @@index([subscriptionId])
+  @@index([labId])
+  @@index([invoiceNumber])
+}
+
+model SubscriptionPayment {
+  id                     String              @id @default(cuid())
+  paymentNumber          String              @unique // e.g. "PAY-SUB-2026-0001"
+  subscriptionInvoiceId  String
+  labId                  String
+  amount                 Decimal             @db.Decimal(10, 2)
+  currency               String              @default("INR")
+  status                 PaymentStatus       @default(PENDING)
+  gateway                PaymentGateway      @default(RAZORPAY)
+  gatewayOrderId         String?
+  gatewayPaymentId       String?
+  gatewaySignature       String?
+  paidAt                 DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  subscriptionInvoice    SubscriptionInvoice @relation(fields: [subscriptionInvoiceId], references: [id], onDelete: Restrict)
+  lab                    Lab                 @relation(fields: [labId], references: [id], onDelete: Restrict)
+
+  @@index([subscriptionInvoiceId])
+  @@index([labId])
+  @@index([gatewayPaymentId])
+}
+
+// ============================================================
+// 10. SETTINGS (LAB STOREFRONT, LAB PAYMENT, PLATFORM)
+// ============================================================
+
+model LabStoreSettings {
+  id                           String    @id @default(cuid())
+  labId                        String    @unique
+  primaryColor                 String    @default("#0284c7")
+  accentColor                  String    @default("#0ea5e9")
+  logoUrl                      String?
+  bannerUrl                    String?
+  heroHeadline                 String    @default("Book Diagnostic Tests & Health Packages Online")
+  heroSubheadline              String    @default("Accurate reports, timely home sample collection, and professional care.")
+  homeCollectionAvailable      Boolean   @default(true)
+  homeCollectionFee            Decimal   @default(100.00) @db.Decimal(10, 2)
+  freeHomeCollectionThreshold   Decimal?  @db.Decimal(10, 2)
+  workingHours                 Json?
+  deliveryPromiseNotice        String?   @default("Reports delivered within 24 hours")
+  metaTitle                    String?
+  metaDescription              String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  lab                          Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+}
+
+model LabPaymentSettings {
+  id                            String    @id @default(cuid())
+  labId                         String    @unique
+  razorpayKeyId                 String?
+  razorpayKeySecretEncrypted    String?
+  razorpayWebhookSecretEncrypted String?
+  cashOnCollectionEnabled       Boolean   @default(true)
+  upiDirectQrUrl                String?
+  isConfigured                  Boolean   @default(false)
+  lastVerifiedAt                DateTime?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
+
+  lab                           Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+}
+
+model PlatformSettings {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  value           Json
+  description     String?
+  updatedByUserId String?
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+
+  @@index([key])
+}
+
+// ============================================================
+// 11. NOTIFICATIONS, SUPPORT TICKETS & AUDIT LOGS
+// ============================================================
+
+model Notification {
+  id            String                    @id @default(cuid())
+  recipientType NotificationRecipientType
+  userId        String?
+  labId         String?
+  channel       NotificationChannel       @default(IN_APP)
+  title         String
+  message       String
+  data          Json?
+  isRead        Boolean                   @default(false)
+  readAt        DateTime?
+  sentAt        DateTime                  @default(now())
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  lab           Lab?                      @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([labId])
+  @@index([isRead])
+}
+
+model SupportTicket {
+  id               String         @id @default(cuid())
+  ticketNumber     String         @unique // e.g. "TCK-2026-0001"
+  labId            String?
+  createdByUserId  String?
+  assignedToUserId String?
+  priority         TicketPriority @default(MEDIUM)
+  status           TicketStatus   @default(OPEN)
+  subject          String
+  description      String
+  category         String         @default("GENERAL")
+  closedAt         DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  lab              Lab?           @relation(fields: [labId], references: [id], onDelete: SetNull)
+  createdByUser    User?          @relation("TicketsCreated", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assignedToUser   User?          @relation("TicketsAssigned", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([labId])
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([ticketNumber])
+}
+
+model AuditLog {
+  id              String       @id @default(cuid())
+  actorUserId     String?
+  actorRole       String?
+  actorIp         String?
+  actorUserAgent  String?
+  action          AuditAction
+  entityType      String       // "Lab", "Order", "Report", "TestMaster", "Subscription", etc.
+  entityId        String
+  labId           String?      // Tenant context if applicable
+  orderId         String?      // Order context if applicable
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+
+  actorUser       User?        @relation("UserAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  lab             Lab?         @relation(fields: [labId], references: [id], onDelete: SetNull)
+  order           Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([labId])
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@index([action])
+  @@index([createdAt])
+}
