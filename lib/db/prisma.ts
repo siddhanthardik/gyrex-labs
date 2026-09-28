@@ -41,7 +41,7 @@ pool.on("error", (err) => {
   }
 });
 
-const adapter = new PrismaPg(pool, { schema: "gyrex_labs" });
+const adapter = new PrismaPg(pool, { schema: "public" });
 
 export const prisma =
   globalForPrisma.prisma ??
