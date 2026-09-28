@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getLabStorefront } from "@/services/labs/storefront";
 import { PackageCard } from "@/components/patient/package-card";
-import { Package } from "lucide-react";
+import { Package, Sparkles, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 export async function generateMetadata({
   params,
@@ -29,11 +30,16 @@ export default async function PackagesPage({
   const { packages } = store;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Health Packages</h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Comprehensive health check-up bundles at {store.lab.name}
+    <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 space-y-4">
+      {/* Header Banner */}
+      <div className="rounded-3xl bg-gradient-to-r from-violet-900 to-indigo-800 p-5 text-white shadow-md">
+        <div className="flex items-center gap-2 text-xs font-bold text-violet-200">
+          <Sparkles className="h-4 w-4" />
+          <span>Full Body &amp; Preventive Health</span>
+        </div>
+        <h1 className="mt-1 text-xl font-extrabold text-white">Health Check-Up Packages</h1>
+        <p className="mt-1 text-xs text-violet-100 leading-relaxed">
+          Comprehensive bundled diagnostic packages at discounted rates with {store.lab.name}.
         </p>
       </div>
 
@@ -54,22 +60,22 @@ export default async function PackagesPage({
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-white py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
-            <Package className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 bg-white py-16 px-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+            <Package className="h-8 w-8" />
           </div>
-          <h3 className="mt-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            No Packages Available
+          <h3 className="mt-4 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+            No Packages Available Currently
           </h3>
           <p className="mt-1 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
-            This laboratory hasn&apos;t set up any health packages yet. Browse individual tests instead.
+            This laboratory currently offers individual diagnostic tests. Browse the full test catalogue below.
           </p>
-          <a
+          <Link
             href={`/${labSlug}/tests`}
-            className="mt-4 text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400"
+            className="mt-5 rounded-2xl bg-sky-700 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-sky-600 transition"
           >
-            Browse diagnostic tests →
-          </a>
+            Browse All Diagnostic Tests
+          </Link>
         </div>
       )}
     </div>

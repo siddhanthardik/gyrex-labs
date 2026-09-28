@@ -1,33 +1,42 @@
 "use client";
 
 import { useCart } from "./cart-context";
-import { Clock, Plus, Check } from "lucide-react";
+import { Clock, Droplets, Plus, Check, Utensils } from "lucide-react";
 
 interface TestCardProps {
   id: string;
   name: string;
   code?: string | null;
+  description?: string | null;
   sellingPrice: number;
   mrpPrice?: number | null;
   sampleType?: string;
   tatHours?: number;
   fastingRequired?: boolean;
   categoryName?: string;
+  preparationInstructions?: string | null;
 }
 
 export function TestCard({
   id,
   name,
   code,
+  description,
   sellingPrice,
   mrpPrice,
   sampleType,
   tatHours = 24,
   fastingRequired = false,
   categoryName,
+  preparationInstructions,
 }: TestCardProps) {
   const { items, addItem, removeItem, isHydrated } = useCart();
   const isInCart = isHydrated && items.some((i) => i.id === id);
+
+  const discount =
+    mrpPrice && mrpPrice > sellingPrice
+      ? Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100)
+      : 0;
 
   const handleToggle = () => {
     if (isInCart) {
@@ -46,59 +55,99 @@ export function TestCard({
   };
 
   return (
-    <div className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700">
-      <div>
-        <div className="flex items-start justify-between gap-2">
+    <div
+      className={`no-tap-highlight flex flex-col rounded-2xl border bg-white transition ${
+        isInCart
+          ? "border-sky-200 shadow-sm shadow-sky-100"
+          : "border-slate-200 shadow-sm hover:border-slate-300"
+      }`}
+    >
+      {/* Card body */}
+      <div className="flex-1 px-4 pt-4 pb-3">
+        {/* Category + fasting badge row */}
+        <div className="mb-1.5 flex items-center justify-between gap-2">
           {categoryName && (
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">
               {categoryName}
             </span>
           )}
           {fastingRequired && (
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-              Fasting Req.
+            <span className="flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              <Utensils className="h-2.5 w-2.5" />
+              Fasting
             </span>
           )}
         </div>
 
-        <h3 className="mt-1 text-sm font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2">
-          {name}
-        </h3>
+        {/* Test name */}
+        <h3 className="text-sm font-bold leading-snug text-slate-900">{name}</h3>
 
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-          {sampleType && <span>{sampleType}</span>}
-          <span className="flex items-center gap-1 text-[11px]">
-            <Clock className="h-3 w-3 text-zinc-400" /> Reports in {tatHours}h
+        {/* Description */}
+        {description && (
+          <p className="mt-1 text-[12px] leading-relaxed text-slate-500 line-clamp-2">
+            {description}
+          </p>
+        )}
+
+        {/* Preparation hint */}
+        {preparationInstructions && (
+          <p className="mt-1 text-[11px] italic text-slate-400 line-clamp-1">
+            {preparationInstructions}
+          </p>
+        )}
+
+        {/* Meta row: sample + TAT */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-3">
+          {sampleType && (
+            <span className="flex items-center gap-1 text-[11px] text-slate-500">
+              <Droplets className="h-3 w-3 text-sky-500" />
+              {sampleType}
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-[11px] text-slate-500">
+            <Clock className="h-3 w-3 text-emerald-500" />
+            Report in {tatHours}h
           </span>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800/80">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-base font-extrabold text-zinc-900 dark:text-white">
-            ₹{sellingPrice}
-          </span>
-          {mrpPrice && mrpPrice > sellingPrice && (
-            <span className="text-xs text-zinc-400 line-through">₹{mrpPrice}</span>
+      {/* Card footer: price + CTA */}
+      <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-base font-extrabold text-slate-900">
+              ₹{sellingPrice}
+            </span>
+            {mrpPrice && mrpPrice > sellingPrice && (
+              <span className="text-xs text-slate-400 line-through">₹{mrpPrice}</span>
+            )}
+          </div>
+          {discount > 0 && (
+            <span className="text-[10px] font-semibold text-emerald-600">
+              {discount}% off
+            </span>
           )}
         </div>
 
         <button
           type="button"
           onClick={handleToggle}
-          className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+          aria-label={isInCart ? `Remove ${name} from cart` : `Add ${name} to cart`}
+          className={`touch-target flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
             isInCart
-              ? "bg-emerald-600 text-white hover:bg-emerald-700"
-              : "border border-sky-600 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40"
+              ? "bg-emerald-500 text-white hover:bg-emerald-600"
+              : "bg-sky-600 text-white hover:bg-sky-700"
           }`}
         >
           {isInCart ? (
             <>
-              <Check className="h-3.5 w-3.5" /> Added
+              <Check className="h-3.5 w-3.5" />
+              Added
             </>
           ) : (
             <>
-              <Plus className="h-3.5 w-3.5" /> Add
+              <Plus className="h-3.5 w-3.5" />
+              Add
             </>
           )}
         </button>

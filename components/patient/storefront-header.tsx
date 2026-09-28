@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCart } from "./cart-context";
-import { ShoppingBag, ShieldCheck, MapPin, Phone, FileText } from "lucide-react";
+import { ShoppingBag, ShieldCheck, MapPin, Phone, FileText, ArrowLeft } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 interface HeaderProps {
   labName: string;
@@ -24,65 +25,79 @@ export function StorefrontHeader({
   nablNumber,
 }: HeaderProps) {
   const { itemCount, isHydrated } = useCart();
+  const pathname = usePathname();
+
+  // Show back button when not on the root storefront page
+  const isHome = pathname === `/${labSlug}`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
-        {/* Laboratory Branding (Primary) */}
-        <Link href={`/${labSlug}`} className="group flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white font-bold text-lg shadow-sm group-hover:bg-sky-500 transition">
-            {labName.charAt(0)}
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-50 group-hover:text-sky-600 transition">
-                {labName}
-              </h1>
-              {isVerified && (
-                <span title={nablNumber ? `NABL Accredited: ${nablNumber}` : "Verified Diagnostic Lab"}>
-                  <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-              <span className="flex items-center gap-0.5">
-                <MapPin className="h-3 w-3" /> {city}, {state}
-              </span>
-              <span className="text-zinc-300 dark:text-zinc-700">•</span>
-              <span className="text-[11px] font-medium text-zinc-400">
-                Powered by Gyrex Labs
-              </span>
-            </div>
-          </div>
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 lg:max-w-5xl">
+        {/* Left: back-arrow or lab brand */}
+        <div className="flex min-w-0 items-center gap-2.5">
+          {!isHome && (
+            <Link
+              href={`/${labSlug}`}
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+              aria-label="Back to storefront"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          )}
 
-        {/* Quick Actions & Navigation */}
-        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href={`/${labSlug}`} className="flex min-w-0 items-center gap-2.5">
+            {/* Lab logo avatar */}
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-bold text-white shadow-sm">
+              {labName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="truncate text-sm font-bold text-slate-900">
+                  {labName}
+                </span>
+                {isVerified && (
+                  <span title={nablNumber ? `NABL: ${nablNumber}` : "Verified Lab"}>
+                    <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                <MapPin className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{city}, {state}</span>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Right: phone (sm+) + reports + cart */}
+        <div className="flex flex-shrink-0 items-center gap-2">
           <a
             href={`tel:${phone}`}
-            className="hidden items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-sky-600 dark:text-zinc-400 sm:flex"
+            className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-slate-600 transition hover:text-sky-600 sm:flex"
+            aria-label={`Call ${labName}`}
           >
             <Phone className="h-3.5 w-3.5" />
-            <span>{phone}</span>
+            <span className="hidden md:inline">{phone}</span>
           </a>
 
           <Link
             href={`/${labSlug}/reports`}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900 transition"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            aria-label="My Reports"
           >
             <FileText className="h-3.5 w-3.5 text-sky-600" />
-            <span className="hidden sm:inline">My Reports</span>
-            <span className="sm:hidden">Reports</span>
+            <span className="hidden sm:inline">Reports</span>
           </Link>
 
           <Link
             href={`/${labSlug}/cart`}
-            className="relative flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-500 transition"
+            className="relative flex h-9 items-center gap-1.5 rounded-lg bg-sky-600 px-3 text-[11px] font-bold text-white shadow-sm transition hover:bg-sky-700"
+            aria-label={`Cart${isHydrated && itemCount > 0 ? `, ${itemCount} items` : ""}`}
           >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            <span>Cart</span>
+            <ShoppingBag className="h-4 w-4" />
+            <span className="hidden sm:inline">Cart</span>
             {isHydrated && itemCount > 0 && (
-              <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-sky-700">
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-sky-700">
                 {itemCount}
               </span>
             )}
