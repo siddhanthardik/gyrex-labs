@@ -24,7 +24,7 @@ export function LabLayoutShell({ lab, user, children }: LabLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100 antialiased font-sans">
+    <div className="gyrex-admin-shell flex min-h-screen antialiased font-sans">
       <LabSidebar
         lab={lab}
         user={user}

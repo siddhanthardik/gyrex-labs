@@ -17,7 +17,7 @@ export function SuperadminLayoutShell({
   userName,
 }: SuperadminLayoutShellProps) {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="gyrex-admin-shell min-h-screen">
       <SuperadminSidebar userRole={userRole} userEmail={userEmail} />
 
       <div className="pl-64 flex min-h-screen flex-col">

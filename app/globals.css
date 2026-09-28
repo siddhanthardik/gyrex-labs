@@ -1,35 +1,151 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f7fb;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-strong: #f8fafc;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #0f5fd8;
+  --primary-soft: #eaf2ff;
+  --secondary: #f1f5f9;
+  --success: #0f9f6e;
+  --warning: #d97706;
+  --destructive: #dc2626;
   /* Patient storefront design tokens */
-  --patient-primary: #0369a1;      /* sky-700 */
-  --patient-primary-light: #e0f2fe; /* sky-100 */
-  --patient-success: #059669;      /* emerald-600 */
-  --patient-warning: #d97706;      /* amber-600 */
-  --patient-surface: #f8fafc;      /* slate-50 */
-  --patient-border: #e2e8f0;       /* slate-200 */
+  --patient-primary: #0369a1;
+  --patient-primary-light: #e0f2fe;
+  --patient-success: #059669;
+  --patient-warning: #d97706;
+  --patient-surface: #f8fafc;
+  --patient-border: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.gyrex-admin-shell {
+  background: linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+  color: var(--foreground);
+}
+
+.gyrex-admin-shell * {
+  box-sizing: border-box;
+}
+
+.gyrex-admin-shell .bg-zinc-950,
+.gyrex-admin-shell .bg-zinc-900,
+.gyrex-admin-shell .bg-zinc-900\/40,
+.gyrex-admin-shell .bg-zinc-900\/60,
+.gyrex-admin-shell .bg-zinc-800,
+.gyrex-admin-shell .bg-zinc-800\/80,
+.gyrex-admin-shell .bg-slate-900,
+.gyrex-admin-shell .bg-slate-950,
+.gyrex-admin-shell .bg-indigo-950,
+.gyrex-admin-shell .bg-indigo-900,
+.gyrex-admin-shell .bg-sky-950,
+.gyrex-admin-shell .bg-sky-900 {
+  background-color: var(--card) !important;
+}
+
+.gyrex-admin-shell .bg-zinc-50,
+.gyrex-admin-shell .bg-slate-50,
+.gyrex-admin-shell .bg-white {
+  background-color: #ffffff !important;
+}
+
+.gyrex-admin-shell .border-zinc-800,
+.gyrex-admin-shell .border-zinc-700,
+.gyrex-admin-shell .border-zinc-800\/80,
+.gyrex-admin-shell .border-zinc-800\/50,
+.gyrex-admin-shell .border-slate-800,
+.gyrex-admin-shell .border-slate-700,
+.gyrex-admin-shell .border-indigo-800,
+.gyrex-admin-shell .border-sky-500\/20,
+.gyrex-admin-shell .border-sky-500\/25,
+.gyrex-admin-shell .border-sky-500\/30,
+.gyrex-admin-shell .border-indigo-500\/30,
+.gyrex-admin-shell .border-sky-500\/40 {
+  border-color: var(--border) !important;
+}
+
+.gyrex-admin-shell .text-white,
+.gyrex-admin-shell .text-zinc-100,
+.gyrex-admin-shell .text-zinc-200,
+.gyrex-admin-shell .text-zinc-300,
+.gyrex-admin-shell .text-zinc-400,
+.gyrex-admin-shell .text-zinc-500,
+.gyrex-admin-shell .text-slate-100,
+.gyrex-admin-shell .text-slate-200,
+.gyrex-admin-shell .text-slate-300,
+.gyrex-admin-shell .text-slate-400,
+.gyrex-admin-shell .text-slate-500 {
+  color: var(--foreground) !important;
+}
+
+.gyrex-admin-shell .text-zinc-600,
+.gyrex-admin-shell .text-zinc-700,
+.gyrex-admin-shell .text-slate-600,
+.gyrex-admin-shell .text-slate-700,
+.gyrex-admin-shell .text-slate-500,
+.gyrex-admin-shell .text-muted {
+  color: var(--muted) !important;
+}
+
+.gyrex-admin-shell .placeholder-zinc-500,
+.gyrex-admin-shell .placeholder-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.gyrex-admin-shell .hover\:bg-zinc-900:hover,
+.gyrex-admin-shell .hover\:bg-zinc-800:hover,
+.gyrex-admin-shell .hover\:bg-slate-900:hover,
+.gyrex-admin-shell .hover\:bg-slate-800:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.gyrex-admin-shell .hover\:text-white:hover,
+.gyrex-admin-shell .hover\:text-zinc-200:hover,
+.gyrex-admin-shell .hover\:text-zinc-300:hover {
+  color: var(--foreground) !important;
+}
+
+.gyrex-admin-shell .shadow-2xl,
+.gyrex-admin-shell .shadow-lg,
+.gyrex-admin-shell .shadow-xl {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+}
+
+.gyrex-admin-shell input,
+.gyrex-admin-shell textarea,
+.gyrex-admin-shell select {
+  background-color: #ffffff !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.gyrex-admin-shell .focus\:border-sky-500:focus,
+.gyrex-admin-shell .focus\:border-indigo-500:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(15, 95, 216, 0.12) !important;
 }
 
 /* ── Mobile-first patient utilities ─────────────────────────────────────── */

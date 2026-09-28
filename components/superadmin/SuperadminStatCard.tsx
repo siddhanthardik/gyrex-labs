@@ -18,22 +18,22 @@ export function SuperadminStatCard({
   icon,
 }: StatCardProps) {
   const badgeStyles = {
-    success: "text-emerald-400 bg-emerald-950/60 border-emerald-800/40",
-    warning: "text-amber-400 bg-amber-950/60 border-amber-800/40",
-    danger: "text-rose-400 bg-rose-950/60 border-rose-800/40",
-    info: "text-indigo-400 bg-indigo-950/60 border-indigo-800/40",
-    neutral: "text-zinc-400 bg-zinc-800 border-zinc-700",
+    success: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    warning: "text-amber-700 bg-amber-50 border-amber-200",
+    danger: "text-rose-700 bg-rose-50 border-rose-200",
+    info: "text-blue-700 bg-blue-50 border-blue-200",
+    neutral: "text-slate-600 bg-slate-100 border-slate-200",
   }[badgeVariant];
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm transition hover:border-zinc-700">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">{title}</span>
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</span>
         {icon && <span className="text-lg">{icon}</span>}
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-white">{value}</span>
+        <span className="text-2xl font-bold tracking-tight text-slate-900">{value}</span>
         {badge && (
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${badgeStyles}`}>
             {badge}
@@ -41,7 +41,7 @@ export function SuperadminStatCard({
         )}
       </div>
 
-      {subtitle && <p className="mt-1 text-xs text-zinc-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
     </div>
   );
 }

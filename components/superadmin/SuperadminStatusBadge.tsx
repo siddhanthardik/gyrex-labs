@@ -24,12 +24,12 @@ export function SuperadminStatusBadge({ status, variant }: StatusBadgeProps) {
   }
 
   const styles = {
-    success: "bg-emerald-950/80 text-emerald-400 border-emerald-800/60",
-    warning: "bg-amber-950/80 text-amber-400 border-amber-800/60",
-    danger: "bg-rose-950/80 text-rose-400 border-rose-800/60",
-    info: "bg-indigo-950/80 text-indigo-400 border-indigo-800/60",
-    neutral: "bg-zinc-900 text-zinc-400 border-zinc-800",
-    default: "bg-zinc-900 text-zinc-300 border-zinc-800",
+    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    warning: "bg-amber-50 text-amber-700 border-amber-200",
+    danger: "bg-rose-50 text-rose-700 border-rose-200",
+    info: "bg-blue-50 text-blue-700 border-blue-200",
+    neutral: "bg-slate-100 text-slate-600 border-slate-200",
+    default: "bg-slate-100 text-slate-700 border-slate-200",
   }[resolvedVariant];
 
   const formatted = status.replace(/_/g, " ");

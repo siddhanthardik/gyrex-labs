@@ -93,20 +93,20 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-800 bg-zinc-950">
+    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white/95 shadow-sm backdrop-blur-sm">
       {/* Brand Header */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-zinc-800 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-md shadow-indigo-500/20">
+      <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white shadow-sm">
           G
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold tracking-tight text-white">Gyrex Labs</span>
-            <span className="rounded bg-indigo-500/20 px-1 py-0.2 text-[9px] font-bold text-indigo-400 border border-indigo-500/30">
+            <span className="text-sm font-bold tracking-tight text-slate-900">Gyrex Lab</span>
+            <span className="rounded border border-blue-200 bg-blue-50 px-1 text-[9px] font-bold text-blue-700">
               SUPERADMIN
             </span>
           </div>
-          <p className="text-[10px] text-zinc-400">Platform Command Center</p>
+          <p className="text-[10px] text-slate-500">Platform Command Center</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 text-xs">
         {navSections.map((section) => (
           <div key={section.title}>
-            <div className="px-2 pb-1.5 text-[10px] font-bold tracking-wider text-zinc-400">
+            <div className="px-2 pb-1.5 text-[10px] font-bold tracking-[0.12em] text-slate-400">
               {section.title}
             </div>
             <div className="space-y-0.5">
@@ -126,8 +126,8 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
                     href={item.href}
                     className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 font-medium transition ${
                       isActive
-                        ? "bg-indigo-600 text-white shadow-sm font-semibold"
-                        : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     <span>{item.icon}</span>
@@ -141,14 +141,14 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
       </div>
 
       {/* Footer Role Context */}
-      <div className="border-t border-zinc-800 p-3">
-        <div className="flex items-center gap-2 rounded-lg bg-zinc-900/60 p-2 border border-zinc-800/80">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-950 text-indigo-400 text-xs font-bold border border-indigo-800/60">
+      <div className="border-t border-slate-200 p-3">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
             SA
           </div>
           <div className="overflow-hidden">
-            <p className="truncate text-xs font-semibold text-zinc-200">{userRole}</p>
-            <p className="truncate text-[10px] text-zinc-500">Platform Administrator</p>
+            <p className="truncate text-xs font-semibold text-slate-900">{userRole}</p>
+            <p className="truncate text-[10px] text-slate-500">Platform Administrator</p>
           </div>
         </div>
       </div>

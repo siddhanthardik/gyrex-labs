@@ -83,24 +83,24 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col border-r border-zinc-800 bg-zinc-950 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white/95 shadow-sm backdrop-blur-sm transition-transform duration-200 lg:static lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand & Lab Header */}
-        <div className="flex h-20 items-center justify-between border-b border-zinc-800/80 px-6">
+        <div className="flex h-20 items-center justify-between border-b border-slate-200 px-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/25 font-bold text-sky-400 shadow-sm">
-              GL
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
+              G
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-sky-400">Lab Admin</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-600">Gyrex Lab</span>
                 {lab.isVerified && (
-                  <span title="Verified by Gyrex" className="text-sky-400 text-xs">✓</span>
+                  <span title="Verified by Gyrex" className="text-[10px] font-semibold text-emerald-600">✓</span>
                 )}
               </div>
-              <h1 className="truncate text-sm font-semibold text-white" title={lab.name}>
+              <h1 className="truncate text-sm font-semibold text-slate-900" title={lab.name}>
                 {lab.name}
               </h1>
             </div>
@@ -108,7 +108,7 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 lg:hidden"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
             >
               ✕
             </button>
@@ -116,20 +116,20 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
         </div>
 
         {/* Status pill */}
-        <div className="px-6 py-3 border-b border-zinc-800/50 flex items-center justify-between">
-          <span className="text-xs text-zinc-400">Store Status:</span>
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <span className="text-[11px] font-medium text-slate-500">Store Status:</span>
           {getStatusBadge()}
         </div>
 
         {/* Navigation links */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {navSections.map((section, idx) => {
             const visibleItems = section.items.filter((item) => item.show);
             if (visibleItems.length === 0) return null;
 
             return (
               <div key={idx} className="space-y-1">
-                <h3 className="px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                <h3 className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
                   {section.title}
                 </h3>
                 {visibleItems.map((item) => {
@@ -145,8 +145,8 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
                       onClick={onClose}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                         isActive
-                          ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
-                          : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                          ? "border border-blue-200 bg-blue-50 text-blue-700"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
                       <span className="text-base">{item.icon}</span>
@@ -160,25 +160,25 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
         </div>
 
         {/* User context & Store Preview */}
-        <div className="border-t border-zinc-800/80 p-4 space-y-3 bg-zinc-900/30">
+        <div className="border-t border-slate-200 bg-slate-50/80 p-4 space-y-3">
           <Link
             href={`/${lab.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-300 transition hover:bg-sky-500/20"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
           >
             <span>↗ Preview Digital Store</span>
           </Link>
 
           <div className="flex items-center justify-between pt-1">
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-white">{user.fullName}</p>
-              <p className="text-[11px] text-zinc-400">{user.role}</p>
+              <p className="truncate text-xs font-semibold text-slate-900">{user.fullName}</p>
+              <p className="text-[11px] text-slate-500">{user.role}</p>
             </div>
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"
-                className="rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs text-zinc-400 transition hover:bg-zinc-800 hover:text-red-400"
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 transition hover:border-red-200 hover:text-red-600"
                 title="Sign out"
               >
                 Logout

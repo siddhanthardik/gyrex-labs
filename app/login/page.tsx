@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -7,11 +8,21 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Email and password are required.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -19,118 +30,127 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Authentication failed");
+        throw new Error(data.error || "Invalid email or password.");
       }
 
       router.push(data.redirectUrl || "/");
+      router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to sign in");
+      setError(err instanceof Error ? err.message : "Invalid email or password.");
     } finally {
       setLoading(false);
     }
   };
 
-  const populateDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("GyrexDemo2026!");
-    setError(null);
-  };
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-12 text-zinc-100">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl backdrop-blur-xl">
-        <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold text-xl">
-            G
-          </div>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-white">Gyrex Labs</h2>
-          <p className="mt-1 text-sm text-zinc-400">Diagnostic Commerce & Patient Platform</p>
-        </div>
-
-        {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
-              className="mt-1 block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 text-slate-900">
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-28 items-center justify-center overflow-hidden">
+              <Image
+                src="/branding/gyrex-labs.svg"
+                alt="Gyrex Labs logo"
+                width={140}
+                height={42}
+                priority
+                className="h-auto w-auto"
+              />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gyrex Lab</h1>
+            <p className="mt-1 text-sm text-slate-500">Diagnostic Commerce &amp; Patient Platform</p>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="mt-1 block w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 transition focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
+          {error && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mt-6 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            >
+              {error}
+            </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
-          >
-            {loading ? "Authenticating..." : "Sign In to Platform"}
-          </button>
-        </form>
+          <form onSubmit={handleLogin} className="mt-6 space-y-4" noValidate>
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="you@company.com"
+                className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                aria-invalid={Boolean(error)}
+              />
+            </div>
 
-        <div className="border-t border-zinc-800/80 pt-6">
-          <p className="text-xs font-medium text-zinc-400 text-center mb-3">Quick Demo Credentials:</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="text-xs font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 rounded"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  autoComplete="current-password"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder="Enter your password"
+                  className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-12 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  aria-invalid={Boolean(error)}
+                />
+              </div>
+            </div>
+
             <button
-              type="button"
-              onClick={() => populateDemo("admin@gyrex.in")}
-              className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-zinc-300 hover:border-sky-500/50 hover:text-white"
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Superadmin
+              {loading ? "Signing in..." : "Sign In"}
             </button>
-            <button
-              type="button"
-              onClick={() => populateDemo("dr.sharma@sharmadiagnostics.com")}
-              className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-zinc-300 hover:border-sky-500/50 hover:text-white"
+          </form>
+
+          <div className="mt-4 text-center text-sm text-slate-600">
+            <p className="font-medium text-slate-700">Need help signing in?</p>
+            <a
+              href="mailto:labs@gyrex.in?subject=Access%20Help%20Request"
+              className="mt-1 inline-block font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 rounded"
             >
-              Lab Owner
-            </button>
-            <button
-              type="button"
-              onClick={() => populateDemo("staff@sharmadiagnostics.com")}
-              className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-zinc-300 hover:border-sky-500/50 hover:text-white"
-            >
-              Lab Staff
-            </button>
-            <button
-              type="button"
-              onClick={() => populateDemo("director@apexlabs.in")}
-              className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-zinc-300 hover:border-sky-500/50 hover:text-white"
-            >
-              Apex Lab Owner
-            </button>
+              Contact your administrator
+            </a>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
