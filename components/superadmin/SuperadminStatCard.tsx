@@ -6,7 +6,7 @@ interface StatCardProps {
   subtitle?: string;
   badge?: string;
   badgeVariant?: "success" | "warning" | "danger" | "info" | "neutral";
-  icon?: string;
+  icon?: React.ReactNode;
 }
 
 export function SuperadminStatCard({
@@ -27,15 +27,15 @@ export function SuperadminStatCard({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</span>
-        {icon && <span className="text-lg">{icon}</span>}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{title}</span>
+        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">{icon}</span>}
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">
         <span className="text-2xl font-bold tracking-tight text-slate-900">{value}</span>
         {badge && (
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${badgeStyles}`}>
+          <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${badgeStyles}`}>
             {badge}
           </span>
         )}

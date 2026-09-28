@@ -1,5 +1,20 @@
 import React from "react";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  BadgeCheck,
+  Building2,
+  CalendarRange,
+  CreditCard,
+  FileText,
+  MessageSquareText,
+  PackageCheck,
+  ShieldAlert,
+  Store,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { getSuperadminDashboardData } from "@/services/superadmin/dashboard-service";
 import { SuperadminStatCard } from "@/components/superadmin/SuperadminStatCard";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
@@ -11,15 +26,13 @@ export default async function SuperadminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Title & Alert Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Platform Operational Overview</h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Cross-tenant governance, laboratory onboarding verification, and Gyrex SaaS monetization metrics.
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Operations overview</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Laboratory onboarding, platform performance, and subscription health across the Gyrex Labs network.
         </p>
       </div>
 
-      {/* Critical Platform Action Alerts */}
       {(data.alerts.pendingLabsCount > 0 ||
         data.alerts.failedPaymentsCount > 0 ||
         data.alerts.suspendedLabsCount > 0 ||
@@ -28,230 +41,216 @@ export default async function SuperadminDashboardPage() {
           {data.alerts.pendingLabsCount > 0 && (
             <Link
               href="/superadmin/labs/pending"
-              className="flex items-center justify-between rounded-xl border border-amber-800/60 bg-amber-950/30 p-4 transition hover:bg-amber-950/50"
+              className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 transition hover:bg-amber-100"
             >
               <div>
-                <p className="text-xs font-semibold text-amber-300">Pending Lab Verifications</p>
-                <p className="text-[11px] text-amber-400/80">Requires platform documentation review</p>
+                <p className="text-xs font-semibold text-amber-800">Pending lab reviews</p>
+                <p className="text-[11px] text-amber-700">Awaiting verification</p>
               </div>
-              <span className="text-xl font-bold text-amber-400">{data.alerts.pendingLabsCount}</span>
+              <span className="text-xl font-bold text-amber-700">{data.alerts.pendingLabsCount}</span>
             </Link>
           )}
 
           {data.alerts.failedPaymentsCount > 0 && (
             <Link
               href="/superadmin/subscriptions/failed"
-              className="flex items-center justify-between rounded-xl border border-rose-800/60 bg-rose-950/30 p-4 transition hover:bg-rose-950/50"
+              className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 transition hover:bg-rose-100"
             >
               <div>
-                <p className="text-xs font-semibold text-rose-300">Failed SaaS Invoices</p>
-                <p className="text-[11px] text-rose-400/80">SaaS subscription dunning queue</p>
+                <p className="text-xs font-semibold text-rose-800">Failed invoices</p>
+                <p className="text-[11px] text-rose-700">Billing follow-up required</p>
               </div>
-              <span className="text-xl font-bold text-rose-400">{data.alerts.failedPaymentsCount}</span>
+              <span className="text-xl font-bold text-rose-700">{data.alerts.failedPaymentsCount}</span>
             </Link>
           )}
 
           {data.alerts.suspendedLabsCount > 0 && (
             <Link
               href="/superadmin/labs/suspended"
-              className="flex items-center justify-between rounded-xl border border-rose-900/60 bg-rose-950/20 p-4 transition hover:bg-rose-950/40"
+              className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 transition hover:bg-rose-100"
             >
               <div>
-                <p className="text-xs font-semibold text-rose-300">Suspended Laboratories</p>
-                <p className="text-[11px] text-rose-400/80">Storefronts currently deactivated</p>
+                <p className="text-xs font-semibold text-rose-800">Suspended labs</p>
+                <p className="text-[11px] text-rose-700">Storefronts inactive</p>
               </div>
-              <span className="text-xl font-bold text-rose-400">{data.alerts.suspendedLabsCount}</span>
+              <span className="text-xl font-bold text-rose-700">{data.alerts.suspendedLabsCount}</span>
             </Link>
           )}
 
           {data.alerts.urgentTicketsCount > 0 && (
             <Link
               href="/superadmin/support"
-              className="flex items-center justify-between rounded-xl border border-indigo-800/60 bg-indigo-950/30 p-4 transition hover:bg-indigo-950/50"
+              className="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 p-4 transition hover:bg-indigo-100"
             >
               <div>
-                <p className="text-xs font-semibold text-indigo-300">Urgent Support Requests</p>
-                <p className="text-[11px] text-indigo-400/80">Open laboratory incident tickets</p>
+                <p className="text-xs font-semibold text-indigo-800">Open support tickets</p>
+                <p className="text-[11px] text-indigo-700">Priority action needed</p>
               </div>
-              <span className="text-xl font-bold text-indigo-400">{data.alerts.urgentTicketsCount}</span>
+              <span className="text-xl font-bold text-indigo-700">{data.alerts.urgentTicketsCount}</span>
             </Link>
           )}
         </div>
       )}
 
-      {/* KPI Section 1: Laboratory Tenants */}
       <div>
-        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
-          1. Laboratory Ecosystem Governance
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          Laboratory network
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SuperadminStatCard
-            title="Total Laboratories"
+            title="Total labs"
             value={data.overview.totalLabs}
-            subtitle="Registered lab tenants"
-            icon="🔬"
+            subtitle="Registered lab partners"
+            icon={<Building2 className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Active Storefronts"
+            title="Active storefronts"
             value={data.overview.activeLabs}
             subtitle="Accepting patient bookings"
-            badge="LIVE"
+            badge="Live"
             badgeVariant="success"
-            icon="🟢"
+            icon={<Store className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Pending Verification"
+            title="Pending review"
             value={data.overview.pendingVerificationLabs}
-            subtitle="Awaiting Superadmin sign-off"
-            badge={data.overview.pendingVerificationLabs > 0 ? "ACTION REQ" : undefined}
+            subtitle="Awaiting admin approval"
+            badge={data.overview.pendingVerificationLabs > 0 ? "Action" : undefined}
             badgeVariant="warning"
-            icon="⏳"
+            icon={<AlertTriangle className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Suspended Stores"
+            title="Suspended labs"
             value={data.overview.suspendedLabs}
-            subtitle="Storefront access blocked"
+            subtitle="Currently inactive"
             badgeVariant="danger"
-            icon="🚫"
+            icon={<ShieldAlert className="h-4 w-4" />}
           />
         </div>
       </div>
 
-      {/* KPI Section 2: Platform Subscriptions & Commercial Revenue */}
       <div>
-        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
-          2. Gyrex SaaS Monetization (Lab → Gyrex)
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          Subscription health
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SuperadminStatCard
-            title="SaaS Monthly Run Rate"
+            title="Monthly recurring revenue"
             value={`₹${data.overview.subscriptionRevenueMonthly.toLocaleString()}`}
-            subtitle="Recurring software subscription fees"
+            subtitle="Recurring subscription fees"
             badge="MRR"
             badgeVariant="info"
-            icon="💳"
+            icon={<CreditCard className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Active Subscriptions"
+            title="Active subscriptions"
             value={data.overview.activeSubscriptions}
-            subtitle="Paying laboratory partners"
-            icon="⚡"
+            subtitle="Paying lab partners"
+            icon={<BadgeCheck className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Trial Laboratories"
+            title="Trial labs"
             value={data.overview.trialLabs}
-            subtitle="14-day evaluation tier"
+            subtitle="Evaluation tier"
             badgeVariant="neutral"
-            icon="🌱"
+            icon={<WalletCards className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Past Due Accounts"
+            title="Past due"
             value={data.overview.pastDueSubscriptions}
-            subtitle="Payment retries active"
+            subtitle="Payment follow-up in progress"
             badgeVariant="danger"
-            icon="⚠️"
+            icon={<AlertTriangle className="h-4 w-4" />}
           />
         </div>
       </div>
 
-      {/* KPI Section 3: Diagnostic Operations */}
       <div>
-        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
-          3. Diagnostic Operational Throughput
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          Operational activity
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SuperadminStatCard
-            title="Orders Today"
+            title="Orders today"
             value={data.overview.ordersToday}
-            subtitle="Cross-tenant bookings placed today"
-            icon="📦"
+            subtitle="Bookings received today"
+            icon={<PackageCheck className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Orders This Month"
+            title="Orders this month"
             value={data.overview.ordersThisMonth}
-            subtitle="Monthly diagnostic throughput"
-            icon="📅"
+            subtitle="Monthly diagnostic volume"
+            icon={<CalendarRange className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Pending Reports"
+            title="Pending reports"
             value={data.overview.reportsPending}
-            subtitle="Draft reports awaiting lab release"
-            icon="📄"
+            subtitle="Awaiting release"
+            icon={<FileText className="h-4 w-4" />}
           />
           <SuperadminStatCard
-            title="Open Support Tickets"
+            title="Open support tickets"
             value={data.overview.openTickets}
-            subtitle="Active partner inquiries"
-            icon="🎫"
+            subtitle="Active partner requests"
+            icon={<MessageSquareText className="h-4 w-4" />}
           />
         </div>
       </div>
 
-      {/* Tables: Recent Laboratories & Orders */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Recent Labs */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Recently Onboarded Laboratories</h3>
-            <Link href="/superadmin/labs" className="text-xs font-medium text-indigo-400 hover:text-indigo-300">
-              View All Labs →
+            <h3 className="text-sm font-bold text-slate-900">Recently onboarded labs</h3>
+            <Link href="/superadmin/labs" className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">
+              View all <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
           {data.recentLabs.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-6 text-center">No laboratories registered yet.</p>
+            <p className="py-6 text-center text-xs text-slate-500">No laboratories registered yet.</p>
           ) : (
-            <div className="divide-y divide-zinc-800/60">
+            <div className="mt-4 divide-y divide-slate-200">
               {data.recentLabs.map((lab) => (
                 <div key={lab.id} className="flex items-center justify-between py-3">
                   <div>
-                    <Link
-                      href={`/superadmin/labs/${lab.id}`}
-                      className="text-xs font-semibold text-white hover:text-indigo-400 transition"
-                    >
+                    <Link href={`/superadmin/labs/${lab.id}`} className="text-xs font-semibold text-slate-900 hover:text-blue-700">
                       {lab.name}
                     </Link>
-                    <p className="text-[11px] text-zinc-500">
+                    <p className="text-[11px] text-slate-500">
                       {lab.city} • Joined {new Date(lab.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <SuperadminStatusBadge status={lab.status} />
-                  </div>
+                  <SuperadminStatusBadge status={lab.status} />
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Recent Orders Across Platform */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Recent Cross-Tenant Orders</h3>
-            <Link href="/superadmin/orders" className="text-xs font-medium text-indigo-400 hover:text-indigo-300">
-              View All Orders →
+            <h3 className="text-sm font-bold text-slate-900">Recent orders</h3>
+            <Link href="/superadmin/orders" className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">
+              View all <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
           {data.recentOrders.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-6 text-center">No diagnostic orders placed yet.</p>
+            <p className="py-6 text-center text-xs text-slate-500">No orders placed yet.</p>
           ) : (
-            <div className="divide-y divide-zinc-800/60">
+            <div className="mt-4 divide-y divide-slate-200">
               {data.recentOrders.map((ord) => (
                 <div key={ord.id} className="flex items-center justify-between py-3">
                   <div>
-                    <Link
-                      href={`/superadmin/orders/${ord.id}`}
-                      className="font-mono text-xs font-bold text-indigo-300 hover:underline"
-                    >
+                    <Link href={`/superadmin/orders/${ord.id}`} className="font-mono text-xs font-bold text-blue-700 hover:underline">
                       {ord.orderNumber}
                     </Link>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-slate-500">
                       {ord.labName} • {ord.patientName}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-white">₹{ord.totalAmount.toLocaleString()}</p>
+                    <p className="text-xs font-bold text-slate-900">₹{ord.totalAmount.toLocaleString()}</p>
                     <SuperadminStatusBadge status={ord.status} />
                   </div>
                 </div>

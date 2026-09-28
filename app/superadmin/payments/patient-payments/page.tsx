@@ -26,19 +26,16 @@ export default async function SuperadminPatientPaymentsPage({ searchParams }: Pa
 
   return (
     <div className="space-y-6">
-      {/* Financial Boundary Callout */}
-      <div className="rounded-xl border border-indigo-800/60 bg-indigo-950/20 p-4 text-xs text-indigo-300">
-        <span className="font-bold">⚠️ CRITICAL FINANCIAL SEPARATION: </span>
-        These transactions represent <span className="font-bold text-white">PATIENT DIAGNOSTIC PAYMENTS (Patient → Lab)</span>.
-        Patients pay the laboratory directly for medical testing. Gyrex Labs is NOT the recipient or merchant of record for these funds.
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-xs text-indigo-700">
+        <span className="font-bold">Financial separation:</span> these transactions represent patient payments made directly to a laboratory for diagnostic services. Gyrex Labs is not the merchant of record for these funds.
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Patient Diagnostic Payments ({total})
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Patient payments ({total})
         </h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Cross-tenant audit ledger of diagnostic commerce transacted directly between patients and laboratories.
+        <p className="mt-1 text-sm text-slate-500">
+          Audit ledger for patient payments processed directly between patients and laboratories.
         </p>
       </div>
 

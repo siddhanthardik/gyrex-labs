@@ -64,7 +64,6 @@ export default function LoginPage() {
               />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gyrex Lab</h1>
-            <p className="mt-1 text-sm text-slate-500">Diagnostic Commerce &amp; Patient Platform</p>
           </div>
 
           {error && (

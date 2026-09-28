@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BellRing, LogOut, Search, ShieldAlert } from "lucide-react";
 
 interface SuperadminHeaderProps {
   userEmail: string;
@@ -26,25 +27,24 @@ export function SuperadminHeader({ userEmail, userName }: SuperadminHeaderProps)
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-6 backdrop-blur-md">
-      {/* Search Input */}
       <div className="flex items-center gap-3">
         <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search platform labs, orders, patients..."
-            className="w-72 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+            placeholder="Search labs, orders, patients..."
+            className="w-72 rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
         </div>
       </div>
 
-      {/* User Actions */}
       <div className="flex items-center gap-3">
         <Link
-          href="/superadmin/system/alerts"
+          href="/superadmin/system/security-alerts"
           className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
         >
-          <span>🚨</span>
-          <span className="text-[11px]">Security Alerts</span>
+          <ShieldAlert className="h-3.5 w-3.5" />
+          <span className="text-[11px]">Security alerts</span>
         </Link>
 
         <div className="h-4 w-px bg-slate-200" />
@@ -59,9 +59,10 @@ export function SuperadminHeader({ userEmail, userName }: SuperadminHeaderProps)
             type="button"
             disabled={isLoggingOut}
             onClick={handleLogout}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-red-200 hover:text-red-600 transition"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-red-200 hover:text-red-600"
           >
-            {isLoggingOut ? "..." : "Sign Out"}
+            <LogOut className="h-3.5 w-3.5" />
+            {isLoggingOut ? "Signing out..." : "Sign out"}
           </button>
         </div>
       </div>

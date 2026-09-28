@@ -3,7 +3,7 @@ import React from "react";
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon?: string;
+  icon?: React.ReactNode;
   helperText?: string;
   badge?: React.ReactNode;
   variant?: "default" | "success" | "warning" | "info";
@@ -28,9 +28,9 @@ export function StatCard({
     <div
       className={`relative overflow-hidden rounded-xl border p-5 shadow-sm transition ${borderStyles}`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-slate-500">{label}</span>
-        {icon && <span className="text-xl opacity-80">{icon}</span>}
+        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 shadow-sm">{icon}</span>}
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">
