@@ -41,9 +41,31 @@ export async function POST(request: NextRequest) {
       testIds,
     } = body;
 
-    if (!name || sellingPrice === undefined || !Array.isArray(testIds) || testIds.length === 0) {
+    if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
-        { error: "name, sellingPrice, and at least one testId are required." },
+        { error: "Package name is required." },
+        { status: 400 }
+      );
+    }
+
+    if (sellingPrice === undefined || sellingPrice === null || isNaN(Number(sellingPrice))) {
+      return NextResponse.json(
+        { error: "Package selling price is required." },
+        { status: 400 }
+      );
+    }
+
+    const numericPrice = Number(sellingPrice);
+    if (numericPrice <= 0) {
+      return NextResponse.json(
+        { error: "Package selling price must be greater than zero." },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(testIds) || testIds.length === 0) {
+      return NextResponse.json(
+        { error: "At least one diagnostic test must be included in the package." },
         { status: 400 }
       );
     }
@@ -51,26 +73,26 @@ export async function POST(request: NextRequest) {
     const pkg = await createLabPackage(
       labMembership.labId,
       {
-        name,
+        name: name.trim(),
         slug,
-        code,
-        description,
-        sellingPrice: Number(sellingPrice),
-        mrpPrice: mrpPrice ? Number(mrpPrice) : undefined,
-        isHomeCollectionAvailable,
-        fastingRequired,
-        preparationInstructions,
+        code: code?.trim(),
+        description: description?.trim(),
+        sellingPrice: numericPrice,
+        mrpPrice: mrpPrice !== undefined && mrpPrice !== null && mrpPrice !== "" ? Number(mrpPrice) : undefined,
+        isHomeCollectionAvailable: isHomeCollectionAvailable !== undefined ? Boolean(isHomeCollectionAvailable) : true,
+        fastingRequired: fastingRequired !== undefined ? Boolean(fastingRequired) : undefined,
+        preparationInstructions: preparationInstructions?.trim(),
         estimatedTatHours: estimatedTatHours ? parseInt(estimatedTatHours) : undefined,
         testIds,
       },
       user.userId
     );
 
-    return NextResponse.json({ success: true, package: pkg });
+    return NextResponse.json({ success: true, package: pkg }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to create health package." },
-      { status: error.statusCode || 500 }
+      { status: error.statusCode || 400 }
     );
   }
 }

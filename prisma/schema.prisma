@@ -214,9 +214,26 @@ model User {
   createdTickets  SupportTicket[] @relation("TicketsCreated")
   assignedTickets SupportTicket[] @relation("TicketsAssigned")
   uploadedReports Report[]     @relation("ReportUploader")
+  verificationTokens EmailVerificationToken[]
 
   @@index([email])
   @@index([role])
+}
+
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  email      String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([tokenHash])
 }
 
 // ============================================================

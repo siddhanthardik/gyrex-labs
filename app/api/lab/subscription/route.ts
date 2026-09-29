@@ -26,14 +26,15 @@ export async function POST(request: NextRequest) {
     const { user, labMembership } = await requireLabTenant(PERMISSIONS.SUBSCRIPTIONS_MANAGE);
     const body = await request.json();
 
-    const { planCode, billingCycle } = body;
-    if (!planCode) {
-      return NextResponse.json({ error: "planCode is required." }, { status: 400 });
+    const { planCode, planId, billingCycle } = body;
+    const target = planId || planCode;
+    if (!target) {
+      return NextResponse.json({ error: "planId or planCode is required." }, { status: 400 });
     }
 
     const updated = await changeLabSubscriptionPlan(
       labMembership.labId,
-      planCode,
+      target,
       billingCycle === "YEARLY" ? BillingCycle.YEARLY : BillingCycle.MONTHLY,
       user.userId
     );

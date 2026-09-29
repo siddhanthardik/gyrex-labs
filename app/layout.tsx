@@ -13,28 +13,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gyrex Labs — The B2B Digital Platform for Diagnostic Laboratories",
+  title: "Gyrex Labs — Modern diagnostic lab platform",
   description:
-    "Gyrex Labs gives diagnostic laboratories a branded online storefront, digital report delivery, and patient engagement — without replacing your existing LIS or billing software. Built for lab owners and chains across India.",
+    "Gyrex Labs gives diagnostic laboratories a professional online presence, digital bookings, and secure report delivery without disrupting existing workflows.",
   keywords: [
     "diagnostic lab software",
     "lab management platform",
-    "diagnostic laboratory B2B",
     "online lab storefront",
     "lab report delivery",
     "diagnostic centre management",
     "Gyrex Labs",
   ],
   openGraph: {
-    title: "Gyrex Labs — The B2B Digital Platform for Diagnostic Laboratories",
+    title: "Gyrex Labs — Modern diagnostic lab platform",
     description:
-      "Give your diagnostic lab a branded online storefront, digital report delivery, and patient engagement — without replacing your LIS.",
+      "Give your diagnostic lab a professional online presence, digital bookings, and secure report delivery without disrupting existing workflows.",
     type: "website",
     url: "https://labs.gyrex.in",
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"

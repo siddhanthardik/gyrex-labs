@@ -139,6 +139,18 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <div className="mt-6 border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
+            <p>
+              New laboratory?{" "}
+              <a
+                href="/lab/onboarding/signup"
+                className="font-medium text-blue-600 hover:text-blue-700 underline focus:outline-none focus:ring-2 focus:ring-blue-200 rounded"
+              >
+                Register your laboratory
+              </a>
+            </p>
+          </div>
+
           <div className="mt-4 text-center text-sm text-slate-600">
             <p className="font-medium text-slate-700">Need help signing in?</p>
             <a

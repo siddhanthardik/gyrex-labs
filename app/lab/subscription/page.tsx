@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function LabSubscriptionPage() {
   const [data, setData] = useState<any>(null);
@@ -114,6 +115,22 @@ export default function LabSubscriptionPage() {
           }`}
         >
           {notification.message}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!sub && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center space-y-3">
+          <p className="text-sm font-semibold text-white">No active platform subscription</p>
+          <p className="text-xs text-zinc-400">
+            Choose a plan to configure platform hosting and services for your laboratory.
+          </p>
+          <Link
+            href="/lab/onboarding/subscription"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-500 transition mt-2"
+          >
+            Choose a Plan
+          </Link>
         </div>
       )}
 

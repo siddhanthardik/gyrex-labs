@@ -30,7 +30,7 @@ const pool =
     connectionString,
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 20000,
     keepAlive: true,
   });
 
@@ -41,7 +41,18 @@ pool.on("error", (err) => {
   }
 });
 
-const adapter = new PrismaPg(pool, { schema: "public" });
+let dbSchema = "public";
+try {
+  const parsed = new URL(connectionString);
+  const paramSchema = parsed.searchParams.get("schema");
+  if (paramSchema) {
+    dbSchema = paramSchema;
+  }
+} catch {
+  // fallback to public
+}
+
+const adapter = new PrismaPg(pool, { schema: dbSchema });
 
 export const prisma =
   globalForPrisma.prisma ??

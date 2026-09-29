@@ -308,6 +308,7 @@ export async function getOrderTracking(orderNumber: string, verificationPhone?: 
   }
 
   return {
+    orderId: order.id,
     orderNumber: order.orderNumber,
     lab: order.lab,
     patientName: order.patient.fullName,

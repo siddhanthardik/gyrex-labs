@@ -36,6 +36,26 @@ export default async function LabDashboardPage() {
         </div>
       </div>
 
+      {/* Resume Onboarding Banner (Phase 2 Step 9) */}
+      {(data.lab.addressLine1.includes("Pending") || data.lab.postalCode === "000000") && (
+        <div className="flex flex-col justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/80 p-5 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-base font-semibold text-blue-900">
+              Continue setting up your laboratory
+            </h2>
+            <p className="mt-0.5 text-sm text-blue-700">
+              Complete your laboratory profile to start building your digital store.
+            </p>
+          </div>
+          <Link
+            href="/lab/onboarding/profile"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            Continue setup
+          </Link>
+        </div>
+      )}
+
       {storeStatus.status !== "ACTIVE" && (
         <div className="flex flex-col justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center">
           <div className="flex items-start gap-3">

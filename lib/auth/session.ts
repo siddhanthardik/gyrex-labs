@@ -82,32 +82,40 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
  * Sets the secure HTTP-only session cookie in Next.js response.
  */
 export async function setSessionCookie(token: string): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set({
-    name: SESSION_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_MAX_AGE,
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE,
+    });
+  } catch {
+    // Gracefully handle invocation outside active Next.js request context (e.g. CLI or test scripts)
+  }
 }
 
 /**
  * Clears the session cookie on logout.
  */
 export async function clearSessionCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set({
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: SESSION_COOKIE_NAME,
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+  } catch {
+    // Gracefully handle invocation outside active Next.js request context
+  }
 }
 
 /**

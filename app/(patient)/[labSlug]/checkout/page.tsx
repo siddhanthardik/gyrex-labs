@@ -140,7 +140,11 @@ export default function CheckoutPage() {
       submissionSucceeded = true;
       setIsOrderSubmitted(true);
       clearCart();
-      router.push(`/${labSlug}/booking/${data.orderNumber}`);
+      const redirectUrl =
+        paymentMethod === "RAZORPAY"
+          ? `/${labSlug}/booking/${data.orderNumber}?payNow=true&phone=${encodeURIComponent(phone.trim())}`
+          : `/${labSlug}/booking/${data.orderNumber}`;
+      router.push(redirectUrl);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setIsOrderSubmitted(false);
@@ -585,11 +589,16 @@ export default function CheckoutPage() {
           </div>
 
           {/* Direct Lab Payment Notice */}
-          <div className="mt-4 flex items-start gap-2 rounded-2xl bg-zinc-50 p-3 text-[11px] text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300 border border-zinc-100 dark:border-zinc-800">
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-sky-50/70 p-3 text-[11px] text-sky-900 border border-sky-100 dark:bg-sky-950/30 dark:text-sky-200 dark:border-sky-900/50">
             <Shield className="h-4 w-4 text-sky-600 shrink-0 mt-0.5" />
-            <span>
-              <strong>Direct Laboratory Settlement:</strong> Your payment goes directly to the diagnostic lab. Gyrex Labs does not hold patient diagnostic fees.
-            </span>
+            <div>
+              <p className="font-semibold">
+                Pay laboratory directly.
+              </p>
+              <p className="text-sky-700 dark:text-sky-300 text-[10px] mt-0.5">
+                Diagnostic payment is for the laboratory. Powered by Gyrex Labs.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -613,6 +622,8 @@ export default function CheckoutPage() {
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 <span>Confirming Booking with Lab…</span>
               </>
+            ) : paymentMethod === "RAZORPAY" ? (
+              <span>Proceed to Pay (₹{subtotal})</span>
             ) : (
               <span>Confirm &amp; Place Booking (₹{subtotal})</span>
             )}

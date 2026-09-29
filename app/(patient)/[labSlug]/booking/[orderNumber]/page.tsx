@@ -16,7 +16,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { OrderStatus, CollectionType } from "@prisma/client";
+import { OrderStatus, CollectionType, PaymentStatus } from "@prisma/client";
+import PatientPaymentAction from "@/components/patient/patient-payment-action";
 
 function StatusBadge({ status }: { status: OrderStatus }) {
   const config: Record<OrderStatus, { label: string; color: string }> = {
@@ -68,10 +69,16 @@ export async function generateMetadata({
 
 export default async function BookingConfirmationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ labSlug: string; orderNumber: string }>;
+  searchParams?: Promise<{ payNow?: string; phone?: string }>;
 }) {
   const { labSlug, orderNumber } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const autoTrigger = resolvedSearchParams.payNow === "true";
+  const phone = resolvedSearchParams.phone;
+
   const tracking = await getOrderTracking(orderNumber);
 
   if (!tracking) {
@@ -80,41 +87,60 @@ export default async function BookingConfirmationPage({
 
   const currentStatusIndex = STATUS_ORDER[tracking.orderStatus] ?? 1;
   const isLabVisit = tracking.collectionType === CollectionType.LAB_VISIT;
+  const isAwaitingPayment =
+    tracking.orderStatus === OrderStatus.PENDING_PAYMENT ||
+    tracking.paymentStatus === PaymentStatus.PENDING;
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4 sm:px-6 space-y-4">
-      {/* Reference Screen 2: Success Confirmation Card */}
-      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-lg">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm">
-              <CheckCircle className="h-7 w-7" />
+      {/* If awaiting payment: render interactive Razorpay Payment Action Card */}
+      {isAwaitingPayment ? (
+        <PatientPaymentAction
+          orderId={tracking.orderId}
+          orderNumber={tracking.orderNumber}
+          labSlug={labSlug}
+          labName={tracking.lab.name}
+          totalAmount={tracking.totalAmount}
+          patientName={tracking.patientName}
+          patientPhone={phone || tracking.patientPhoneMasked}
+          orderStatus={tracking.orderStatus}
+          paymentStatus={tracking.paymentStatus}
+          autoTrigger={autoTrigger}
+        />
+      ) : (
+        /* Reference Screen 2: Success Confirmation Card */
+        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-lg">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm">
+                <CheckCircle className="h-7 w-7" />
+              </div>
+              <div>
+                <span className="inline-block rounded-full bg-emerald-800/60 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-200">
+                  Payment &amp; Booking Confirmed
+                </span>
+                <h1 className="text-xl font-extrabold text-white mt-1">Booking Confirmed!</h1>
+              </div>
             </div>
-            <div>
-              <span className="inline-block rounded-full bg-emerald-800/60 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-200">
-                Payment &amp; Booking Confirmed
-              </span>
-              <h1 className="text-xl font-extrabold text-white mt-1">Booking Confirmed!</h1>
+          </div>
+
+          <p className="mt-3 text-xs text-emerald-100 leading-relaxed">
+            Your diagnostic test appointment with <strong>{tracking.lab.name}</strong> is confirmed. A copy will be sent to your mobile.
+          </p>
+
+          {/* Quick details grid */}
+          <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
+              <p className="text-[11px] text-emerald-200 font-medium">Booking ID</p>
+              <p className="mt-0.5 font-mono text-sm font-extrabold text-white">{tracking.orderNumber}</p>
+            </div>
+            <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
+              <p className="text-[11px] text-emerald-200 font-medium">Patient</p>
+              <p className="mt-0.5 text-sm font-extrabold text-white truncate">{tracking.patientName}</p>
             </div>
           </div>
         </div>
-
-        <p className="mt-3 text-xs text-emerald-100 leading-relaxed">
-          Your diagnostic test appointment with <strong>{tracking.lab.name}</strong> is confirmed. A copy will be sent to your mobile.
-        </p>
-
-        {/* Quick details grid */}
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
-            <p className="text-[11px] text-emerald-200 font-medium">Booking ID</p>
-            <p className="mt-0.5 font-mono text-sm font-extrabold text-white">{tracking.orderNumber}</p>
-          </div>
-          <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
-            <p className="text-[11px] text-emerald-200 font-medium">Patient</p>
-            <p className="mt-0.5 text-sm font-extrabold text-white truncate">{tracking.patientName}</p>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* WhatsApp-Style Lab Interaction Banner (Reference Screen 10) */}
       <div className="flex items-center justify-between rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">

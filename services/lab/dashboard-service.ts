@@ -8,6 +8,8 @@ export interface LabDashboardMetrics {
     slug: string;
     status: LabStatus;
     isVerified: boolean;
+    addressLine1: string;
+    postalCode: string;
   };
   metrics: {
     todayOrdersCount: number;
@@ -150,6 +152,8 @@ export async function getLabDashboardData(labId: string): Promise<LabDashboardMe
       slug: lab.slug,
       status: lab.status,
       isVerified: lab.isVerified,
+      addressLine1: lab.addressLine1,
+      postalCode: lab.postalCode,
     },
     metrics: {
       todayOrdersCount,

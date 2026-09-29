@@ -91,6 +91,36 @@ export class EmailService implements EmailProvider {
           `,
         };
 
+      case "LAB_EMAIL_VERIFICATION":
+        return {
+          subject: "Verify your email address - Gyrex Labs",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #ffffff; color: #1e293b;">
+              <div style="margin-bottom: 24px;">
+                <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.025em; color: #0284c7;">GYREX LABS</span>
+              </div>
+              <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 16px;">Verify your email address</h2>
+              <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 24px;">
+                Hello ${data.ownerName || "there"},<br/>
+                Thank you for creating an account for <strong>${data.labName || "your laboratory"}</strong> on Gyrex Labs. To complete your registration and activate your laboratory workspace, please verify your email address.
+              </p>
+              <div style="margin: 32px 0;">
+                <a href="${data.verificationUrl}" style="background-color: #0284c7; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">
+                  Verify Email Address
+                </a>
+              </div>
+              <p style="font-size: 14px; line-height: 1.5; color: #64748b; margin-bottom: 24px;">
+                This link will expire in 24 hours. If you did not create an account on Gyrex Labs, please disregard this email.
+              </p>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
+                If you are having trouble clicking the button above, copy and paste this URL into your browser:<br/>
+                <a href="${data.verificationUrl}" style="color: #0284c7; word-break: break-all;">${data.verificationUrl}</a>
+              </p>
+            </div>
+          `,
+        };
+
       default:
         return {
           subject: String(data.subject || "Gyrex Labs Notification"),

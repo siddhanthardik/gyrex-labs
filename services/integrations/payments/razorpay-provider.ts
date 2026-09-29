@@ -32,7 +32,13 @@ export class RazorpayProvider implements PaymentProvider {
     const keyId = credentials?.keyId || process.env.GYREX_RAZORPAY_KEY_ID;
     const keySecret = credentials?.keySecret || process.env.GYREX_RAZORPAY_KEY_SECRET;
 
-    if (!keyId || !keySecret) {
+    if (
+      !keyId ||
+      !keySecret ||
+      keyId.startsWith("rzp_test_mock") ||
+      keyId === "mock_key_id" ||
+      process.env.TEST_PAYMENT_MOCK === "true"
+    ) {
       // Deterministic Mock mode for test / unconfigured environments
       return {
         gatewayOrderId: `order_mock_${Date.now()}_${Math.random().toString(36).substring(7)}`,

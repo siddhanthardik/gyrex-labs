@@ -137,6 +137,7 @@ export type EmailTemplateId =
   | "LAB_NEW_ORDER_ALERT"
   | "LAB_SUBSCRIPTION_INVOICE"
   | "LAB_VERIFICATION_STATUS"
+  | "LAB_EMAIL_VERIFICATION"
   | "PLATFORM_SUPPORT_ALERT";
 
 export interface SendEmailParams {
