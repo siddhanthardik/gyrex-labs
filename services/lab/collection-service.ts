@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { sendSampleCollectedWhatsApp } from "@/services/integrations/whatsapp/whatsapp-notification-service";
 
 export interface CollectionFilter {
   scheduledDate?: Date;
@@ -86,7 +87,7 @@ export async function updateLabCollection(
     throw new Error("Collection record not found or access denied.");
   }
 
-  return prisma.collection.update({
+  const updated = await prisma.collection.update({
     where: { id: collectionId },
     data: {
       scheduledDate: data.scheduledDate ?? undefined,
@@ -97,4 +98,18 @@ export async function updateLabCollection(
       specialInstructions: data.specialInstructions !== undefined ? data.specialInstructions.trim() : undefined,
     },
   });
+
+  if (data.sampleCollectedAt && !existing.sampleCollectedAt) {
+    try {
+      sendSampleCollectedWhatsApp(existing.orderId, {
+        phlebotomistName: data.phlebotomistName || existing.phlebotomistName || undefined,
+      }).catch((err) =>
+        console.error("Non-blocking collection update WhatsApp notification error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+  }
+
+  return updated;
 }

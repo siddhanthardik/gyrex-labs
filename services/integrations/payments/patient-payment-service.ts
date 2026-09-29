@@ -11,6 +11,10 @@ import { PaymentStatus, PaymentMethod, OrderStatus, AuditAction, LabStatus } fro
 import { razorpayProvider } from "./razorpay-provider";
 import { decryptSecret } from "@/lib/integrations/crypto";
 import { recordAuditLog } from "@/lib/db/audit";
+import {
+  sendPaymentConfirmationWhatsApp,
+  sendOrderConfirmationWhatsApp,
+} from "@/services/integrations/whatsapp/whatsapp-notification-service";
 
 export interface InitiatePatientPaymentInput {
   orderId: string;
@@ -145,6 +149,14 @@ export async function initiatePatientPayment(input: InitiatePatientPaymentInput)
         paymentStatus: PaymentStatus.CASH_ON_COLLECTION,
       },
     });
+
+    try {
+      sendOrderConfirmationWhatsApp(order.id).catch((err) =>
+        console.error("Non-blocking WhatsApp order confirmation error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
 
     return {
       success: true,
@@ -447,6 +459,18 @@ export async function verifyAndConfirmPatientPayment(input: VerifyPatientPayment
       paymentNumber: updatedPayment.paymentNumber,
     },
   });
+
+  // 9. Non-blocking WhatsApp Transactional Notifications
+  try {
+    sendPaymentConfirmationWhatsApp(updatedPayment.id).catch((err) =>
+      console.error("Non-blocking payment confirmation WhatsApp error:", err)
+    );
+    sendOrderConfirmationWhatsApp(updatedOrder.id).catch((err) =>
+      console.error("Non-blocking order confirmation WhatsApp error:", err)
+    );
+  } catch (err: any) {
+    console.error("Non-blocking notification trigger error:", err);
+  }
 
   return {
     success: true,

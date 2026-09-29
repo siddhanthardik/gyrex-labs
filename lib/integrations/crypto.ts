@@ -114,6 +114,41 @@ export function verifyRazorpayWebhookSignature(
 }
 
 /**
+ * Verifies Meta WhatsApp Cloud API webhook signature:
+ * Expected: HMAC-SHA256(raw_body, app_secret) === x-hub-signature-256 (prefix 'sha256=')
+ */
+export function verifyMetaWebhookSignature(
+  rawBody: string,
+  signatureHeader: string,
+  appSecret: string
+): boolean {
+  if (!rawBody || !signatureHeader || !appSecret) {
+    return false;
+  }
+
+  const parts = signatureHeader.split("sha256=");
+  const signatureHex = parts.length === 2 ? parts[1] : signatureHeader;
+
+  if (!signatureHex || signatureHex.length !== 64) {
+    return false;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", appSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signatureHex, "hex"),
+      Buffer.from(expectedSignature, "hex")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Calculates SHA-256 checksum of a file buffer.
  */
 export function calculateSha256Checksum(buffer: Buffer): string {

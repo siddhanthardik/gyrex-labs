@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
 import { recordAuditLog } from "@/lib/db/audit";
 import { OrderStatus, PaymentStatus, CollectionType, AuditAction } from "@prisma/client";
+import {
+  sendOrderConfirmationWhatsApp,
+  sendSampleCollectedWhatsApp,
+} from "@/services/integrations/whatsapp/whatsapp-notification-service";
 
 export interface OrderFilter {
   search?: string;
@@ -389,6 +393,26 @@ export async function updateLabOrderStatus(
       reason: options?.cancellationReason,
     },
   });
+
+  if (targetStatus === OrderStatus.SAMPLE_COLLECTED) {
+    try {
+      sendSampleCollectedWhatsApp(order.id).catch((err) =>
+        console.error("Non-blocking sample collected WhatsApp notification error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+  }
+
+  if (targetStatus === OrderStatus.CONFIRMED) {
+    try {
+      sendOrderConfirmationWhatsApp(order.id).catch((err) =>
+        console.error("Non-blocking order confirmation WhatsApp notification error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+  }
 
   return updatedOrder;
 }

@@ -19,6 +19,10 @@ import {
 import { razorpayProvider } from "./razorpay-provider";
 import { decryptSecret } from "@/lib/integrations/crypto";
 import { recordAuditLog } from "@/lib/db/audit";
+import {
+  sendPaymentConfirmationWhatsApp,
+  sendOrderConfirmationWhatsApp,
+} from "@/services/integrations/whatsapp/whatsapp-notification-service";
 
 export interface WebhookProcessingResult {
   handled: boolean;
@@ -274,6 +278,17 @@ export async function handlePatientPaymentWebhook(
       },
     });
 
+    try {
+      sendPaymentConfirmationWhatsApp(payment.id).catch((err) =>
+        console.error("Non-blocking webhook payment confirmation WhatsApp error:", err)
+      );
+      sendOrderConfirmationWhatsApp(payment.orderId).catch((err) =>
+        console.error("Non-blocking webhook order confirmation WhatsApp error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+
     return {
       handled: true,
       event,
@@ -328,6 +343,17 @@ export async function handlePatientPaymentWebhook(
         event,
       },
     });
+
+    try {
+      sendPaymentConfirmationWhatsApp(payment.id).catch((err) =>
+        console.error("Non-blocking webhook payment confirmation WhatsApp error:", err)
+      );
+      sendOrderConfirmationWhatsApp(payment.orderId).catch((err) =>
+        console.error("Non-blocking webhook order confirmation WhatsApp error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
 
     return {
       handled: true,

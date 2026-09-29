@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { CollectionType, OrderItemType, OrderStatus, PaymentMethod, PaymentStatus, Gender } from "@prisma/client";
+import { sendOrderConfirmationWhatsApp } from "@/services/integrations/whatsapp/whatsapp-notification-service";
 
 export interface CreatePatientOrderItem {
   itemType: "TEST" | "PACKAGE";
@@ -253,6 +254,17 @@ export async function createPatientOrder(params: CreatePatientOrderParams) {
       collection: true,
     },
   });
+
+  // Non-blocking transactional notification for confirmed orders (e.g. Cash on Collection)
+  if (order.orderStatus === OrderStatus.CONFIRMED) {
+    try {
+      sendOrderConfirmationWhatsApp(order.id).catch((err) =>
+        console.error("Non-blocking WhatsApp order confirmation error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+  }
 
   return order;
 }

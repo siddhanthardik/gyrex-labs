@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { recordAuditLog } from "@/lib/db/audit";
+import { sendReportReadyWhatsApp } from "@/services/integrations/whatsapp/whatsapp-notification-service";
 import {
   ReportStatus,
   FileCategory,
@@ -188,6 +189,16 @@ export async function uploadLabReport(
     },
   });
 
+  if (result.status === ReportStatus.FINAL && (params.releasedNow ?? true)) {
+    try {
+      sendReportReadyWhatsApp(result.id).catch((err) =>
+        console.error("Non-blocking report ready WhatsApp notification error:", err)
+      );
+    } catch {
+      // non-blocking
+    }
+  }
+
   return result;
 }
 
@@ -255,6 +266,14 @@ export async function amendLabReport(
       reason,
     },
   });
+
+  try {
+    sendReportReadyWhatsApp(result.id).catch((err) =>
+      console.error("Non-blocking amended report ready WhatsApp notification error:", err)
+    );
+  } catch {
+    // non-blocking
+  }
 
   return result;
 }

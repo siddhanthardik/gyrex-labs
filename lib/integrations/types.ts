@@ -191,8 +191,9 @@ export interface WhatsAppSendResult {
   messageId: string;
   recipientPhone: string;
   success: boolean;
-  status: "sent" | "failed";
+  status: "sent" | "failed" | "disabled" | "opted_out";
   timestamp: Date;
+  reason?: string;
 }
 
 export interface WhatsAppProvider {
