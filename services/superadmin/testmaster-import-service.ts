@@ -120,90 +120,162 @@ function parseBooleanFlexible(value: unknown, defaultValue: boolean = false): bo
 }
 
 /**
- * Approved controlled aliases for TestMaster category values.
- * Maps various department spellings, organ panels, and clinical subspecialties
- * to canonical active TestCategory names in the database.
+ * Approved Gyrex clinical category taxonomy.
+ * Every test investigation in the TestMaster catalogue must belong to one of these approved categories.
  */
-export const APPROVED_CATEGORY_ALIASES: Record<string, string> = {
-  // Hematology
-  "hematology & coagulation": "Hematology",
-  "haematology & coagulation": "Hematology",
-  "coagulation": "Hematology",
-  "immunohematology": "Hematology",
+export const APPROVED_GYREX_TAXONOMY = [
+  { name: "Microbiology & Infectious Diseases", slug: "microbiology-infectious-diseases" },
+  { name: "Histopathology & Cytopathology", slug: "histopathology-cytopathology" },
+  { name: "Molecular Diagnostics & Genetics", slug: "molecular-diagnostics-genetics" },
+  { name: "Oncology & Tumour Markers", slug: "oncology-tumour-markers" },
+  { name: "Toxicology & TDM", slug: "toxicology-tdm" },
+  { name: "Reproductive & Prenatal Diagnostics", slug: "reproductive-prenatal-diagnostics" },
+  { name: "Histocompatibility & Immunogenetics", slug: "histocompatibility-immunogenetics" },
+  { name: "Flow Cytometry", slug: "flow-cytometry" },
+  { name: "Cytogenetics", slug: "cytogenetics" },
+  { name: "Allergy & Hypersensitivity", slug: "allergy-hypersensitivity" },
+  { name: "Immunology & Autoimmunity", slug: "immunology-autoimmunity" },
+  { name: "Clinical Biochemistry", slug: "clinical-biochemistry" },
+  { name: "Clinical Pathology", slug: "clinical-pathology" },
+  { name: "Endocrinology", slug: "endocrinology" },
+  { name: "Hematology", slug: "hematology" },
+  { name: "Hematology & Coagulation", slug: "hematology-coagulation" },
+] as const;
 
-  // Serology & Immunology
-  "immunology & serology": "Serology & Immunology",
-  "immunology": "Serology & Immunology",
-  "immunology & autoimmune": "Serology & Immunology",
-  "allergy": "Serology & Immunology",
-  "allergy & immunoassays": "Serology & Immunology",
-  "specialized immunology & transplant": "Serology & Immunology",
+export const APPROVED_GYREX_CATEGORIES = APPROVED_GYREX_TAXONOMY.map((c) => c.name);
+export type ApprovedGyrexCategory = (typeof APPROVED_GYREX_CATEGORIES)[number];
 
-  // Biochemistry
-  "clinical biochemistry & metabolic": "Biochemistry",
-  "kidney": "Biochemistry",
-  "liver": "Biochemistry",
-  "nutritional & micronutrients": "Biochemistry",
-  "diabetes": "Biochemistry",
-  "lipids & cardiac": "Biochemistry",
-  "gastroenterology": "Biochemistry",
-  "neurology & specialized protein diagnostics": "Biochemistry",
+/**
+ * Standardizes raw category strings for dictionary lookups (trims, lowercases, collapses whitespace, normalizes dashes).
+ */
+export function cleanCategoryKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[–—]/g, "-");
+}
 
-  // Molecular Diagnostics & Genetics
+/**
+ * Canonical normalization mapping table:
+ * Maps legacy, source-specific, organ-panel, and variant category spellings to the approved Gyrex categories.
+ */
+export const CATEGORY_NORMALIZATION_MAP: Record<string, ApprovedGyrexCategory> = {
+  // 1. Microbiology & Infectious Diseases
+  "microbiology & infectious disease serology": "Microbiology & Infectious Diseases",
+  "microbiology & infectious diseases": "Microbiology & Infectious Diseases",
+  "microbiology": "Microbiology & Infectious Diseases",
+  "infectious disease": "Microbiology & Infectious Diseases",
+  "infectious diseases": "Microbiology & Infectious Diseases",
+  "tuberculosis & mycobacteriology": "Microbiology & Infectious Diseases",
+
+  // 2. Histopathology & Cytopathology
+  "histopathology": "Histopathology & Cytopathology",
+  "cytopathology": "Histopathology & Cytopathology",
+  "histopathology & cytopathology": "Histopathology & Cytopathology",
+  "histopathology & cytology": "Histopathology & Cytopathology",
+  "cytology": "Histopathology & Cytopathology",
+
+  // 3. Molecular Diagnostics & Genetics
   "molecular diagnostics": "Molecular Diagnostics & Genetics",
   "molecular diagnostics & genetics": "Molecular Diagnostics & Genetics",
   "rare disease & specialized genetics": "Molecular Diagnostics & Genetics",
-  "cytogenetics": "Molecular Diagnostics & Genetics",
+  "hematologic malignancy & cytogenetics": "Molecular Diagnostics & Genetics",
+  "genetics": "Molecular Diagnostics & Genetics",
 
-  // Microbiology & Infectious Diseases
-  "microbiology & infectious disease serology": "Microbiology & Infectious Diseases",
-  "microbiology": "Microbiology & Infectious Diseases",
-  "infectious disease": "Microbiology & Infectious Diseases",
-  "tuberculosis & mycobacteriology": "Microbiology & Infectious Diseases",
+  // 4. Oncology & Tumour Markers
+  "oncology & precision medicine": "Oncology & Tumour Markers",
+  "oncology & precision diagnostics": "Oncology & Tumour Markers",
+  "oncology & tumour markers": "Oncology & Tumour Markers",
+  "oncology & tumor markers": "Oncology & Tumour Markers",
+  "oncology": "Oncology & Tumour Markers",
+  "tumour markers": "Oncology & Tumour Markers",
+  "tumor markers": "Oncology & Tumour Markers",
 
-  // Histopathology & Cytopathology
-  "histopathology": "Histopathology & Cytopathology",
-  "histopathology & cytology": "Histopathology & Cytopathology",
-  "cytopathology": "Histopathology & Cytopathology",
+  // 5. Toxicology & TDM
+  "toxicology & therapeutic drug monitoring": "Toxicology & TDM",
+  "specialized toxicology & therapeutic drug monitoring": "Toxicology & TDM",
+  "toxicology & tdm": "Toxicology & TDM",
+  "therapeutic drug monitoring": "Toxicology & TDM",
+  "toxicology": "Toxicology & TDM",
+  "tdm": "Toxicology & TDM",
 
-  // Oncology & Precision Medicine
-  "oncology & precision medicine": "Oncology & Precision Medicine",
-  "oncology": "Oncology & Precision Medicine",
-  "oncology & precision diagnostics": "Oncology & Precision Medicine",
-
-  // Toxicology & Therapeutic Drug Monitoring
-  "specialized toxicology & therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
-  "toxicology & therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
-  "therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
-
-  // Reproductive & Prenatal Diagnostics
+  // 6. Reproductive & Prenatal Diagnostics
+  "reproductive & prenatal diagnostics": "Reproductive & Prenatal Diagnostics",
   "fertility & reproductive": "Reproductive & Prenatal Diagnostics",
   "prenatal screening": "Reproductive & Prenatal Diagnostics",
-  "reproductive & prenatal diagnostics": "Reproductive & Prenatal Diagnostics",
+  "reproductive diagnostics": "Reproductive & Prenatal Diagnostics",
+  "prenatal diagnostics": "Reproductive & Prenatal Diagnostics",
 
-  // Histocompatibility & Immunogenetics
+  // 7. Histocompatibility & Immunogenetics
   "histocompatibility & immunogenetics": "Histocompatibility & Immunogenetics",
   "transplant immunology & hla": "Histocompatibility & Immunogenetics",
+  "hla & immunogenetics": "Histocompatibility & Immunogenetics",
 
-  // Canonical Identity Mappings (Self-mapping for consistency)
-  "endocrinology": "Endocrinology",
-  "biochemistry": "Biochemistry",
+  // 8. Flow Cytometry
+  "flow cytometry": "Flow Cytometry",
+
+  // 9. Cytogenetics
+  "cytogenetics": "Cytogenetics",
+
+  // 10. Allergy & Hypersensitivity
+  "allergy & hypersensitivity": "Allergy & Hypersensitivity",
+  "allergy": "Allergy & Hypersensitivity",
+  "allergy & immunoassays": "Allergy & Hypersensitivity",
+
+  // 11. Immunology & Autoimmunity
+  "immunology & autoimmunity": "Immunology & Autoimmunity",
+  "serology & immunology": "Immunology & Autoimmunity",
+  "immunology & serology": "Immunology & Autoimmunity",
+  "immunology": "Immunology & Autoimmunity",
+  "immunology & autoimmune": "Immunology & Autoimmunity",
+  "specialized immunology & transplant": "Immunology & Autoimmunity",
+
+  // 12. Clinical Biochemistry
+  "clinical biochemistry": "Clinical Biochemistry",
+  "biochemistry": "Clinical Biochemistry",
+  "clinical biochemistry & metabolic": "Clinical Biochemistry",
+  "metabolic": "Clinical Biochemistry",
+  "kidney": "Clinical Biochemistry",
+  "liver": "Clinical Biochemistry",
+  "nutritional & micronutrients": "Clinical Biochemistry",
+  "diabetes": "Clinical Biochemistry",
+  "lipids & cardiac": "Clinical Biochemistry",
+  "gastroenterology": "Clinical Biochemistry",
+  "neurology & specialized protein diagnostics": "Clinical Biochemistry",
+
+  // 13. Clinical Pathology
   "clinical pathology": "Clinical Pathology",
-  "serology & immunology": "Serology & Immunology",
+
+  // 14. Endocrinology
+  "endocrinology": "Endocrinology",
+
+  // 15. Hematology
   "hematology": "Hematology",
-  "general": "General",
+  "haematology": "Hematology",
+  "immunohematology": "Hematology",
+
+  // 16. Hematology & Coagulation
+  "hematology & coagulation": "Hematology & Coagulation",
+  "haematology & coagulation": "Hematology & Coagulation",
+  "coagulation": "Hematology & Coagulation",
 };
+
+/**
+ * Backward compatibility alias for existing consumers.
+ */
+export const APPROVED_CATEGORY_ALIASES = CATEGORY_NORMALIZATION_MAP;
 
 /**
  * Test-specific canonical category overrides for investigations appearing in mixed/methodology categories.
  * Ensures tests are classified according to the clinical investigation/discipline represented rather than solely laboratory method.
  */
-export const TEST_SPECIFIC_CATEGORY_OVERRIDES: Record<string, string> = {
-  // Transplant Histocompatibility Crossmatching (method was Flow Cytometry)
+export const TEST_SPECIFIC_CATEGORY_OVERRIDES: Record<string, ApprovedGyrexCategory> = {
+  // Transplant Histocompatibility Crossmatching
   "gyx-00400": "Histocompatibility & Immunogenetics",
   "crossmatch - flow cytometry": "Histocompatibility & Immunogenetics",
 
-  // Bone Marrow & MRD Immunophenotyping (Hematology)
+  // Bone Marrow & MRD Immunophenotyping
   "gyx-00045": "Hematology",
   "bone marrow flow cytometry": "Hematology",
   "gyx-00047": "Hematology",
@@ -211,17 +283,17 @@ export const TEST_SPECIFIC_CATEGORY_OVERRIDES: Record<string, string> = {
   "gyx-00365": "Hematology",
   "mrd by flow cytometry": "Hematology",
 
-  // Coagulation Factor & Platelet Antibody tests (Hematology)
-  "gyx-00508": "Hematology",
-  "adamts13 activity": "Hematology",
-  "gyx-00595": "Hematology",
-  "factor vii functional": "Hematology",
-  "gyx-00596": "Hematology",
-  "factor xiii clot solubility": "Hematology",
-  "gyx-00700": "Hematology",
-  "platelet antibodies": "Hematology",
+  // Coagulation Factor & Platelet Antibody tests
+  "gyx-00508": "Hematology & Coagulation",
+  "adamts13 activity": "Hematology & Coagulation",
+  "gyx-00595": "Hematology & Coagulation",
+  "factor vii functional": "Hematology & Coagulation",
+  "gyx-00596": "Hematology & Coagulation",
+  "factor xiii clot solubility": "Hematology & Coagulation",
+  "gyx-00700": "Hematology & Coagulation",
+  "platelet antibodies": "Hematology & Coagulation",
 
-  // Molecular Genetics & Cytogenetic FISH panels (Molecular Diagnostics & Genetics)
+  // Molecular Genetics & Cytogenetic FISH panels
   "gyx-00510": "Molecular Diagnostics & Genetics",
   "alk fusion fish": "Molecular Diagnostics & Genetics",
   "gyx-00515": "Molecular Diagnostics & Genetics",
@@ -232,36 +304,45 @@ export const TEST_SPECIFIC_CATEGORY_OVERRIDES: Record<string, string> = {
   "multiple myeloma markers fish": "Molecular Diagnostics & Genetics",
 };
 
-export interface ClinicalReviewCategoryDefinition {
-  proposedCanonical: string;
-  reason: string;
+/**
+ * Normalizes any category string from Excel to an approved Gyrex Category.
+ * Returns null if the category does not belong to or map into the approved Gyrex taxonomy.
+ */
+export function normalizeCategory(rawCategory: string): ApprovedGyrexCategory | null {
+  if (!rawCategory || typeof rawCategory !== "string") {
+    return null;
+  }
+
+  const clean = cleanCategoryKey(rawCategory);
+
+  // 1. Direct dictionary lookup
+  const mapped = CATEGORY_NORMALIZATION_MAP[clean];
+  if (mapped) {
+    return mapped;
+  }
+
+  // 2. Direct case-insensitive match against approved category names
+  const approvedByName = APPROVED_GYREX_TAXONOMY.find(
+    (c) => c.name.toLowerCase() === clean
+  );
+  if (approvedByName) {
+    return approvedByName.name;
+  }
+
+  // 3. Direct match against approved category slugs
+  const approvedBySlug = APPROVED_GYREX_TAXONOMY.find(
+    (c) => c.slug.toLowerCase() === clean
+  );
+  if (approvedBySlug) {
+    return approvedBySlug.name;
+  }
+
+  return null;
 }
 
 /**
- * Categories that require explicit clinical review rather than silent automatic forcing.
- */
-export const CLINICAL_REVIEW_CATEGORIES: Record<string, ClinicalReviewCategoryDefinition> = {
-  "flow cytometry": {
-    proposedCanonical: "Hematology",
-    reason: "Flow cytometry investigations in this seed (MRD, bone marrow) are predominantly hematologic neoplasm panels.",
-  },
-  "histocompatibility & immunogenetics": {
-    proposedCanonical: "Histocompatibility & Immunogenetics",
-    reason: "HLA allele typing and transplant immunogenetics are dedicated histocompatibility disciplines.",
-  },
-  "transplant immunology & hla": {
-    proposedCanonical: "Histocompatibility & Immunogenetics",
-    reason: "Crossmatch, calculated PRA, and lymphocyte cytotoxicity assays are transplant histocompatibility investigations.",
-  },
-  "hematologic malignancy & cytogenetics": {
-    proposedCanonical: "Molecular Diagnostics & Genetics",
-    reason: "Cytogenetic FISH and hemoglobinopathy gene mutation analyses are molecular genetics assays.",
-  },
-};
-
-/**
  * Resolves a raw uploaded category string to a canonical TestCategory record in the database.
- * Supports test-specific overrides, exact canonical names/slugs, approved aliases, and clinical review mappings.
+ * Uses test-specific overrides and the unified canonical category normalization layer.
  */
 export function resolveCategory(
   rawCategoryInput: string,
@@ -273,8 +354,7 @@ export function resolveCategory(
 ): {
   categoryId: string | null;
   canonicalCategoryName: string;
-  source: "EXACT_NAME" | "EXACT_SLUG" | "APPROVED_ALIAS" | "TEST_OVERRIDE" | "CLINICAL_REVIEW" | "UNRESOLVED";
-  reviewNotice?: ClinicalReviewCategoryDefinition;
+  source: "NORMALIZED_APPROVED" | "TEST_OVERRIDE" | "UNRESOLVED";
 } {
   // 1. Check test-specific override first if code or name matches
   if (testCode) {
@@ -305,59 +385,33 @@ export function resolveCategory(
     }
   }
 
-  const normalized = rawCategoryInput.trim().toLowerCase();
-
-  // 2. Direct name match in DB
-  const directIdByName = categoryMapByName.get(normalized);
-  if (directIdByName) {
+  // 2. Canonical Normalization
+  const canonical = normalizeCategory(rawCategoryInput);
+  if (!canonical) {
     return {
-      categoryId: directIdByName,
-      canonicalCategoryName: categoryDisplayNames.get(directIdByName) || rawCategoryInput,
-      source: "EXACT_NAME",
+      categoryId: null,
+      canonicalCategoryName: rawCategoryInput.trim(),
+      source: "UNRESOLVED",
     };
   }
 
-  // 3. Direct slug match in DB
-  const directIdBySlug = categoryMapBySlug.get(normalized);
-  if (directIdBySlug) {
+  // 3. Match against database active category IDs
+  const lowerCanonical = canonical.toLowerCase();
+  const dbCatId =
+    categoryMapByName.get(lowerCanonical) ||
+    categoryMapBySlug.get(lowerCanonical);
+
+  if (dbCatId) {
     return {
-      categoryId: directIdBySlug,
-      canonicalCategoryName: categoryDisplayNames.get(directIdBySlug) || rawCategoryInput,
-      source: "EXACT_SLUG",
+      categoryId: dbCatId,
+      canonicalCategoryName: canonical,
+      source: "NORMALIZED_APPROVED",
     };
   }
 
-  // 4. Approved alias mapping
-  const mappedCanonical = APPROVED_CATEGORY_ALIASES[normalized];
-  if (mappedCanonical) {
-    const aliasCatId = categoryMapByName.get(mappedCanonical.trim().toLowerCase());
-    if (aliasCatId) {
-      return {
-        categoryId: aliasCatId,
-        canonicalCategoryName: categoryDisplayNames.get(aliasCatId) || mappedCanonical,
-        source: "APPROVED_ALIAS",
-      };
-    }
-  }
-
-  // 5. Clinical review mapping
-  const reviewDef = CLINICAL_REVIEW_CATEGORIES[normalized];
-  if (reviewDef) {
-    const reviewCatId = categoryMapByName.get(reviewDef.proposedCanonical.trim().toLowerCase());
-    if (reviewCatId) {
-      return {
-        categoryId: reviewCatId,
-        canonicalCategoryName: categoryDisplayNames.get(reviewCatId) || reviewDef.proposedCanonical,
-        source: "CLINICAL_REVIEW",
-        reviewNotice: reviewDef,
-      };
-    }
-  }
-
-  // 6. Unresolved
   return {
     categoryId: null,
-    canonicalCategoryName: rawCategoryInput,
+    canonicalCategoryName: canonical,
     source: "UNRESOLVED",
   };
 }
@@ -614,11 +668,11 @@ export async function analyzeTestMasterSpreadsheet(
       }
     });
 
-    const rawCode = sanitizeFormulaString(rowObj["code"] || "");
-    const rawName = sanitizeFormulaString(rowObj["name"] || "");
+    const cleanCode = sanitizeFormulaString(rowObj["code"] || "").trim();
+    const cleanName = sanitizeFormulaString(rowObj["name"] || "").trim();
 
     // Ignore row if both code and name are completely empty
-    if (!rawCode && !rawName) {
+    if (!cleanCode && !cleanName) {
       continue;
     }
 
@@ -626,7 +680,7 @@ export async function analyzeTestMasterSpreadsheet(
     const issues: TestMasterRowIssue[] = [];
 
     // 1. Mandatory Code validation
-    if (!rawCode) {
+    if (!cleanCode) {
       issues.push({
         type: "ERROR",
         field: "code",
@@ -635,7 +689,7 @@ export async function analyzeTestMasterSpreadsheet(
     }
 
     // 2. Mandatory Name validation
-    if (!rawName) {
+    if (!cleanName) {
       issues.push({
         type: "ERROR",
         field: "name",
@@ -643,19 +697,19 @@ export async function analyzeTestMasterSpreadsheet(
       });
     }
 
-    const upperCode = rawCode.toUpperCase();
-    const lowerName = rawName.toLowerCase();
+    const upperCode = cleanCode.toUpperCase();
+    const lowerName = cleanName.toLowerCase();
 
     // 3. Category validation
     const rawCategory = sanitizeFormulaString(rowObj["category"] || "");
     let categoryId: string | null = null;
     let properCategoryName = rawCategory;
 
-    if (!rawCategory) {
+    if (!rawCategory || !rawCategory.trim()) {
       issues.push({
         type: "ERROR",
         field: "category",
-        message: "Category is mandatory.",
+        message: "Category is mandatory and cannot be blank.",
       });
     } else {
       const resolution = resolveCategory(
@@ -663,26 +717,18 @@ export async function analyzeTestMasterSpreadsheet(
         categoryMapByName,
         categoryMapBySlug,
         categoryDisplayNames,
-        rawCode,
-        rawName
+        cleanCode,
+        cleanName
       );
 
       if (resolution.categoryId) {
         categoryId = resolution.categoryId;
         properCategoryName = resolution.canonicalCategoryName;
-
-        if (resolution.source === "CLINICAL_REVIEW" && resolution.reviewNotice) {
-          issues.push({
-            type: "WARNING",
-            field: "category",
-            message: `[CLINICAL REVIEW REQUIRED] Category '${rawCategory}' resolved to proposed canonical '${resolution.canonicalCategoryName}'. Reason: ${resolution.reviewNotice.reason}`,
-          });
-        }
       } else {
         issues.push({
           type: "ERROR",
           field: "category",
-          message: `Category '${rawCategory}' does not exist in the system and has no approved mapping. Please map or create it first.`,
+          message: `Category '${rawCategory}' does not exist in the approved Gyrex clinical taxonomy and has no approved mapping.`,
         });
       }
     }
@@ -753,7 +799,7 @@ export async function analyzeTestMasterSpreadsheet(
         issues.push({
           type: "ERROR",
           field: "name",
-          message: `Duplicate Test Name '${rawName}' within the file (previously found on row ${firstRow}).`,
+          message: `Duplicate Test Name '${cleanName}' within the file (previously found on row ${firstRow}).`,
         });
       } else {
         seenNamesInFile.set(lowerName, rowNumber);
@@ -798,7 +844,7 @@ export async function analyzeTestMasterSpreadsheet(
       rowNumber,
       status,
       code: upperCode,
-      name: rawName,
+      name: cleanName,
       categoryName: properCategoryName,
       categoryId,
       sampleType,
@@ -876,6 +922,17 @@ export async function confirmTestMasterImport(
   // Execute in Neon-safe transaction
   await prisma.$transaction(
     async (tx) => {
+      // Re-fetch active categories within transaction to guarantee exact parity
+      const dbCategories = await tx.testCategory.findMany({ where: { isActive: true } });
+      const txCatMapByName = new Map<string, string>();
+      const txCatMapBySlug = new Map<string, string>();
+      const txCatDisplayNames = new Map<string, string>();
+      for (const cat of dbCategories) {
+        txCatMapByName.set(cat.name.trim().toLowerCase(), cat.id);
+        txCatMapBySlug.set(cat.slug.trim().toLowerCase(), cat.id);
+        txCatDisplayNames.set(cat.id, cat.name);
+      }
+
       // Re-verify against database within transaction for race safety
       const codes = candidateItems.map((c) => c.code.toUpperCase().trim());
       const existingInDb = await tx.testMaster.findMany({
@@ -886,6 +943,8 @@ export async function confirmTestMasterImport(
 
       for (const item of candidateItems) {
         const upperCode = item.code.toUpperCase().trim();
+        const cleanName = item.name.trim();
+
         if (dbCodesSet.has(upperCode)) {
           rejectedErrors.push({
             rowNumber: item.rowNumber,
@@ -895,7 +954,27 @@ export async function confirmTestMasterImport(
           continue;
         }
 
-        const nameSlug = item.name
+        // Re-resolve using EXACT same category normalization function
+        const catRes = resolveCategory(
+          item.categoryName,
+          txCatMapByName,
+          txCatMapBySlug,
+          txCatDisplayNames,
+          upperCode,
+          cleanName
+        );
+
+        const categoryIdToUse = catRes.categoryId || item.categoryId;
+        if (!categoryIdToUse) {
+          rejectedErrors.push({
+            rowNumber: item.rowNumber,
+            code: upperCode,
+            message: `Category validation failed during import: '${item.categoryName}' does not map to an approved active category.`,
+          });
+          continue;
+        }
+
+        const nameSlug = cleanName
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "");
@@ -905,9 +984,9 @@ export async function confirmTestMasterImport(
         const created = await tx.testMaster.create({
           data: {
             code: upperCode,
-            name: item.name.trim(),
+            name: cleanName,
             slug: uniqueSlug,
-            categoryId: item.categoryId!,
+            categoryId: categoryIdToUse,
             sampleType: item.sampleType || "Serum",
             standardTatHours: item.standardTatHours ?? 24,
             fastingRequired: item.fastingRequired ?? false,
@@ -922,6 +1001,12 @@ export async function confirmTestMasterImport(
 
         createdIds.push(created.id);
         dbCodesSet.add(upperCode); // Add to set so subsequent items in same batch don't collide
+      }
+
+      if (rejectedErrors.length > 0) {
+        throw new Error(
+          `Import aborted: ${rejectedErrors.length} item(s) failed database validation (${rejectedErrors[0].message}).`
+        );
       }
     },
     { maxWait: 15000, timeout: 20000 }

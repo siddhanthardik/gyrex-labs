@@ -20,10 +20,6 @@ let connectionString =
   process.env.DATABASE_URL ||
   "postgresql://postgres:postgres@localhost:5432/gyrex_labs?schema=public";
 
-if (connectionString.includes("sslmode=require") && !connectionString.includes("uselibpqcompat")) {
-  connectionString += (connectionString.includes("?") ? "&" : "?") + "uselibpqcompat=true";
-}
-
 const pool =
   globalForPrisma.pool ??
   new Pool({
@@ -32,6 +28,9 @@ const pool =
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 20000,
     keepAlive: true,
+    ssl: connectionString.includes("sslmode=require")
+      ? { rejectUnauthorized: false }
+      : undefined,
   });
 
 // Handle idle connection drops gracefully so broken sockets are pruned
