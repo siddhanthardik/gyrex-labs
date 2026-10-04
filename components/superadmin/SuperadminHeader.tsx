@@ -33,7 +33,7 @@ export function SuperadminHeader({ userEmail, userName }: SuperadminHeaderProps)
           <input
             type="text"
             placeholder="Search labs, orders, patients..."
-            className="w-72 rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="w-72 rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
           />
         </div>
       </div>
@@ -41,7 +41,7 @@ export function SuperadminHeader({ userEmail, userName }: SuperadminHeaderProps)
       <div className="flex items-center gap-3">
         <Link
           href="/superadmin/system/security-alerts"
-          className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+          className="flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
         >
           <ShieldAlert className="h-3.5 w-3.5" />
           <span className="text-[11px]">Security alerts</span>

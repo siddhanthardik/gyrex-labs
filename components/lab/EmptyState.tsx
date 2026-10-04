@@ -29,7 +29,7 @@ export function EmptyState({
       {actionText && actionHref && (
         <Link
           href={actionHref}
-          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-sky-600"
         >
           {actionText}
         </Link>
@@ -38,7 +38,7 @@ export function EmptyState({
       {actionText && onAction && !actionHref && (
         <button
           onClick={onAction}
-          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-sky-600"
         >
           {actionText}
         </button>

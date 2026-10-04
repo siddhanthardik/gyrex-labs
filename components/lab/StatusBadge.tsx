@@ -13,13 +13,13 @@ export function StatusBadge({ status, type = "order" }: StatusBadgeProps) {
       case OrderStatus.PENDING_PAYMENT:
         return <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">Pending Payment</span>;
       case OrderStatus.CONFIRMED:
-        return <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">Confirmed</span>;
+        return <span className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">Confirmed</span>;
       case OrderStatus.COLLECTION_SCHEDULED:
-        return <span className="inline-flex items-center rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700">Collection Scheduled</span>;
+        return <span className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">Collection Scheduled</span>;
       case OrderStatus.SAMPLE_COLLECTED:
-        return <span className="inline-flex items-center rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">Sample Collected</span>;
+        return <span className="inline-flex items-center rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700">Sample Collected</span>;
       case OrderStatus.PROCESSING:
-        return <span className="inline-flex items-center rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700">In Processing</span>;
+        return <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">In Processing</span>;
       case OrderStatus.REPORT_READY:
         return <span className="inline-flex items-center rounded-md border border-teal-200 bg-teal-50 px-2 py-1 text-xs font-medium text-teal-700">Report Ready</span>;
       case OrderStatus.COMPLETED:

@@ -18,10 +18,10 @@ export function StatCard({
   variant = "default",
 }: StatCardProps) {
   const borderStyles = {
-    default: "border-slate-200 bg-white hover:border-blue-200",
-    success: "border-emerald-200 bg-emerald-50 hover:border-emerald-300",
-    warning: "border-amber-200 bg-amber-50 hover:border-amber-300",
-    info: "border-blue-200 bg-blue-50 hover:border-blue-300",
+    default: "border-slate-200 bg-white hover:border-slate-300",
+    success: "border-emerald-200 bg-emerald-50/50 hover:border-emerald-300",
+    warning: "border-amber-200 bg-amber-50/50 hover:border-amber-300",
+    info: "border-sky-200 bg-sky-50/50 hover:border-sky-300",
   }[variant];
 
   return (

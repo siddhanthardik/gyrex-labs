@@ -21,15 +21,15 @@ export function SuperadminStatCard({
     success: "text-emerald-700 bg-emerald-50 border-emerald-200",
     warning: "text-amber-700 bg-amber-50 border-amber-200",
     danger: "text-rose-700 bg-rose-50 border-rose-200",
-    info: "text-blue-700 bg-blue-50 border-blue-200",
+    info: "text-sky-700 bg-sky-50 border-sky-200",
     neutral: "text-slate-600 bg-slate-100 border-slate-200",
   }[badgeVariant];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs transition hover:border-slate-300">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{title}</span>
-        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">{icon}</span>}
+        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-700">{icon}</span>}
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">

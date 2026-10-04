@@ -91,9 +91,9 @@ export default function SuperadminReportsPage() {
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Diagnostic Report Delivery Centre</h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Cross-tenant operational monitoring of patient diagnostic report delivery and delivery failure diagnostics.
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Platform Diagnostic Reports</h1>
+        <p className="mt-1 text-xs text-slate-500">
+          Cross-tenant operational monitoring of patient diagnostic report delivery and delivery diagnostics.
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export default function SuperadminReportsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search report number (e.g. RPT-2026-0001), order number, or patient..."
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-900/80 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none shadow-sm"
           />
         </div>
 
@@ -144,7 +144,7 @@ export default function SuperadminReportsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none shadow-sm"
           >
             <option value="">All Statuses</option>
             <option value="FINAL">FINAL</option>
@@ -156,7 +156,7 @@ export default function SuperadminReportsPage() {
         <button
           type="button"
           onClick={fetchReports}
-          className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-700 transition"
+          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
         >
           Refresh
         </button>
@@ -164,16 +164,16 @@ export default function SuperadminReportsPage() {
 
       {/* Reports Table */}
       {loading ? (
-        <div className="py-12 text-center text-xs text-zinc-500">Loading Report Centre records...</div>
+        <div className="py-12 text-center text-xs text-slate-500">Loading diagnostic report records...</div>
       ) : reports.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/60 p-12 text-center">
-          <p className="text-sm font-semibold text-white">No Diagnostic Reports Match Filter</p>
-          <p className="mt-1 text-xs text-zinc-400">Reports will appear here once partner laboratories upload signed PDF documents.</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center">
+          <p className="text-sm font-semibold text-slate-900">No Diagnostic Reports Match Filter</p>
+          <p className="mt-1 text-xs text-slate-500">Reports will appear here once partner laboratories upload signed PDF documents.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <thead className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-600">
               <tr>
                 <th className="px-4 py-3">Report Number</th>
                 <th className="px-4 py-3">Order Number</th>
@@ -185,41 +185,41 @@ export default function SuperadminReportsPage() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-slate-200 text-slate-700">
               {reports.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-800/30 transition">
-                  <td className="px-4 py-3 font-mono font-bold text-white">
+                <tr key={r.id} className="hover:bg-slate-50/60 transition">
+                  <td className="px-4 py-3 font-mono font-bold text-sky-700">
                     {r.reportNumber}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/superadmin/orders/${r.orderId}`} className="font-mono text-indigo-400 hover:underline">
+                    <Link href={`/superadmin/orders/${r.orderId}`} className="font-mono text-sky-700 hover:underline">
                       {r.orderNumber}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-zinc-200">
+                  <td className="px-4 py-3 font-semibold text-slate-900">
                     {r.labName}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-zinc-200">{r.patientName}</p>
-                    <p className="text-[10px] text-zinc-500">{r.patientPhone}</p>
+                    <p className="text-slate-900">{r.patientName}</p>
+                    <p className="text-[10px] text-slate-500">{r.patientPhone}</p>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">
+                  <td className="px-4 py-3 text-slate-500">
                     <span className="truncate block max-w-xs">{r.fileName}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">
+                    <span className="text-[10px] text-slate-400 font-mono">
                       {(r.fileSize / 1024).toFixed(1)} KB
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <SuperadminStatusBadge status={r.status} />
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">
+                  <td className="px-4 py-3 text-slate-500">
                     {r.releasedAt ? new Date(r.releasedAt).toLocaleString() : "Not released"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => setSelectedReport(r)}
-                      className="rounded border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 transition"
+                      className="rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition"
                     >
                       Audit Inspect 🔍
                     </button>

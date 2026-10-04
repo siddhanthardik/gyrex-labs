@@ -55,7 +55,7 @@ export function LabHeader({ lab, user, onMenuToggle }: LabHeaderProps) {
           href={`/${lab.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+          className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
         >
           <span>Store preview</span>
           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -64,7 +64,7 @@ export function LabHeader({ lab, user, onMenuToggle }: LabHeaderProps) {
         <div className="hidden h-4 w-px bg-slate-200 sm:block" />
 
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-700">
             {user.fullName.charAt(0).toUpperCase()}
           </div>
           <div className="hidden md:block text-left text-xs">

@@ -41,8 +41,8 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Diagnostic Laboratories</h1>
-          <p className="mt-1 text-xs text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Diagnostic Laboratories</h1>
+          <p className="mt-1 text-xs text-slate-500">
             Platform-wide governance directory of all registered diagnostic laboratory tenants.
           </p>
         </div>
@@ -50,13 +50,13 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
         <div className="flex items-center gap-2">
           <Link
             href="/superadmin/labs/pending"
-            className="rounded-lg border border-amber-800/80 bg-amber-950/40 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-900/40 transition"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition"
           >
             ⏳ Verification Queue
           </Link>
           <Link
             href="/superadmin/labs/suspended"
-            className="rounded-lg border border-rose-800/80 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/40 transition"
+            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition"
           >
             🚫 Suspended Labs
           </Link>
@@ -64,9 +64,9 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters Bar */}
-      <form method="GET" className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:grid-cols-4">
+      <form method="GET" className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-4 shadow-xs">
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             Search Laboratory
           </label>
           <input
@@ -74,18 +74,18 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
             name="search"
             defaultValue={search || ""}
             placeholder="Name, city, code..."
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             Filter by Status
           </label>
           <select
             name="status"
             defaultValue={status || ""}
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">ACTIVE</option>
@@ -96,7 +96,7 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             City
           </label>
           <input
@@ -104,14 +104,14 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
             name="city"
             defaultValue={city || ""}
             placeholder="e.g. Mumbai, Delhi..."
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           />
         </div>
 
         <div className="flex items-end">
           <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition shadow-sm"
+            className="w-full rounded-lg bg-sky-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition shadow-xs"
           >
             Apply Filters
           </button>
@@ -127,9 +127,9 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
           actionHref="/superadmin/labs"
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Lab Name & Code</th>
                 <th className="px-4 py-3">Location</th>
@@ -141,32 +141,32 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {labs.map((lab) => (
-                <tr key={lab.id} className="hover:bg-zinc-800/30 transition">
+                <tr key={lab.id} className="hover:bg-slate-50/75 transition">
                   <td className="px-4 py-3">
                     <Link
                       href={`/superadmin/labs/${lab.id}`}
-                      className="font-semibold text-white hover:text-indigo-400 transition"
+                      className="font-semibold text-slate-900 hover:text-sky-700 transition"
                     >
                       {lab.name}
                     </Link>
-                    <p className="text-[11px] text-zinc-500 font-mono">{lab.code} • {lab.slug}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">{lab.code} • {lab.slug}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-zinc-200">{lab.city}</p>
-                    <p className="text-[10px] text-zinc-500">{lab.state}</p>
+                    <p className="text-slate-800">{lab.city}</p>
+                    <p className="text-[10px] text-slate-500">{lab.state}</p>
                   </td>
                   <td className="px-4 py-3">
                     <SuperadminStatusBadge status={lab.status} />
                   </td>
                   <td className="px-4 py-3">
                     {lab.isVerified ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
                         ✓ Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
                         ⏳ Unverified
                       </span>
                     )}
@@ -178,13 +178,13 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
                     {lab.ordersCount} orders
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-semibold text-zinc-200">{lab.subscriptionPlan}</span>
-                    <p className="text-[10px] text-zinc-500">{lab.subscriptionStatus}</p>
+                    <span className="font-semibold text-slate-800">{lab.subscriptionPlan}</span>
+                    <p className="text-[10px] text-slate-500">{lab.subscriptionStatus}</p>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/superadmin/labs/${lab.id}`}
-                      className="inline-flex items-center rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 transition"
+                      className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition"
                     >
                       Inspect →
                     </Link>
@@ -195,17 +195,17 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
           </table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-400">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <div>
-              Showing <span className="font-medium text-white">{labs.length}</span> of{" "}
-              <span className="font-medium text-white">{total}</span> labs
+              Showing <span className="font-medium text-slate-900">{labs.length}</span> of{" "}
+              <span className="font-medium text-slate-900">{total}</span> labs
             </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">
                 {page > 1 && (
                   <Link
                     href={`/superadmin/labs?page=${page - 1}`}
-                    className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs hover:bg-zinc-800"
+                    className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
                   >
                     Previous
                   </Link>
@@ -214,7 +214,7 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
                 {page < totalPages && (
                   <Link
                     href={`/superadmin/labs?page=${page + 1}`}
-                    className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs hover:bg-zinc-800"
+                    className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
                   >
                     Next
                   </Link>

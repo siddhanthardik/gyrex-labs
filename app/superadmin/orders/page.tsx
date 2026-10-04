@@ -47,16 +47,16 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Diagnostic Orders ({total})</h1>
-        <p className="mt-1 text-xs text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Diagnostic Orders ({total})</h1>
+        <p className="mt-1 text-xs text-slate-500">
           Cross-tenant visibility into diagnostic test bookings across all participating laboratories.
         </p>
       </div>
 
       {/* Filters */}
-      <form method="GET" className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:grid-cols-4">
+      <form method="GET" className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-4 shadow-xs">
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             Search Order or Patient
           </label>
           <input
@@ -64,18 +64,18 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
             name="search"
             defaultValue={search || ""}
             placeholder="Order number, phone..."
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             Order Status
           </label>
           <select
             name="status"
             defaultValue={status || ""}
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="CONFIRMED">CONFIRMED</option>
@@ -87,13 +87,13 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
             Payment Status
           </label>
           <select
             name="paymentStatus"
             defaultValue={paymentStatus || ""}
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
           >
             <option value="">All Payments</option>
             <option value="PAID">PAID</option>
@@ -105,7 +105,7 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
         <div className="flex items-end">
           <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition shadow-sm"
+            className="w-full rounded-lg bg-sky-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-sky-600 transition shadow-xs"
           >
             Apply Filters
           </button>
@@ -121,9 +121,9 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
           actionHref="/superadmin/orders"
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Order Number</th>
                 <th className="px-4 py-3">Laboratory</th>
@@ -135,27 +135,27 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {orders.map((o) => (
-                <tr key={o.id} className="hover:bg-zinc-800/30 transition">
+                <tr key={o.id} className="hover:bg-slate-50/75 transition">
                   <td className="px-4 py-3">
                     <Link
                       href={`/superadmin/orders/${o.id}`}
-                      className="font-mono font-bold text-indigo-300 hover:underline"
+                      className="font-mono font-bold text-sky-700 hover:underline"
                     >
                       {o.orderNumber}
                     </Link>
-                    <p className="text-[10px] text-zinc-500">{new Date(o.createdAt).toLocaleDateString()}</p>
+                    <p className="text-[10px] text-slate-500">{new Date(o.createdAt).toLocaleDateString()}</p>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-white">
+                  <td className="px-4 py-3 font-semibold text-slate-900">
                     {o.labName}
-                    <p className="text-[10px] text-zinc-500">{o.labCity}</p>
+                    <p className="text-[10px] text-slate-500">{o.labCity}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-zinc-200">{o.patientName}</p>
-                    <p className="text-[10px] text-zinc-500">{o.patientPhone}</p>
+                    <p className="text-slate-800">{o.patientName}</p>
+                    <p className="text-[10px] text-slate-500">{o.patientPhone}</p>
                   </td>
-                  <td className="px-4 py-3 font-mono font-semibold text-white">
+                  <td className="px-4 py-3 font-mono font-semibold text-slate-900">
                     ₹{o.totalAmount.toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
@@ -164,13 +164,13 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
                   <td className="px-4 py-3">
                     <SuperadminStatusBadge status={o.paymentStatus} />
                   </td>
-                  <td className="px-4 py-3 text-zinc-400 capitalize">
+                  <td className="px-4 py-3 text-slate-500 capitalize">
                     {o.collectionType.replace(/_/g, " ").toLowerCase()}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/superadmin/orders/${o.id}`}
-                      className="rounded border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 transition"
+                      className="rounded border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 transition"
                     >
                       Inspect →
                     </Link>
@@ -181,10 +181,10 @@ export default async function SuperadminOrdersPage({ searchParams }: PageProps) 
           </table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-400">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <div>
-              Showing <span className="font-medium text-white">{orders.length}</span> of{" "}
-              <span className="font-medium text-white">{total}</span> orders
+              Showing <span className="font-medium text-slate-900">{orders.length}</span> of{" "}
+              <span className="font-medium text-slate-900">{total}</span> orders
             </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">

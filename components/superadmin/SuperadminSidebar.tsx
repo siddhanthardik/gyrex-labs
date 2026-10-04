@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import type { LucideIcon } from "lucide-react";
@@ -114,26 +115,28 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white/95 shadow-sm backdrop-blur-sm">
-      <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white shadow-sm">
-          G
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold tracking-tight text-slate-900">Gyrex Lab</span>
-            <span className="rounded border border-blue-200 bg-blue-50 px-1 text-[9px] font-bold text-blue-700">
-              ADMIN
-            </span>
-          </div>
-        </div>
+    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white/95 shadow-xs backdrop-blur-sm">
+      <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
+        <Link href="/superadmin/dashboard" className="flex items-center gap-2">
+          <Image
+            src="/branding/gyrex-labs.svg"
+            alt="Gyrex Labs"
+            width={120}
+            height={30}
+            className="h-6 w-auto"
+            priority
+          />
+        </Link>
+        <span className="rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-sky-700">
+          SUPERADMIN
+        </span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 text-xs">
         {navSections.map((section) => (
           <div key={section.title}>
-            <div className="px-2 pb-1.5 text-[10px] font-bold tracking-[0.12em] text-slate-400">
-              {section.title.toUpperCase()}
+            <div className="px-2 pb-1.5 text-[10px] font-bold tracking-[0.12em] text-slate-400 uppercase">
+              {section.title}
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
@@ -145,7 +148,7 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
                     href={item.href}
                     className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 font-medium transition ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                        ? "bg-sky-50 text-sky-700 border border-sky-100 font-semibold"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
@@ -161,7 +164,7 @@ export function SuperadminSidebar({ userRole }: SuperadminSidebarProps) {
 
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
             {userRole.slice(0, 2).toUpperCase()}
           </div>
           <div className="overflow-hidden">

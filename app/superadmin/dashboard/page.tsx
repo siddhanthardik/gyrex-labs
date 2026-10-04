@@ -80,13 +80,13 @@ export default async function SuperadminDashboardPage() {
           {data.alerts.urgentTicketsCount > 0 && (
             <Link
               href="/superadmin/support"
-              className="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 p-4 transition hover:bg-indigo-100"
+              className="flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50 p-4 transition hover:bg-sky-100"
             >
               <div>
-                <p className="text-xs font-semibold text-indigo-800">Open support tickets</p>
-                <p className="text-[11px] text-indigo-700">Priority action needed</p>
+                <p className="text-xs font-semibold text-sky-800">Open support tickets</p>
+                <p className="text-[11px] text-sky-700">Priority action needed</p>
               </div>
-              <span className="text-xl font-bold text-indigo-700">{data.alerts.urgentTicketsCount}</span>
+              <span className="text-xl font-bold text-sky-700">{data.alerts.urgentTicketsCount}</span>
             </Link>
           )}
         </div>
@@ -201,7 +201,7 @@ export default async function SuperadminDashboardPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Recently onboarded labs</h3>
-            <Link href="/superadmin/labs" className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">
+            <Link href="/superadmin/labs" className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:text-sky-800">
               View all <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -213,7 +213,7 @@ export default async function SuperadminDashboardPage() {
               {data.recentLabs.map((lab) => (
                 <div key={lab.id} className="flex items-center justify-between py-3">
                   <div>
-                    <Link href={`/superadmin/labs/${lab.id}`} className="text-xs font-semibold text-slate-900 hover:text-blue-700">
+                    <Link href={`/superadmin/labs/${lab.id}`} className="text-xs font-semibold text-slate-900 hover:text-sky-700">
                       {lab.name}
                     </Link>
                     <p className="text-[11px] text-slate-500">
@@ -230,7 +230,7 @@ export default async function SuperadminDashboardPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Recent orders</h3>
-            <Link href="/superadmin/orders" className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">
+            <Link href="/superadmin/orders" className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:text-sky-800">
               View all <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -242,7 +242,7 @@ export default async function SuperadminDashboardPage() {
               {data.recentOrders.map((ord) => (
                 <div key={ord.id} className="flex items-center justify-between py-3">
                   <div>
-                    <Link href={`/superadmin/orders/${ord.id}`} className="font-mono text-xs font-bold text-blue-700 hover:underline">
+                    <Link href={`/superadmin/orders/${ord.id}`} className="font-mono text-xs font-bold text-sky-700 hover:underline">
                       {ord.orderNumber}
                     </Link>
                     <p className="text-[11px] text-slate-500">

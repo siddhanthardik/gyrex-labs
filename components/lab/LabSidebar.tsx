@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import type { LucideIcon } from "lucide-react";
@@ -101,24 +102,30 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
       {isOpen && <div onClick={onClose} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" />}
 
       <aside
-        className={`fixed bottom-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white/95 shadow-sm backdrop-blur-sm transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed bottom-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white/95 shadow-xs backdrop-blur-sm transition-transform duration-200 lg:static lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-20 items-center justify-between border-b border-slate-200 px-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
-              G
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/branding/gyrex-labs.svg"
+                alt="Gyrex Labs"
+                width={100}
+                height={25}
+                className="h-5 w-auto"
+                priority
+              />
+              {lab.isVerified && (
+                <span title="Verified laboratory" className="inline-flex items-center rounded bg-emerald-50 px-1 py-0.2 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                  ✓ Verified
+                </span>
+              )}
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-600">Gyrex Lab</span>
-                {lab.isVerified && <span title="Verified by Gyrex" className="text-[10px] font-semibold text-emerald-600">✓</span>}
-              </div>
-              <h1 className="truncate text-sm font-semibold text-slate-900" title={lab.name}>
-                {lab.name}
-              </h1>
-            </div>
+            <h1 className="truncate text-xs font-semibold text-slate-900" title={lab.name}>
+              {lab.name}
+            </h1>
           </div>
           {onClose && (
             <button onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Close navigation">
@@ -127,7 +134,7 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
           )}
         </div>
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-2.5">
           <span className="text-[11px] font-medium text-slate-500">Store status</span>
           {getStatusBadge()}
         </div>
@@ -152,7 +159,7 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
                       href={item.href}
                       onClick={onClose}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                        isActive ? "border border-blue-200 bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        isActive ? "border border-sky-200 bg-sky-50 text-sky-700 font-semibold" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -170,7 +177,7 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
             href={`/${lab.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
           >
             <span>Preview digital store</span>
             <ArrowUpRight className="h-3.5 w-3.5" />

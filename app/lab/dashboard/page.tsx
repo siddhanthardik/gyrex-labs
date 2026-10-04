@@ -24,13 +24,13 @@ export default async function LabDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Link href="/lab/catalogue/test-master" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">
+          <Link href="/lab/catalogue/test-master" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700">
             Add tests
           </Link>
-          <Link href="/lab/packages/new" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">
+          <Link href="/lab/packages/new" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700">
             Create package
           </Link>
-          <Link href="/lab/onboarding" className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700">
+          <Link href="/lab/onboarding" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-600">
             Setup checklist <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -38,18 +38,18 @@ export default async function LabDashboardPage() {
 
       {/* Resume Onboarding Banner (Phase 2 Step 9) */}
       {(data.lab.addressLine1.includes("Pending") || data.lab.postalCode === "000000") && (
-        <div className="flex flex-col justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50/80 p-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-4 rounded-xl border border-sky-200 bg-sky-50/80 p-5 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-base font-semibold text-blue-900">
+            <h2 className="text-base font-semibold text-sky-900">
               Continue setting up your laboratory
             </h2>
-            <p className="mt-0.5 text-sm text-blue-700">
+            <p className="mt-0.5 text-sm text-sky-700">
               Complete your laboratory profile to start building your digital store.
             </p>
           </div>
           <Link
             href="/lab/onboarding/profile"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
           >
             Continue setup
           </Link>
@@ -105,7 +105,7 @@ export default async function LabDashboardPage() {
             <h2 className="text-base font-semibold text-slate-900">Recent orders</h2>
             <p className="text-xs text-slate-500">Latest bookings requiring attention</p>
           </div>
-          <Link href="/lab/orders" className="text-xs font-semibold text-blue-700 transition hover:text-blue-800">
+          <Link href="/lab/orders" className="text-xs font-semibold text-sky-700 transition hover:text-sky-800">
             View all orders <ArrowUpRight className="inline h-3.5 w-3.5" />
           </Link>
         </div>
@@ -137,7 +137,7 @@ export default async function LabDashboardPage() {
               <tbody className="divide-y divide-slate-200">
                 {recentOrders.map((order) => (
                   <tr key={order.id} className="transition hover:bg-slate-50">
-                    <td className="py-3.5 pr-4 font-mono font-medium text-blue-700">
+                    <td className="py-3.5 pr-4 font-mono font-medium text-sky-700">
                       <Link href={`/lab/orders/${order.orderNumber}`} className="hover:underline">
                         {order.orderNumber}
                       </Link>

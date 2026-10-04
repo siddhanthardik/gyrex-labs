@@ -98,8 +98,8 @@ export default function LabCataloguePage() {
       {/* Header with Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Diagnostic Test Catalogue</h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Diagnostic Test Catalogue</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Manage your laboratory&apos;s selling prices, availability, and sample preparation rules.
           </p>
         </div>
@@ -107,13 +107,13 @@ export default function LabCataloguePage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/lab/catalogue/import"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition hover:border-sky-500/40 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <span>📥 Bulk Import (CSV)</span>
           </Link>
           <Link
             href="/lab/catalogue/test-master"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-600"
           >
             <span>+ Add from Test Master</span>
           </Link>
@@ -121,7 +121,7 @@ export default function LabCataloguePage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 backdrop-blur-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <form onSubmit={handleSearchSubmit} className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="flex-1">
             <input
@@ -129,7 +129,7 @@ export default function LabCataloguePage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search tests by name or code (e.g. CBC, Lipid Profile)..."
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-sky-500 focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
             />
           </div>
 
@@ -137,7 +137,7 @@ export default function LabCataloguePage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 focus:border-sky-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
             >
               <option value="">All Categories</option>
               {categories.map((c) => (
@@ -150,7 +150,7 @@ export default function LabCataloguePage() {
             <select
               value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 focus:border-sky-500 focus:outline-none"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active Only</option>
@@ -159,7 +159,7 @@ export default function LabCataloguePage() {
 
             <button
               type="submit"
-              className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               Filter
             </button>
@@ -168,11 +168,11 @@ export default function LabCataloguePage() {
       </div>
 
       {/* Tests Table */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center p-16 text-zinc-400">
+          <div className="flex items-center justify-center p-16 text-slate-500">
             <div className="flex items-center gap-3 text-sm">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
               <span>Loading catalogue...</span>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function LabCataloguePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/60 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600">
                   <th className="py-3 px-4">Test Name</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Sample Type</th>
@@ -201,44 +201,44 @@ export default function LabCataloguePage() {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60">
+              <tbody className="divide-y divide-slate-200">
                 {tests.map((test) => (
-                  <tr key={test.id} className="transition hover:bg-zinc-800/20">
+                  <tr key={test.id} className="transition hover:bg-slate-50/60">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sky-400">
+                        <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-600">
                           {test.code}
                         </span>
                         <Link
                           href={`/lab/catalogue/${test.id}`}
-                          className="font-semibold text-white hover:text-sky-400 transition"
+                          className="font-semibold text-slate-900 hover:text-sky-600 transition"
                         >
                           {test.name}
                         </Link>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-zinc-300">
+                    <td className="py-3.5 px-4 text-xs text-slate-600">
                       {test.categoryName}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-zinc-400">
+                    <td className="py-3.5 px-4 text-xs text-slate-500">
                       {test.sampleType}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-bold text-white">₹{test.sellingPrice}</span>
+                      <span className="font-bold text-slate-900">₹{test.sellingPrice}</span>
                       {test.mrpPrice && test.mrpPrice > test.sellingPrice && (
-                        <span className="ml-1.5 text-xs text-zinc-400 line-through">
+                        <span className="ml-1.5 text-xs text-slate-400 line-through">
                           ₹{test.mrpPrice}
                         </span>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-xs">
                       {test.isHomeCollectionAvailable ? (
-                        <span className="text-emerald-400 font-medium">✓ Available</span>
+                        <span className="text-emerald-700 font-medium">✓ Available</span>
                       ) : (
-                        <span className="text-zinc-400">Lab Visit Only</span>
+                        <span className="text-slate-400">Lab Visit Only</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-zinc-300">
+                    <td className="py-3.5 px-4 text-xs text-slate-600">
                       {test.effectiveTatHours} hrs
                     </td>
                     <td className="py-3.5 px-4">
@@ -247,8 +247,8 @@ export default function LabCataloguePage() {
                         onClick={() => toggleTestActive(test.id, test.isActive)}
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border transition ${
                           test.isActive
-                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20"
-                            : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                            : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
                         }`}
                       >
                         {test.isActive ? "Active" : "Inactive"}
@@ -257,7 +257,7 @@ export default function LabCataloguePage() {
                     <td className="py-3.5 px-4 text-right">
                       <Link
                         href={`/lab/catalogue/${test.id}`}
-                        className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700 hover:text-white"
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                       >
                         Edit
                       </Link>

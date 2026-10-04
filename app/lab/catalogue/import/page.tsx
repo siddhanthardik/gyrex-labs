@@ -141,13 +141,13 @@ Urine Routine and Microscopy,URINE,200,300`;
     <div className="mx-auto max-w-5xl space-y-6">
       {/* Header */}
       <div>
-        <Link href="/lab/catalogue" className="text-xs font-semibold text-zinc-400 hover:text-white transition">
+        <Link href="/lab/catalogue" className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
           ← Back to Catalogue
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
           Bulk Test Catalogue Import (Excel / CSV)
         </h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-slate-500">
           Upload your existing laboratory test list. Our system automatically matches your test names
           against standard Gyrex Test Master records with zero guesswork.
         </p>
@@ -157,8 +157,8 @@ Urine Routine and Microscopy,URINE,200,300`;
         <div
           className={`rounded-xl p-4 text-xs font-medium border ${
             notification.type === "error"
-              ? "bg-rose-500/10 border-rose-500/25 text-rose-400"
-              : "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              ? "bg-rose-50 border-rose-200 text-rose-700"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700"
           }`}
         >
           {notification.message}
@@ -167,18 +167,18 @@ Urine Routine and Microscopy,URINE,200,300`;
 
       {/* Stage 1: Input / Upload */}
       {!analysis && (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8 space-y-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">Paste CSV or Test List</h2>
-              <p className="text-xs text-zinc-400">
-                Columns: <code className="text-sky-400">Test Name, Code, Price, MRP</code>
+              <h2 className="text-base font-semibold text-slate-900">Paste CSV or Test List</h2>
+              <p className="text-xs text-slate-500">
+                Columns: <code className="font-semibold text-sky-700">Test Name, Code, Price, MRP</code>
               </p>
             </div>
             <button
               type="button"
               onClick={() => setCsvText(sampleCsv)}
-              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
             >
               Load Sample Template
             </button>
@@ -189,18 +189,18 @@ Urine Routine and Microscopy,URINE,200,300`;
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder="Complete Blood Count, CBC, 350, 500&#10;Lipid Profile, LIPID, 750, 1100..."
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs text-white focus:border-sky-500 focus:outline-none"
+            className="w-full rounded-xl border border-slate-300 bg-white p-4 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
           />
 
           <div className="flex items-center justify-between pt-2">
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-slate-500">
               Matches are matched safely and previewed before any changes are written to your database.
             </p>
             <button
               type="button"
               disabled={analyzing}
               onClick={handleParseAndAnalyze}
-              className="rounded-lg bg-sky-500 px-6 py-2.5 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 hover:bg-sky-400 transition disabled:opacity-50"
+              className="rounded-lg bg-sky-500 px-6 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-600 transition disabled:opacity-50"
             >
               {analyzing ? "Analyzing Test Names..." : "Parse & Match Against Test Master →"}
             </button>
@@ -213,31 +213,31 @@ Urine Routine and Microscopy,URINE,200,300`;
         <div className="space-y-6">
           {/* Analysis Summary Cards */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-              <span className="text-xs text-zinc-400">Total Found</span>
-              <p className="mt-1 text-2xl font-bold text-white">{analysis.totalImported}</p>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span className="text-xs text-slate-500">Total Found</span>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{analysis.totalImported}</p>
             </div>
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4">
-              <span className="text-xs text-emerald-400">Auto-Matched</span>
-              <p className="mt-1 text-2xl font-bold text-emerald-300">{analysis.autoMatchedCount}</p>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+              <span className="text-xs text-emerald-700">Auto-Matched</span>
+              <p className="mt-1 text-2xl font-bold text-emerald-700">{analysis.autoMatchedCount}</p>
             </div>
-            <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-4">
-              <span className="text-xs text-amber-400">Requires Review</span>
-              <p className="mt-1 text-2xl font-bold text-amber-300">{analysis.needsReviewCount}</p>
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
+              <span className="text-xs text-amber-700">Requires Review</span>
+              <p className="mt-1 text-2xl font-bold text-amber-700">{analysis.needsReviewCount}</p>
             </div>
-            <div className="rounded-xl border border-sky-500/20 bg-sky-950/20 p-4">
-              <span className="text-xs text-sky-400">Ready to Publish</span>
-              <p className="mt-1 text-2xl font-bold text-sky-300">{analysis.readyPercentage}%</p>
+            <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 shadow-sm">
+              <span className="text-xs text-sky-700">Ready to Publish</span>
+              <p className="mt-1 text-2xl font-bold text-sky-700">{analysis.readyPercentage}%</p>
             </div>
           </div>
 
           {/* Action Bar */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div>
-              <p className="text-xs font-semibold text-white">
+              <p className="text-xs font-semibold text-slate-900">
                 Review Matching & Prices ({reviewItems.length} items)
               </p>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-slate-500">
                 Tests with &gt;90% match confidence are pre-selected. Unmatched tests can be ignored or mapped.
               </p>
             </div>
@@ -246,7 +246,7 @@ Urine Routine and Microscopy,URINE,200,300`;
               <button
                 type="button"
                 onClick={() => setAnalysis(null)}
-                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
               >
                 Reset
               </button>
@@ -254,7 +254,7 @@ Urine Routine and Microscopy,URINE,200,300`;
                 type="button"
                 disabled={confirming || reviewItems.length === 0}
                 onClick={handleConfirmImport}
-                className="rounded-lg bg-sky-500 px-5 py-1.5 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 hover:bg-sky-400 transition disabled:opacity-50"
+                className="rounded-lg bg-sky-500 px-5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-600 transition disabled:opacity-50"
               >
                 {confirming ? "Importing to Lab..." : `Confirm & Add (${reviewItems.filter(r => r.matchedMaster).length}) Tests`}
               </button>
@@ -262,42 +262,42 @@ Urine Routine and Microscopy,URINE,200,300`;
           </div>
 
           {/* Review Table */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 overflow-hidden">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-zinc-800 bg-zinc-900/60 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600">
                     <th className="py-3 px-4">Imported Name & Price</th>
                     <th className="py-3 px-4">Matched Gyrex Standard Test</th>
                     <th className="py-3 px-4">Match Reason / Confidence</th>
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/60">
+                <tbody className="divide-y divide-slate-200">
                   {reviewItems.map((item, idx) => (
-                    <tr key={idx} className="transition hover:bg-zinc-800/20">
+                    <tr key={idx} className="transition hover:bg-slate-50/60">
                       <td className="py-3 px-4">
-                        <p className="font-semibold text-white">{item.row.name}</p>
-                        <p className="text-xs text-zinc-400">
-                          Price: <strong className="text-emerald-400">₹{item.row.price}</strong>
-                          {item.row.mrp && <span className="ml-2">MRP: ₹{item.row.mrp}</span>}
+                        <p className="font-semibold text-slate-900">{item.row.name}</p>
+                        <p className="text-xs text-slate-500">
+                          Price: <strong className="text-slate-900 font-bold">₹{item.row.price}</strong>
+                          {item.row.mrp && <span className="ml-2 text-slate-400">MRP: ₹{item.row.mrp}</span>}
                         </p>
                       </td>
                       <td className="py-3 px-4">
                         {item.matchedMaster ? (
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="rounded bg-sky-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sky-400">
+                              <span className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-sky-700">
                                 {item.matchedMaster.code}
                               </span>
-                              <span className="font-medium text-white">{item.matchedMaster.name}</span>
+                              <span className="font-medium text-slate-900">{item.matchedMaster.name}</span>
                             </div>
-                            <span className="text-[11px] text-zinc-400">
+                            <span className="text-[11px] text-slate-500">
                               {item.matchedMaster.categoryName} • {item.matchedMaster.standardTatHours}h TAT
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs font-medium text-rose-400">No match found</span>
+                          <span className="text-xs font-medium text-rose-700">No match found</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -305,22 +305,22 @@ Urine Routine and Microscopy,URINE,200,300`;
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
                               item.confidence >= 0.9
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 : item.confidence >= 0.7
-                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
                             }`}
                           >
                             {Math.round(item.confidence * 100)}%
                           </span>
-                          <span className="text-xs text-zinc-400">{item.reason}</span>
+                          <span className="text-xs text-slate-500">{item.reason}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <button
                           type="button"
                           onClick={() => handleIgnoreRow(idx)}
-                          className="rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-400 hover:text-white"
+                          className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
                         >
                           Ignore
                         </button>

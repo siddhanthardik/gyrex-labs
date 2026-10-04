@@ -34,9 +34,9 @@ export function ConfirmationModal({
   const canSubmit = isConfirmed && reason.trim().length > 0 && !isLoading;
 
   const btnClasses = {
-    danger: "bg-rose-600 hover:bg-rose-500 text-white",
-    warning: "bg-amber-600 hover:bg-amber-500 text-white",
-    primary: "bg-indigo-600 hover:bg-indigo-500 text-white",
+    danger: "bg-rose-600 hover:bg-rose-700 text-white",
+    warning: "bg-amber-600 hover:bg-amber-700 text-white",
+    primary: "bg-sky-500 hover:bg-sky-600 text-white",
   }[confirmVariant];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,15 +46,15 @@ export function ConfirmationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
-        <h3 className="text-base font-bold text-white">{title}</h3>
-        <p className="mt-2 text-xs text-zinc-400">{description}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+        <h3 className="text-base font-bold text-slate-900">{title}</h3>
+        <p className="mt-2 text-xs text-slate-500">{description}</p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-300">
-              Mandatory Administrative Reason / Audit Note <span className="text-rose-400">*</span>
+            <label className="block text-xs font-medium text-slate-700">
+              Mandatory Administrative Reason / Audit Note <span className="text-rose-500">*</span>
             </label>
             <textarea
               required
@@ -62,14 +62,14 @@ export function ConfirmationModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Provide justification for compliance audit trail..."
-              className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-indigo-500 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
             />
           </div>
 
           {confirmKeyword && (
             <div>
-              <label className="block text-xs font-medium text-zinc-300">
-                Type <span className="font-mono text-amber-400">{confirmKeyword}</span> to confirm:
+              <label className="block text-xs font-medium text-slate-700">
+                Type <span className="font-mono text-amber-700 font-semibold">{confirmKeyword}</span> to confirm:
               </label>
               <input
                 type="text"
@@ -77,7 +77,7 @@ export function ConfirmationModal({
                 value={typedKeyword}
                 onChange={(e) => setTypedKeyword(e.target.value)}
                 placeholder={confirmKeyword}
-                className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs font-mono text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
               />
             </div>
           )}
@@ -87,14 +87,14 @@ export function ConfirmationModal({
               type="button"
               disabled={isLoading}
               onClick={onClose}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition disabled:opacity-50"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className={`rounded-lg px-4 py-2 text-xs font-semibold shadow-sm transition disabled:opacity-40 ${btnClasses}`}
+              className={`rounded-lg px-4 py-2 text-xs font-medium shadow-xs transition disabled:opacity-40 ${btnClasses}`}
             >
               {isLoading ? "Executing..." : confirmButtonText}
             </button>

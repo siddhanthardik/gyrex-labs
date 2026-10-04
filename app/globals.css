@@ -1,16 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f7fb;
+  --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
-  --card-strong: #f8fafc;
+  --card-strong: #ffffff;
   --muted: #64748b;
   --border: #e2e8f0;
-  --primary: #0f5fd8;
-  --primary-soft: #eaf2ff;
-  --secondary: #f1f5f9;
-  --success: #0f9f6e;
+  --primary: #0ea5e9;
+  --primary-hover: #0284c7;
+  --primary-soft: #e0f2fe;
+  --secondary: #f8fafc;
+  --success: #16a34a;
   --warning: #d97706;
   --destructive: #dc2626;
   /* Patient storefront design tokens */
@@ -43,7 +44,7 @@ body {
 }
 
 .gyrex-admin-shell {
-  background: linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+  background: #f8fafc;
   color: var(--foreground);
 }
 
@@ -145,7 +146,23 @@ body {
 .gyrex-admin-shell .focus\:border-sky-500:focus,
 .gyrex-admin-shell .focus\:border-indigo-500:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(15, 95, 216, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+}
+
+.gyrex-admin-shell .bg-indigo-600,
+.gyrex-admin-shell .bg-indigo-500 {
+  background-color: var(--primary) !important;
+}
+
+.gyrex-admin-shell .hover\:bg-indigo-500:hover,
+.gyrex-admin-shell .hover\:bg-indigo-700:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.gyrex-admin-shell .text-indigo-600,
+.gyrex-admin-shell .text-indigo-500,
+.gyrex-admin-shell .text-indigo-400 {
+  color: #0284c7 !important;
 }
 
 /* ── Mobile-first patient utilities ─────────────────────────────────────── */

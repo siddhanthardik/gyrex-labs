@@ -115,8 +115,8 @@ export default function LabReportsPage() {
       {/* Header with CTA */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Diagnostic Report Delivery</h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Diagnostic Report Delivery</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Securely upload, release, and monitor diagnostic PDF reports. Gyrex Labs is not an LIS; clinical reporting remains your laboratory&apos;s responsibility.
           </p>
         </div>
@@ -124,7 +124,7 @@ export default function LabReportsPage() {
         <button
           type="button"
           onClick={() => setShowUploadModal(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-teal-600/20 hover:bg-teal-500 transition"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-600 transition"
         >
           <span>+ Upload & Associate Report</span>
         </button>
@@ -134,8 +134,8 @@ export default function LabReportsPage() {
         <div
           className={`rounded-xl p-4 text-xs font-medium border ${
             notification.type === "error"
-              ? "bg-rose-500/10 border-rose-500/25 text-rose-400"
-              : "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              ? "bg-rose-50 border-rose-200 text-rose-700"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700"
           }`}
         >
           {notification.message}
@@ -143,7 +143,7 @@ export default function LabReportsPage() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -156,13 +156,13 @@ export default function LabReportsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search reports by report ID (RPT-...), order number, or patient name..."
-            className="flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-sky-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
           />
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 focus:border-sky-500 focus:outline-none"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
           >
             <option value="">All Report Statuses</option>
             {Object.values(ReportStatus).map((s) => (
@@ -174,7 +174,7 @@ export default function LabReportsPage() {
 
           <button
             type="submit"
-            className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-700"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
           >
             Filter
           </button>
@@ -182,10 +182,10 @@ export default function LabReportsPage() {
       </div>
 
       {/* Reports Table */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center p-16 text-zinc-400">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
+          <div className="flex items-center justify-center p-16 text-slate-500">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
             <span className="ml-3 text-sm">Loading diagnostic reports...</span>
           </div>
         ) : reports.length === 0 ? (
@@ -202,7 +202,7 @@ export default function LabReportsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/60 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600">
                   <th className="py-3 px-4">Report Number</th>
                   <th className="py-3 px-4">Order Number</th>
                   <th className="py-3 px-4">Patient</th>
@@ -213,30 +213,30 @@ export default function LabReportsPage() {
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60">
+              <tbody className="divide-y divide-slate-200">
                 {reports.map((r) => (
-                  <tr key={r.id} className="transition hover:bg-zinc-800/20">
-                    <td className="py-3.5 px-4 font-mono font-bold text-sky-400">
+                  <tr key={r.id} className="transition hover:bg-slate-50/60">
+                    <td className="py-3.5 px-4 font-mono font-bold text-sky-700">
                       {r.reportNumber}
                     </td>
 
                     <td className="py-3.5 px-4">
                       <Link
                         href={`/lab/orders/${r.orderNumber}`}
-                        className="font-mono text-xs text-zinc-300 hover:text-white hover:underline"
+                        className="font-mono text-xs text-sky-700 hover:underline"
                       >
                         {r.orderNumber}
                       </Link>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <p className="font-semibold text-white">{r.patientName}</p>
-                      <p className="text-xs text-zinc-400">{r.patientPhone}</p>
+                      <p className="font-semibold text-slate-900">{r.patientName}</p>
+                      <p className="text-xs text-slate-500">{r.patientPhone}</p>
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs text-zinc-300">
+                    <td className="py-3.5 px-4 text-xs text-slate-700">
                       {r.fileName}
-                      <span className="ml-1 text-[10px] text-zinc-500">
+                      <span className="ml-1 text-[10px] text-slate-500">
                         ({Math.round(r.fileSize / 1024)} KB)
                       </span>
                     </td>
@@ -245,7 +245,7 @@ export default function LabReportsPage() {
                       <StatusBadge status={r.status} type="report" />
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs text-zinc-400">
+                    <td className="py-3.5 px-4 text-xs text-slate-500">
                       {new Date(r.uploadedAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
@@ -255,14 +255,14 @@ export default function LabReportsPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-xs">
-                      <span className="font-semibold text-white">{r.viewCount}</span>
-                      <span className="text-zinc-500"> views</span>
+                      <span className="font-semibold text-slate-900">{r.viewCount}</span>
+                      <span className="text-slate-500"> views</span>
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
                       <Link
                         href={`/lab/orders/${r.orderNumber}`}
-                        className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white"
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                       >
                         View Order
                       </Link>
@@ -277,14 +277,14 @@ export default function LabReportsPage() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-white">Upload Diagnostic Report</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Upload Diagnostic Report</h3>
               <button
                 type="button"
                 onClick={() => setShowUploadModal(false)}
-                className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 ✕
               </button>
@@ -292,7 +292,7 @@ export default function LabReportsPage() {
 
             <form onSubmit={handleUploadSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-300">
+                <label className="block text-xs font-medium text-slate-700">
                   Booking Order ID (or Database Order ID) *
                 </label>
                 <input
@@ -301,12 +301,12 @@ export default function LabReportsPage() {
                   value={uploadOrderId}
                   onChange={(e) => setUploadOrderId(e.target.value)}
                   placeholder="e.g. GYR-2026-0001"
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300">
+                <label className="block text-xs font-medium text-slate-700">
                   Select Diagnostic Report (PDF)
                 </label>
                 <input
@@ -319,12 +319,12 @@ export default function LabReportsPage() {
                       setFileName(file.name);
                     }
                   }}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 focus:border-sky-500 focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-xs file:text-white hover:file:bg-zinc-700"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 focus:border-sky-500 focus:outline-none file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-200"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300">
+                <label className="block text-xs font-medium text-slate-700">
                   Report File Name *
                 </label>
                 <input
@@ -333,7 +333,7 @@ export default function LabReportsPage() {
                   value={fileName}
                   onChange={(e) => setFileName(e.target.value)}
                   placeholder="e.g. Sharma_Lab_Report_CBC.pdf"
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white focus:border-sky-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
                 />
               </div>
 
@@ -342,25 +342,25 @@ export default function LabReportsPage() {
                   type="checkbox"
                   checked={releasedNow}
                   onChange={(e) => setReleasedNow(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-700 text-teal-600"
+                  className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
                 />
-                <span className="text-xs text-zinc-300">
+                <span className="text-xs text-slate-700">
                   Release immediately to patient (Sets status to FINAL)
                 </span>
               </label>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowUploadModal(false)}
-                  className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="rounded-lg bg-teal-600 px-5 py-2 text-xs font-semibold text-white hover:bg-teal-500 transition disabled:opacity-50"
+                  className="rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-600 transition disabled:opacity-50"
                 >
                   {uploading ? "Saving Report..." : "Attach Report"}
                 </button>
