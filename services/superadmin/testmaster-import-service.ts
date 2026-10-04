@@ -120,8 +120,247 @@ function parseBooleanFlexible(value: unknown, defaultValue: boolean = false): bo
 }
 
 /**
- * Generates sample Excel or CSV template for Superadmin Test Master import.
+ * Approved controlled aliases for TestMaster category values.
+ * Maps various department spellings, organ panels, and clinical subspecialties
+ * to canonical active TestCategory names in the database.
  */
+export const APPROVED_CATEGORY_ALIASES: Record<string, string> = {
+  // Hematology
+  "hematology & coagulation": "Hematology",
+  "haematology & coagulation": "Hematology",
+  "coagulation": "Hematology",
+  "immunohematology": "Hematology",
+
+  // Serology & Immunology
+  "immunology & serology": "Serology & Immunology",
+  "immunology": "Serology & Immunology",
+  "immunology & autoimmune": "Serology & Immunology",
+  "allergy": "Serology & Immunology",
+  "allergy & immunoassays": "Serology & Immunology",
+  "specialized immunology & transplant": "Serology & Immunology",
+
+  // Biochemistry
+  "clinical biochemistry & metabolic": "Biochemistry",
+  "kidney": "Biochemistry",
+  "liver": "Biochemistry",
+  "nutritional & micronutrients": "Biochemistry",
+  "diabetes": "Biochemistry",
+  "lipids & cardiac": "Biochemistry",
+  "gastroenterology": "Biochemistry",
+  "neurology & specialized protein diagnostics": "Biochemistry",
+
+  // Molecular Diagnostics & Genetics
+  "molecular diagnostics": "Molecular Diagnostics & Genetics",
+  "molecular diagnostics & genetics": "Molecular Diagnostics & Genetics",
+  "rare disease & specialized genetics": "Molecular Diagnostics & Genetics",
+  "cytogenetics": "Molecular Diagnostics & Genetics",
+
+  // Microbiology & Infectious Diseases
+  "microbiology & infectious disease serology": "Microbiology & Infectious Diseases",
+  "microbiology": "Microbiology & Infectious Diseases",
+  "infectious disease": "Microbiology & Infectious Diseases",
+  "tuberculosis & mycobacteriology": "Microbiology & Infectious Diseases",
+
+  // Histopathology & Cytopathology
+  "histopathology": "Histopathology & Cytopathology",
+  "histopathology & cytology": "Histopathology & Cytopathology",
+  "cytopathology": "Histopathology & Cytopathology",
+
+  // Oncology & Precision Medicine
+  "oncology & precision medicine": "Oncology & Precision Medicine",
+  "oncology": "Oncology & Precision Medicine",
+  "oncology & precision diagnostics": "Oncology & Precision Medicine",
+
+  // Toxicology & Therapeutic Drug Monitoring
+  "specialized toxicology & therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
+  "toxicology & therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
+  "therapeutic drug monitoring": "Toxicology & Therapeutic Drug Monitoring",
+
+  // Reproductive & Prenatal Diagnostics
+  "fertility & reproductive": "Reproductive & Prenatal Diagnostics",
+  "prenatal screening": "Reproductive & Prenatal Diagnostics",
+  "reproductive & prenatal diagnostics": "Reproductive & Prenatal Diagnostics",
+
+  // Histocompatibility & Immunogenetics
+  "histocompatibility & immunogenetics": "Histocompatibility & Immunogenetics",
+  "transplant immunology & hla": "Histocompatibility & Immunogenetics",
+
+  // Canonical Identity Mappings (Self-mapping for consistency)
+  "endocrinology": "Endocrinology",
+  "biochemistry": "Biochemistry",
+  "clinical pathology": "Clinical Pathology",
+  "serology & immunology": "Serology & Immunology",
+  "hematology": "Hematology",
+  "general": "General",
+};
+
+/**
+ * Test-specific canonical category overrides for investigations appearing in mixed/methodology categories.
+ * Ensures tests are classified according to the clinical investigation/discipline represented rather than solely laboratory method.
+ */
+export const TEST_SPECIFIC_CATEGORY_OVERRIDES: Record<string, string> = {
+  // Transplant Histocompatibility Crossmatching (method was Flow Cytometry)
+  "gyx-00400": "Histocompatibility & Immunogenetics",
+  "crossmatch - flow cytometry": "Histocompatibility & Immunogenetics",
+
+  // Bone Marrow & MRD Immunophenotyping (Hematology)
+  "gyx-00045": "Hematology",
+  "bone marrow flow cytometry": "Hematology",
+  "gyx-00047": "Hematology",
+  "minimal residual disease flow cytometry": "Hematology",
+  "gyx-00365": "Hematology",
+  "mrd by flow cytometry": "Hematology",
+
+  // Coagulation Factor & Platelet Antibody tests (Hematology)
+  "gyx-00508": "Hematology",
+  "adamts13 activity": "Hematology",
+  "gyx-00595": "Hematology",
+  "factor vii functional": "Hematology",
+  "gyx-00596": "Hematology",
+  "factor xiii clot solubility": "Hematology",
+  "gyx-00700": "Hematology",
+  "platelet antibodies": "Hematology",
+
+  // Molecular Genetics & Cytogenetic FISH panels (Molecular Diagnostics & Genetics)
+  "gyx-00510": "Molecular Diagnostics & Genetics",
+  "alk fusion fish": "Molecular Diagnostics & Genetics",
+  "gyx-00515": "Molecular Diagnostics & Genetics",
+  "alpha thalassemia mutation analysis": "Molecular Diagnostics & Genetics",
+  "gyx-00544": "Molecular Diagnostics & Genetics",
+  "beta thalassemia gene mutation analysis": "Molecular Diagnostics & Genetics",
+  "gyx-00686": "Molecular Diagnostics & Genetics",
+  "multiple myeloma markers fish": "Molecular Diagnostics & Genetics",
+};
+
+export interface ClinicalReviewCategoryDefinition {
+  proposedCanonical: string;
+  reason: string;
+}
+
+/**
+ * Categories that require explicit clinical review rather than silent automatic forcing.
+ */
+export const CLINICAL_REVIEW_CATEGORIES: Record<string, ClinicalReviewCategoryDefinition> = {
+  "flow cytometry": {
+    proposedCanonical: "Hematology",
+    reason: "Flow cytometry investigations in this seed (MRD, bone marrow) are predominantly hematologic neoplasm panels.",
+  },
+  "histocompatibility & immunogenetics": {
+    proposedCanonical: "Histocompatibility & Immunogenetics",
+    reason: "HLA allele typing and transplant immunogenetics are dedicated histocompatibility disciplines.",
+  },
+  "transplant immunology & hla": {
+    proposedCanonical: "Histocompatibility & Immunogenetics",
+    reason: "Crossmatch, calculated PRA, and lymphocyte cytotoxicity assays are transplant histocompatibility investigations.",
+  },
+  "hematologic malignancy & cytogenetics": {
+    proposedCanonical: "Molecular Diagnostics & Genetics",
+    reason: "Cytogenetic FISH and hemoglobinopathy gene mutation analyses are molecular genetics assays.",
+  },
+};
+
+/**
+ * Resolves a raw uploaded category string to a canonical TestCategory record in the database.
+ * Supports test-specific overrides, exact canonical names/slugs, approved aliases, and clinical review mappings.
+ */
+export function resolveCategory(
+  rawCategoryInput: string,
+  categoryMapByName: Map<string, string>,
+  categoryMapBySlug: Map<string, string>,
+  categoryDisplayNames: Map<string, string>,
+  testCode?: string,
+  testName?: string
+): {
+  categoryId: string | null;
+  canonicalCategoryName: string;
+  source: "EXACT_NAME" | "EXACT_SLUG" | "APPROVED_ALIAS" | "TEST_OVERRIDE" | "CLINICAL_REVIEW" | "UNRESOLVED";
+  reviewNotice?: ClinicalReviewCategoryDefinition;
+} {
+  // 1. Check test-specific override first if code or name matches
+  if (testCode) {
+    const overrideByCode = TEST_SPECIFIC_CATEGORY_OVERRIDES[testCode.trim().toLowerCase()];
+    if (overrideByCode) {
+      const catId = categoryMapByName.get(overrideByCode.trim().toLowerCase());
+      if (catId) {
+        return {
+          categoryId: catId,
+          canonicalCategoryName: categoryDisplayNames.get(catId) || overrideByCode,
+          source: "TEST_OVERRIDE",
+        };
+      }
+    }
+  }
+
+  if (testName) {
+    const overrideByName = TEST_SPECIFIC_CATEGORY_OVERRIDES[testName.trim().toLowerCase()];
+    if (overrideByName) {
+      const catId = categoryMapByName.get(overrideByName.trim().toLowerCase());
+      if (catId) {
+        return {
+          categoryId: catId,
+          canonicalCategoryName: categoryDisplayNames.get(catId) || overrideByName,
+          source: "TEST_OVERRIDE",
+        };
+      }
+    }
+  }
+
+  const normalized = rawCategoryInput.trim().toLowerCase();
+
+  // 2. Direct name match in DB
+  const directIdByName = categoryMapByName.get(normalized);
+  if (directIdByName) {
+    return {
+      categoryId: directIdByName,
+      canonicalCategoryName: categoryDisplayNames.get(directIdByName) || rawCategoryInput,
+      source: "EXACT_NAME",
+    };
+  }
+
+  // 3. Direct slug match in DB
+  const directIdBySlug = categoryMapBySlug.get(normalized);
+  if (directIdBySlug) {
+    return {
+      categoryId: directIdBySlug,
+      canonicalCategoryName: categoryDisplayNames.get(directIdBySlug) || rawCategoryInput,
+      source: "EXACT_SLUG",
+    };
+  }
+
+  // 4. Approved alias mapping
+  const mappedCanonical = APPROVED_CATEGORY_ALIASES[normalized];
+  if (mappedCanonical) {
+    const aliasCatId = categoryMapByName.get(mappedCanonical.trim().toLowerCase());
+    if (aliasCatId) {
+      return {
+        categoryId: aliasCatId,
+        canonicalCategoryName: categoryDisplayNames.get(aliasCatId) || mappedCanonical,
+        source: "APPROVED_ALIAS",
+      };
+    }
+  }
+
+  // 5. Clinical review mapping
+  const reviewDef = CLINICAL_REVIEW_CATEGORIES[normalized];
+  if (reviewDef) {
+    const reviewCatId = categoryMapByName.get(reviewDef.proposedCanonical.trim().toLowerCase());
+    if (reviewCatId) {
+      return {
+        categoryId: reviewCatId,
+        canonicalCategoryName: categoryDisplayNames.get(reviewCatId) || reviewDef.proposedCanonical,
+        source: "CLINICAL_REVIEW",
+        reviewNotice: reviewDef,
+      };
+    }
+  }
+
+  // 6. Unresolved
+  return {
+    categoryId: null,
+    canonicalCategoryName: rawCategoryInput,
+    source: "UNRESOLVED",
+  };
+}
 export async function generateTestMasterTemplate(format: "xlsx" | "csv" = "xlsx"): Promise<{
   data: Buffer;
   contentType: string;
@@ -419,19 +658,32 @@ export async function analyzeTestMasterSpreadsheet(
         message: "Category is mandatory.",
       });
     } else {
-      const matchedCatId =
-        categoryMapByName.get(rawCategory.toLowerCase()) ||
-        categoryMapBySlug.get(rawCategory.toLowerCase());
+      const resolution = resolveCategory(
+        rawCategory,
+        categoryMapByName,
+        categoryMapBySlug,
+        categoryDisplayNames,
+        rawCode,
+        rawName
+      );
 
-      if (!matchedCatId) {
+      if (resolution.categoryId) {
+        categoryId = resolution.categoryId;
+        properCategoryName = resolution.canonicalCategoryName;
+
+        if (resolution.source === "CLINICAL_REVIEW" && resolution.reviewNotice) {
+          issues.push({
+            type: "WARNING",
+            field: "category",
+            message: `[CLINICAL REVIEW REQUIRED] Category '${rawCategory}' resolved to proposed canonical '${resolution.canonicalCategoryName}'. Reason: ${resolution.reviewNotice.reason}`,
+          });
+        }
+      } else {
         issues.push({
           type: "ERROR",
           field: "category",
-          message: `Category '${rawCategory}' does not exist in the system. Please create the category first or match an existing one.`,
+          message: `Category '${rawCategory}' does not exist in the system and has no approved mapping. Please map or create it first.`,
         });
-      } else {
-        categoryId = matchedCatId;
-        properCategoryName = categoryDisplayNames.get(matchedCatId) || rawCategory;
       }
     }
 
