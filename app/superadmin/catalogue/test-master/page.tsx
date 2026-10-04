@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { SuperadminEmptyState } from "@/components/superadmin/SuperadminEmptyState";
 
@@ -266,12 +266,56 @@ export default function SuperadminTestMasterPage() {
     }
   };
 
-  const filteredImportItems = importAnalysis?.items.filter((item) => {
-    if (importFilter === "NEW") return item.status === "NEW";
-    if (importFilter === "EXISTING") return item.status === "EXISTING_SKIP";
-    if (importFilter === "ERROR") return item.status === "ERROR";
-    return true;
-  }) || [];
+  // Computed analysis metrics & error breakdowns
+  const errorRowsCount = useMemo(() => {
+    if (!importAnalysis?.items) return 0;
+    return importAnalysis.items.filter(
+      (it) => it.status === "ERROR" || it.issues?.some((i) => i.type === "ERROR")
+    ).length;
+  }, [importAnalysis]);
+
+  const totalErrorIssuesCount = useMemo(() => {
+    if (!importAnalysis?.items) return 0;
+    return importAnalysis.items.reduce(
+      (sum, it) => sum + (it.issues?.filter((i) => i.type === "ERROR").length || 0),
+      0
+    );
+  }, [importAnalysis]);
+
+  const errorBreakdown = useMemo(() => {
+    if (!importAnalysis?.items) return [];
+    const fieldMap = new Map<string, { count: number; rowNumbers: Set<number> }>();
+
+    for (const item of importAnalysis.items) {
+      for (const iss of item.issues) {
+        if (iss.type === "ERROR") {
+          const field = iss.field || "general";
+          const existing = fieldMap.get(field) || { count: 0, rowNumbers: new Set<number>() };
+          existing.count += 1;
+          existing.rowNumbers.add(item.rowNumber);
+          fieldMap.set(field, existing);
+        }
+      }
+    }
+
+    return Array.from(fieldMap.entries())
+      .map(([field, data]) => ({
+        field,
+        count: data.count,
+        rowCount: data.rowNumbers.size,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [importAnalysis]);
+
+  const filteredImportItems = useMemo(() => {
+    if (!importAnalysis?.items) return [];
+    return importAnalysis.items.filter((item) => {
+      if (importFilter === "NEW") return item.status === "NEW";
+      if (importFilter === "EXISTING") return item.status === "EXISTING_SKIP";
+      if (importFilter === "ERROR") return item.status === "ERROR" || item.issues?.some((i) => i.type === "ERROR");
+      return true;
+    });
+  }, [importAnalysis, importFilter]);
 
   return (
     <div className="space-y-6">
@@ -537,8 +581,8 @@ export default function SuperadminTestMasterPage() {
 
       {/* Bulk Import Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="w-[96vw] max-w-6xl max-h-[92vh] flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden my-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4 bg-zinc-900/60">
               <div>
@@ -729,60 +773,150 @@ export default function SuperadminTestMasterPage() {
               ) : (
                 /* View 3: Analysis Preview & Confirmation */
                 <div className="space-y-5">
-                  {/* Summary Metric Cards */}
+                  {/* Summary Metric Cards (Interactive Filters) */}
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+                    <button
+                      type="button"
+                      onClick={() => setImportFilter("ALL")}
+                      className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                        importFilter === "ALL"
+                          ? "border-zinc-500 bg-zinc-800/80 ring-2 ring-zinc-500/30 shadow-sm"
+                          : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900"
+                      }`}
+                    >
                       <div className="text-[11px] text-zinc-400 font-medium">Total Rows</div>
                       <div className="text-xl font-bold text-white mt-1">{importAnalysis.totalRows}</div>
-                    </div>
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setImportFilter("NEW")}
+                      className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                        importFilter === "NEW"
+                          ? "border-emerald-500/60 bg-emerald-500/20 ring-2 ring-emerald-500/40 shadow-sm"
+                          : "border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50 hover:bg-emerald-500/15"
+                      }`}
+                    >
                       <div className="text-[11px] text-emerald-300 font-medium">New Records</div>
                       <div className="text-xl font-bold text-emerald-400 mt-1">{importAnalysis.newRecordsCount}</div>
-                    </div>
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setImportFilter("EXISTING")}
+                      className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                        importFilter === "EXISTING"
+                          ? "border-amber-500/60 bg-amber-500/20 ring-2 ring-amber-500/40 shadow-sm"
+                          : "border-amber-500/30 bg-amber-500/10 hover:border-amber-500/50 hover:bg-amber-500/15"
+                      }`}
+                    >
                       <div className="text-[11px] text-amber-300 font-medium">Existing (Skip)</div>
                       <div className="text-xl font-bold text-amber-400 mt-1">{importAnalysis.existingCount}</div>
-                    </div>
+                    </button>
+
                     <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
                       <div className="text-[11px] text-zinc-400 font-medium">Duplicates in File</div>
                       <div className="text-xl font-bold text-zinc-300 mt-1">{importAnalysis.duplicateCount}</div>
                     </div>
-                    <div className={`rounded-xl border p-3 ${
-                      importAnalysis.errorCount > 0 ? "border-rose-500/30 bg-rose-500/10" : "border-zinc-800 bg-zinc-900/60"
-                    }`}>
-                      <div className={`text-[11px] font-medium ${importAnalysis.errorCount > 0 ? "text-rose-300" : "text-zinc-400"}`}>
-                        Errors
+
+                    <button
+                      type="button"
+                      onClick={() => setImportFilter("ERROR")}
+                      className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                        errorRowsCount > 0
+                          ? importFilter === "ERROR"
+                            ? "border-rose-500/80 bg-rose-500/25 ring-2 ring-rose-500/50 shadow-sm"
+                            : "border-rose-500/30 bg-rose-500/10 hover:border-rose-500/60 hover:bg-rose-500/20"
+                          : "border-zinc-800 bg-zinc-900/60 opacity-60 cursor-default"
+                      }`}
+                    >
+                      <div className={`text-[11px] font-medium flex items-center justify-between ${
+                        errorRowsCount > 0 ? "text-rose-300" : "text-zinc-400"
+                      }`}>
+                        <span>Errors</span>
+                        {errorRowsCount > 0 && (
+                          <span className="text-[9px] font-semibold bg-rose-500/20 text-rose-300 px-1 rounded border border-rose-500/30">
+                            CLICK TO VIEW
+                          </span>
+                        )}
                       </div>
-                      <div className={`text-xl font-bold mt-1 ${importAnalysis.errorCount > 0 ? "text-rose-400" : "text-zinc-400"}`}>
-                        {importAnalysis.errorCount}
+                      <div className={`text-xl font-bold mt-1 ${
+                        errorRowsCount > 0 ? "text-rose-400" : "text-zinc-400"
+                      }`}>
+                        {errorRowsCount}
                       </div>
-                    </div>
+                    </button>
                   </div>
 
-                  {/* Warning / Error notice */}
-                  {importAnalysis.hasBlockingErrors && (
-                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-rose-300 text-xs flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span>
-                          <strong>Blocking Errors Detected:</strong> {importAnalysis.errorCount} row(s) contain invalid data. Please correct them in your file or inspect below. Import cannot proceed until errors are resolved.
-                        </span>
+                  {/* Task 3: Error Summary Banner */}
+                  {(importAnalysis.hasBlockingErrors || errorRowsCount > 0) && (
+                    <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-4 text-rose-200 space-y-3 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0 mt-0.5">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
+                              <span>{errorRowsCount} Blocking Error Row{errorRowsCount !== 1 ? "s" : ""}</span>
+                              <span className="text-xs font-normal text-rose-300">
+                                ({totalErrorIssuesCount} total validation issue{totalErrorIssuesCount !== 1 ? "s" : ""})
+                              </span>
+                            </div>
+                            <p className="text-xs text-rose-300/90 mt-1 leading-relaxed">
+                              These records cannot be imported into the global catalogue until the validation issues are corrected. All database transactions remain locked.
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setImportFilter("ERROR")}
+                          className={`shrink-0 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition border cursor-pointer ${
+                            importFilter === "ERROR"
+                              ? "bg-rose-500/30 text-white border-rose-500/60 shadow-sm ring-1 ring-rose-500/50"
+                              : "bg-rose-500/15 text-rose-200 border-rose-500/30 hover:bg-rose-500/25 hover:text-white"
+                          }`}
+                        >
+                          {importFilter === "ERROR" ? "Showing Errors" : `View All ${errorRowsCount} Error Rows →`}
+                        </button>
                       </div>
+
+                      {/* Summary Breakdown of Error Types by Field */}
+                      {errorBreakdown.length > 0 && (
+                        <div className="pt-2.5 border-t border-rose-500/20">
+                          <div className="text-[11px] font-semibold text-rose-300 mb-1.5 uppercase tracking-wider">
+                            Validation Failure Breakdown By Field:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {errorBreakdown.map((b, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 rounded-md bg-rose-950/80 border border-rose-700/50 px-2.5 py-1 text-xs text-rose-200"
+                              >
+                                <span className="font-mono font-semibold text-rose-300 uppercase">[{b.field}]:</span>
+                                <strong className="text-white">{b.count}</strong> issue{b.count !== 1 ? "s" : ""}
+                                <span className="text-rose-400/80">({b.rowCount} affected row{b.rowCount !== 1 ? "s" : ""})</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Filter Tabs */}
-                  <div className="flex items-center justify-between gap-2 border-b border-zinc-800 pb-2">
-                    <div className="flex items-center gap-1.5">
+                  {/* Task 1: Filter Tabs */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setImportFilter("ALL")}
-                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                        className={`rounded-lg px-3 py-1.5 text-xs transition cursor-pointer ${
                           importFilter === "ALL"
-                            ? "bg-zinc-800 text-white"
-                            : "text-zinc-400 hover:text-white"
+                            ? "bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-600 font-semibold"
+                            : "text-zinc-400 hover:text-white hover:bg-zinc-900 font-medium"
                         }`}
                       >
                         All ({importAnalysis.totalRows})
@@ -790,10 +924,10 @@ export default function SuperadminTestMasterPage() {
                       <button
                         type="button"
                         onClick={() => setImportFilter("NEW")}
-                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                        className={`rounded-lg px-3 py-1.5 text-xs transition cursor-pointer ${
                           importFilter === "NEW"
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                            : "text-zinc-400 hover:text-white"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 ring-1 ring-emerald-500/30 font-semibold"
+                            : "text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 font-medium"
                         }`}
                       >
                         New ({importAnalysis.newRecordsCount})
@@ -801,101 +935,213 @@ export default function SuperadminTestMasterPage() {
                       <button
                         type="button"
                         onClick={() => setImportFilter("EXISTING")}
-                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                        className={`rounded-lg px-3 py-1.5 text-xs transition cursor-pointer ${
                           importFilter === "EXISTING"
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                            : "text-zinc-400 hover:text-white"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 ring-1 ring-amber-500/30 font-semibold"
+                            : "text-zinc-400 hover:text-amber-300 hover:bg-amber-500/10 font-medium"
                         }`}
                       >
                         Existing Skipped ({importAnalysis.existingCount})
                       </button>
-                      {importAnalysis.errorCount > 0 && (
+                      {errorRowsCount > 0 && (
                         <button
                           type="button"
                           onClick={() => setImportFilter("ERROR")}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                          className={`rounded-lg px-3 py-1.5 text-xs transition cursor-pointer ${
                             importFilter === "ERROR"
-                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                              : "text-rose-400 hover:text-rose-300"
+                              ? "bg-rose-500/25 text-rose-200 border border-rose-500/50 ring-2 ring-rose-500/40 font-bold"
+                              : "bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 hover:text-rose-300 font-semibold"
                           }`}
                         >
-                          Errors ({importAnalysis.errorCount})
+                          Errors ({errorRowsCount})
                         </button>
                       )}
                     </div>
-                    <span className="text-[11px] text-zinc-500">
-                      File: <strong className="text-zinc-300 font-normal">{importAnalysis.filename}</strong>
+                    <span className="text-xs text-zinc-400">
+                      File: <strong className="text-zinc-200 font-normal">{importAnalysis.filename}</strong>
                     </span>
                   </div>
 
-                  {/* Preview Table */}
-                  <div className="max-h-64 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900/30">
-                    <table className="w-full text-left text-[11px]">
-                      <thead className="sticky top-0 border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        <tr>
-                          <th className="px-3 py-2">Row</th>
-                          <th className="px-3 py-2">Status</th>
-                          <th className="px-3 py-2">Code</th>
-                          <th className="px-3 py-2">Name</th>
-                          <th className="px-3 py-2">Category</th>
-                          <th className="px-3 py-2">Sample / TAT</th>
-                          <th className="px-3 py-2">Issues / Notes</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-                        {filteredImportItems.map((item) => (
-                          <tr key={item.rowNumber} className="hover:bg-zinc-800/30">
-                            <td className="px-3 py-2 font-mono text-zinc-500">#{item.rowNumber}</td>
-                            <td className="px-3 py-2">
-                              {item.status === "NEW" && (
-                                <span className="inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/20">
-                                  NEW
-                                </span>
-                              )}
-                              {item.status === "EXISTING_SKIP" && (
-                                <span className="inline-flex rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20">
-                                  EXISTING (SKIP)
-                                </span>
-                              )}
-                              {item.status === "ERROR" && (
-                                <span className="inline-flex rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400 border border-rose-500/20">
-                                  ERROR
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 font-mono font-medium text-white">{item.code || "—"}</td>
-                            <td className="px-3 py-2 font-medium text-white max-w-[180px] truncate" title={item.name}>
-                              {item.name || "—"}
-                            </td>
-                            <td className="px-3 py-2 text-zinc-400">{item.categoryName || "—"}</td>
-                            <td className="px-3 py-2 text-zinc-400">
-                              {item.sampleType} • {item.standardTatHours}h
-                            </td>
-                            <td className="px-3 py-2">
-                              {item.issues.length === 0 ? (
-                                <span className="text-zinc-500">Valid</span>
-                              ) : (
-                                <div className="space-y-0.5">
-                                  {item.issues.map((iss, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`text-[10px] ${
-                                        iss.type === "ERROR" ? "text-rose-400 font-medium" : "text-amber-400/90"
-                                      }`}
-                                    >
-                                      • {iss.message}
+                  {/* Task 2: Dedicated Error Header when in ERROR filter */}
+                  {importFilter === "ERROR" && (
+                    <div className="rounded-lg bg-rose-950/40 border border-rose-800/40 px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-rose-200">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase shrink-0">
+                          Blocked Rows
+                        </span>
+                        <span>
+                          <strong>{errorRowsCount} blocking error rows</strong> — These records cannot be imported until the validation issues are resolved.
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-rose-300/80 shrink-0">
+                        {totalErrorIssuesCount} total issue{totalErrorIssuesCount !== 1 ? "s" : ""} across {errorRowsCount} row{errorRowsCount !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview Table Container (Scrollable with sticky header) */}
+                  <div className="max-h-[500px] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900/30">
+                    {/* View 3A: Dedicated Error Table View */}
+                    {importFilter === "ERROR" ? (
+                      filteredImportItems.length === 0 ? (
+                        <div className="p-8 text-center text-zinc-400">
+                          <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center mb-2">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-medium text-white">No validation errors detected.</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">All rows are valid.</p>
+                        </div>
+                      ) : (
+                        <table className="w-full text-left text-xs">
+                          <thead className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400 shadow-sm">
+                            <tr>
+                              <th className="px-3.5 py-2.5 w-16">Row</th>
+                              <th className="px-3.5 py-2.5 w-20">Status</th>
+                              <th className="px-3.5 py-2.5 w-28">Code</th>
+                              <th className="px-3.5 py-2.5 min-w-[200px]">Test Name</th>
+                              <th className="px-3.5 py-2.5 min-w-[160px]">Category</th>
+                              <th className="px-3.5 py-2.5 w-28">Field</th>
+                              <th className="px-3.5 py-2.5 min-w-[280px]">Error Message</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+                            {filteredImportItems.map((item) => {
+                              const errorIssues = item.issues.filter((i) => i.type === "ERROR");
+                              const warningIssues = item.issues.filter((i) => i.type === "WARNING");
+                              return (
+                                <tr key={item.rowNumber} className="hover:bg-rose-950/10 transition">
+                                  <td className="px-3.5 py-3 font-mono font-semibold text-zinc-400 align-top">
+                                    #{item.rowNumber}
+                                  </td>
+                                  <td className="px-3.5 py-3 align-top">
+                                    <span className="inline-flex rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-500/30">
+                                      ERROR
+                                    </span>
+                                  </td>
+                                  <td className="px-3.5 py-3 font-mono font-medium text-white align-top">
+                                    {item.code || "—"}
+                                  </td>
+                                  <td className="px-3.5 py-3 font-medium text-white align-top break-words">
+                                    {item.name || "—"}
+                                  </td>
+                                  <td className="px-3.5 py-3 text-zinc-300 align-top break-words">
+                                    {item.categoryName || "—"}
+                                  </td>
+                                  <td className="px-3.5 py-3 align-top">
+                                    <div className="flex flex-col gap-1">
+                                      {errorIssues.map((iss, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/60 inline-block w-fit font-semibold"
+                                        >
+                                          {iss.field}
+                                        </span>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                  </td>
+                                  <td className="px-3.5 py-3 align-top">
+                                    <div className="space-y-1.5">
+                                      {errorIssues.map((iss, idx) => (
+                                        <div key={idx} className="text-xs text-rose-200 leading-relaxed break-words">
+                                          <span className="font-mono text-[10px] uppercase text-rose-400 font-semibold mr-1.5">
+                                            [{iss.field}]:
+                                          </span>
+                                          {iss.message}
+                                        </div>
+                                      ))}
+                                      {warningIssues.map((iss, idx) => (
+                                        <div key={idx} className="text-xs text-amber-300/90 leading-relaxed break-words">
+                                          <span className="font-mono text-[10px] uppercase text-amber-400 font-semibold mr-1.5">
+                                            [WARN - {iss.field}]:
+                                          </span>
+                                          {iss.message}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )
+                    ) : (
+                      /* View 3B: Standard Table View (All / New / Existing) */
+                      filteredImportItems.length === 0 ? (
+                        <div className="p-8 text-center text-zinc-500 text-xs">
+                          No records found matching the "{importFilter}" filter.
+                        </div>
+                      ) : (
+                        <table className="w-full text-left text-xs">
+                          <thead className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400 shadow-sm">
+                            <tr>
+                              <th className="px-3.5 py-2.5 w-16">Row</th>
+                              <th className="px-3.5 py-2.5 w-28">Status</th>
+                              <th className="px-3.5 py-2.5 w-32">Code</th>
+                              <th className="px-3.5 py-2.5 min-w-[220px]">Name</th>
+                              <th className="px-3.5 py-2.5 min-w-[180px]">Category</th>
+                              <th className="px-3.5 py-2.5 min-w-[140px]">Sample / TAT</th>
+                              <th className="px-3.5 py-2.5 min-w-[220px]">Issues / Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+                            {filteredImportItems.map((item) => (
+                              <tr key={item.rowNumber} className="hover:bg-zinc-800/30 transition">
+                                <td className="px-3.5 py-2.5 font-mono text-zinc-500">#{item.rowNumber}</td>
+                                <td className="px-3.5 py-2.5">
+                                  {item.status === "NEW" && (
+                                    <span className="inline-flex rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/20">
+                                      NEW
+                                    </span>
+                                  )}
+                                  {item.status === "EXISTING_SKIP" && (
+                                    <span className="inline-flex rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20">
+                                      EXISTING (SKIP)
+                                    </span>
+                                  )}
+                                  {item.status === "ERROR" && (
+                                    <span className="inline-flex rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400 border border-rose-500/20">
+                                      ERROR
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-3.5 py-2.5 font-mono font-medium text-white">{item.code || "—"}</td>
+                                <td className="px-3.5 py-2.5 font-medium text-white break-words">
+                                  {item.name || "—"}
+                                </td>
+                                <td className="px-3.5 py-2.5 text-zinc-400 break-words">{item.categoryName || "—"}</td>
+                                <td className="px-3.5 py-2.5 text-zinc-400">
+                                  {item.sampleType} • {item.standardTatHours}h
+                                </td>
+                                <td className="px-3.5 py-2.5">
+                                  {item.issues.length === 0 ? (
+                                    <span className="text-zinc-500">Valid</span>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      {item.issues.map((iss, idx) => (
+                                        <div
+                                          key={idx}
+                                          className={`text-xs break-words ${
+                                            iss.type === "ERROR" ? "text-rose-400 font-medium" : "text-amber-400/90"
+                                          }`}
+                                        >
+                                          • <span className="font-mono text-[10px] uppercase">[{iss.field}]:</span> {iss.message}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )
+                    )}
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
                     <button
                       type="button"
@@ -903,7 +1149,7 @@ export default function SuperadminTestMasterPage() {
                         setImportAnalysis(null);
                         setSelectedFile(null);
                       }}
-                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-300 hover:bg-zinc-800 transition"
+                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer"
                     >
                       ← Upload Different File
                     </button>
@@ -912,15 +1158,15 @@ export default function SuperadminTestMasterPage() {
                       <button
                         type="button"
                         onClick={() => setShowImportModal(false)}
-                        className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-300 hover:bg-zinc-800 transition"
+                        className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={handleConfirmImport}
-                        disabled={importAnalysis.hasBlockingErrors || importAnalysis.newRecordsCount === 0 || isImporting}
-                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white hover:bg-indigo-500 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={importAnalysis.hasBlockingErrors || errorRowsCount > 0 || importAnalysis.newRecordsCount === 0 || isImporting}
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white hover:bg-indigo-500 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                       >
                         {isImporting ? (
                           <>
