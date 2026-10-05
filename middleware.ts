@@ -4,6 +4,8 @@ import { isPlatformRole } from "./lib/auth/permissions";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
 
   // 1. Skip static assets, Next internal files, and public auth endpoints
   if (
@@ -11,12 +13,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname === "/login" ||
     pathname === "/lab/onboarding/signup" ||
+    pathname.startsWith("/lab/onboarding/signup/") ||
     pathname === "/lab/onboarding/verify" ||
+    pathname.startsWith("/lab/onboarding/verify/") ||
     pathname.startsWith("/api/files/logo/") ||
     pathname === "/favicon.ico" ||
     pathname.match(/\.(png|jpg|jpeg|svg|webp|css|js|woff|woff2)$/)
   ) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // 2. CSRF Origin Verification for state-changing API endpoints
@@ -101,7 +105,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 6. Forward request with authenticated user context in headers
-  const response = NextResponse.next();
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   if (session) {
     response.headers.set("x-user-id", session.userId);
     response.headers.set("x-user-role", session.role);

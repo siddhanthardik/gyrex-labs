@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -133,7 +134,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
@@ -142,12 +143,12 @@ export default function LoginPage() {
           <div className="mt-6 border-t border-slate-100 pt-4 text-center text-sm text-slate-600">
             <p>
               New laboratory?{" "}
-              <a
+              <Link
                 href="/lab/onboarding/signup"
-                className="font-medium text-blue-600 hover:text-blue-700 underline focus:outline-none focus:ring-2 focus:ring-blue-200 rounded"
+                className="font-medium text-sky-600 hover:text-sky-700 underline focus:outline-none focus:ring-2 focus:ring-sky-100 rounded"
               >
                 Register your laboratory
-              </a>
+              </Link>
             </p>
           </div>
 
@@ -155,9 +156,9 @@ export default function LoginPage() {
             <p className="font-medium text-slate-700">Need help signing in?</p>
             <a
               href="mailto:labs@gyrex.in?subject=Access%20Help%20Request"
-              className="mt-1 inline-block font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 rounded"
+              className="mt-1 inline-block font-medium text-slate-600 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-100 rounded text-xs"
             >
-              Contact your administrator
+              Contact support
             </a>
           </div>
         </div>

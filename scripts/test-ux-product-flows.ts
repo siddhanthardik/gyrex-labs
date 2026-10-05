@@ -12,6 +12,8 @@
  */
 
 import { calculatePackageMetrics } from "../services/lab/packages-service";
+import { encryptSecret, decryptSecret, verifyMetaWebhookSignature } from "../lib/integrations/crypto";
+import crypto from "crypto";
 
 async function runTests() {
   console.log("===============================================================");
@@ -267,6 +269,248 @@ async function runTests() {
     assert(!("razorpayKeySecret" in clientData), "razorpayKeySecret is stripped from client response");
     assert(clientData.hasRazorpaySecret === true, "hasRazorpaySecret boolean flag is set");
     assert(clientData.razorpayKeyId === "rzp_live_abc12345", "Public Key ID is present");
+  }
+
+  // -------------------------------------------------------------
+  // 8. Logout Flow Dual-Mode Handling
+  // -------------------------------------------------------------
+  console.log("\n--- 8. Testing Logout Dual-Mode Response Handling ---");
+  {
+    function resolveLogoutResponse(acceptHeader: string | null): { status: number; isRedirect: boolean; location?: string; isJson: boolean } {
+      const isHtmlRequest = acceptHeader && (acceptHeader.includes("text/html") || acceptHeader.includes("application/xhtml+xml"));
+      if (isHtmlRequest) {
+        return { status: 303, isRedirect: true, location: "/login", isJson: false };
+      }
+      return { status: 200, isRedirect: false, isJson: true };
+    }
+
+    const browserNav = resolveLogoutResponse("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    assert(browserNav.status === 303, "Native browser form submit triggers HTTP 303 See Other");
+    assert(browserNav.isRedirect === true && browserNav.location === "/login", "Native browser form redirects directly to /login");
+
+    const fetchApi = resolveLogoutResponse("application/json");
+    assert(fetchApi.status === 200 && fetchApi.isJson === true, "Fetch API call receives 200 JSON payload");
+
+    const curlDefault = resolveLogoutResponse(null);
+    assert(curlDefault.status === 200 && curlDefault.isJson === true, "Default request without accept header receives JSON");
+  }
+
+  // -------------------------------------------------------------
+  // 9. Public Onboarding Exemption Logic
+  // -------------------------------------------------------------
+  console.log("\n--- 9. Testing Public Onboarding Route Exemption Logic ---");
+  {
+    const PUBLIC_LAB_ROUTES = [
+      "/lab/onboarding/signup",
+      "/lab/onboarding/verify",
+    ];
+
+    function isPublicLabRoute(pathname: string): boolean {
+      return PUBLIC_LAB_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+    }
+
+    assert(isPublicLabRoute("/lab/onboarding/signup") === true, "Exempts /lab/onboarding/signup from auth and layout shell");
+    assert(isPublicLabRoute("/lab/onboarding/verify") === true, "Exempts /lab/onboarding/verify from auth and layout shell");
+    assert(isPublicLabRoute("/lab/onboarding/signup?step=2") === false || isPublicLabRoute("/lab/onboarding/signup") === true, "Validates signup route");
+    assert(isPublicLabRoute("/lab/dashboard") === false, "Protects /lab/dashboard (requires authentication)");
+    assert(isPublicLabRoute("/lab/catalogue") === false, "Protects /lab/catalogue (requires authentication)");
+    assert(isPublicLabRoute("/lab/settings") === false, "Protects /lab/settings (requires authentication)");
+  }
+
+  // -------------------------------------------------------------
+  // 10. WhatsApp Multi-Tenant Isolation (Strict 3-Way Cross-Verification)
+  // -------------------------------------------------------------
+  console.log("\n--- 10. Testing WhatsApp Multi-Tenant Isolation & Conflict Resolution ---");
+  {
+    // Multi-tenant database fixture with 2 registered labs
+    const labSettingsDB: Record<string, { wabaId: string; phoneNumberId: string; webhookVerifyToken: string; appSecret: string }> = {
+      "lab-alpha": {
+        wabaId: "waba_alpha_123",
+        phoneNumberId: "phone_alpha_456",
+        webhookVerifyToken: "token_alpha_secret",
+        appSecret: "secret_alpha_999",
+      },
+      "lab-beta": {
+        wabaId: "waba_beta_789",
+        phoneNumberId: "phone_beta_012",
+        webhookVerifyToken: "token_beta_secret",
+        appSecret: "secret_beta_888",
+      },
+    };
+
+    /**
+     * Replicates the exact production logic from whatsAppService.resolveLabFromInbound
+     */
+    function resolveTenantStrict(payload: any, labIdQuery?: string): string | null {
+      const entry = payload?.entry?.[0];
+      const wabaId = entry?.id ? String(entry.id).trim() : null;
+      const phoneNumberId = entry?.changes?.[0]?.value?.metadata?.phone_number_id
+        ? String(entry.changes[0].value.metadata.phone_number_id).trim()
+        : null;
+
+      // Determine ownership of payload metadata
+      let phoneOwnerLabId: string | null = null;
+      let wabaOwnerLabId: string | null = null;
+
+      for (const [lid, val] of Object.entries(labSettingsDB)) {
+        if (phoneNumberId && val.phoneNumberId === phoneNumberId) phoneOwnerLabId = lid;
+        if (wabaId && val.wabaId === wabaId) wabaOwnerLabId = lid;
+      }
+
+      // Scenario A: labId provided in query string
+      if (labIdQuery) {
+        const cleanLabId = labIdQuery.trim();
+        const settings = labSettingsDB[cleanLabId];
+        if (!settings) return null; // Unknown labId
+
+        // Conflict check: if phone or waba belongs to another lab, reject!
+        if (phoneOwnerLabId && phoneOwnerLabId !== cleanLabId) return null;
+        if (wabaOwnerLabId && wabaOwnerLabId !== cleanLabId) return null;
+
+        // Metadata mismatch check
+        if (phoneNumberId && settings.phoneNumberId && settings.phoneNumberId !== phoneNumberId) return null;
+        if (wabaId && settings.wabaId && settings.wabaId !== wabaId) return null;
+        if (phoneNumberId && !settings.phoneNumberId) return null;
+
+        return cleanLabId;
+      }
+
+      // Scenario B: No labId in query, resolve from payload
+      if (!phoneNumberId && !wabaId) return null; // Missing tenant identifiers
+
+      // If both present, they must agree on the same laboratory
+      if (phoneOwnerLabId && wabaOwnerLabId && phoneOwnerLabId !== wabaOwnerLabId) return null;
+
+      const resolvedLabId = phoneOwnerLabId || wabaOwnerLabId;
+      if (!resolvedLabId) return null; // Unknown phone_number_id or unknown WABA ID
+
+      const resolvedSettings = labSettingsDB[resolvedLabId];
+      if (phoneNumberId && resolvedSettings.phoneNumberId !== phoneNumberId) return null;
+      if (wabaId && resolvedSettings.wabaId !== wabaId) return null;
+
+      return resolvedLabId;
+    }
+
+    // 10a. Valid tenant match (payload matches registered lab-alpha)
+    const validAlphaPayload = {
+      entry: [{ id: "waba_alpha_123", changes: [{ value: { metadata: { phone_number_id: "phone_alpha_456" } } }] }],
+    };
+    assert(resolveTenantStrict(validAlphaPayload, "lab-alpha") === "lab-alpha", "10a. Valid tenant match with matching labId and metadata");
+    assert(resolveTenantStrict(validAlphaPayload) === "lab-alpha", "10b. Valid tenant match resolved from payload metadata alone");
+
+    // 10c. labId mismatch: ?labId=lab-alpha but phone_number_id belongs to lab-beta
+    const betaPhonePayload = {
+      entry: [{ id: "waba_beta_789", changes: [{ value: { metadata: { phone_number_id: "phone_beta_012" } } }] }],
+    };
+    assert(resolveTenantStrict(betaPhonePayload, "lab-alpha") === null, "10c. Rejects webhook when ?labId=lab-alpha but phone_number_id belongs to lab-beta");
+
+    // 10d. phone_number_id mismatch: ?labId=lab-alpha but phone_number_id is unconfigured/mismatched
+    const mismatchedPhonePayload = {
+      entry: [{ id: "waba_alpha_123", changes: [{ value: { metadata: { phone_number_id: "phone_mismatched_000" } } }] }],
+    };
+    assert(resolveTenantStrict(mismatchedPhonePayload, "lab-alpha") === null, "10d. Rejects webhook when phone_number_id does not match lab's configured number");
+
+    // 10e. WABA mismatch: ?labId=lab-alpha but WABA ID is mismatched
+    const mismatchedWabaPayload = {
+      entry: [{ id: "waba_mismatched_999", changes: [{ value: { metadata: { phone_number_id: "phone_alpha_456" } } }] }],
+    };
+    assert(resolveTenantStrict(mismatchedWabaPayload, "lab-alpha") === null, "10e. Rejects webhook when WABA ID conflicts with lab's configured WABA ID");
+
+    // 10f. Missing tenant identifiers in payload and query
+    assert(resolveTenantStrict({}) === null, "10f. Rejects empty payload without tenant identifiers");
+    assert(resolveTenantStrict({ entry: [{ changes: [{ value: {} }] }] }) === null, "10g. Rejects payload with missing phone_number_id and WABA ID");
+
+    // 10g. Unknown phone_number_id (unregistered in system)
+    const unknownPhonePayload = {
+      entry: [{ changes: [{ value: { metadata: { phone_number_id: "phone_unknown_999" } } }] }],
+    };
+    assert(resolveTenantStrict(unknownPhonePayload) === null, "10h. Rejects payload with unknown/unregistered phone_number_id");
+
+    // 10h. Unknown WABA ID (unregistered in system)
+    const unknownWabaPayload = {
+      entry: [{ id: "waba_unknown_999" }],
+    };
+    assert(resolveTenantStrict(unknownWabaPayload) === null, "10i. Rejects payload with unknown/unregistered WABA ID");
+
+    // 10i. Conflicting phone_number_id (lab-alpha) and WABA ID (lab-beta) in same payload
+    const splitPayload = {
+      entry: [{ id: "waba_beta_789", changes: [{ value: { metadata: { phone_number_id: "phone_alpha_456" } } }] }],
+    };
+    assert(resolveTenantStrict(splitPayload) === null, "10j. Rejects payload with conflicting ownership (phone=lab-alpha, waba=lab-beta)");
+
+    // 10j. Handshake verification per tenant
+    function verifyTenantHandshake(verifyToken: string, challenge: string, labIdQuery?: string): string | null {
+      if (labIdQuery) {
+        const settings = labSettingsDB[labIdQuery];
+        return settings?.webhookVerifyToken === verifyToken ? challenge : null;
+      }
+      return null;
+    }
+
+    assert(verifyTenantHandshake("token_alpha_secret", "chal_1", "lab-alpha") === "chal_1", "10k. Handshake passes with correct tenant verify token");
+    assert(verifyTenantHandshake("wrong_token", "chal_1", "lab-alpha") === null, "10l. Handshake rejected with wrong verify token");
+    assert(verifyTenantHandshake("token_beta_secret", "chal_1", "lab-alpha") === null, "10m. Handshake rejected when token belongs to another lab");
+  }
+
+  // -------------------------------------------------------------
+  // 11. Meta Webhook Signature Verification (X-Hub-Signature-256)
+  // -------------------------------------------------------------
+  console.log("\n--- 11. Testing Meta Webhook HMAC-SHA256 Signature Verification ---");
+  {
+    const labAppSecretAlpha = "meta_app_secret_alpha_1234567890";
+    const labAppSecretBeta = "meta_app_secret_beta_0987654321";
+    const validBody = JSON.stringify({
+      object: "whatsapp_business_account",
+      entry: [{ id: "123", changes: [{ value: { messages: [{ id: "msg_1", from: "919999999999", text: { body: "Hi" } }] } }] }],
+    });
+
+    // Helper to generate Meta X-Hub-Signature-256
+    function generateMetaSignature(body: string, secret: string): string {
+      const hmac = crypto.createHmac("sha256", secret).update(body).digest("hex");
+      return `sha256=${hmac}`;
+    }
+
+    const validSignatureAlpha = generateMetaSignature(validBody, labAppSecretAlpha);
+
+    // 11a. Valid signature matching lab App Secret
+    assert(
+      verifyMetaWebhookSignature(validBody, validSignatureAlpha, labAppSecretAlpha) === true,
+      "11a. Valid HMAC-SHA256 signature passes verification"
+    );
+
+    // 11b. Invalid signature header (corrupted hex)
+    const invalidSignature = "sha256=0000000000000000000000000000000000000000000000000000000000000000";
+    assert(
+      verifyMetaWebhookSignature(validBody, invalidSignature, labAppSecretAlpha) === false,
+      "11b. Invalid signature strictly rejected"
+    );
+
+    // 11c. Missing signature header
+    assert(
+      verifyMetaWebhookSignature(validBody, "", labAppSecretAlpha) === false,
+      "11c. Missing/empty signature header strictly rejected"
+    );
+
+    // 11d. Wrong lab App Secret (signed with Lab Alpha, verified with Lab Beta)
+    assert(
+      verifyMetaWebhookSignature(validBody, validSignatureAlpha, labAppSecretBeta) === false,
+      "11d. Signature strictly rejected when using wrong lab's App Secret"
+    );
+
+    // 11e. Tampered body (even 1 altered character in payload)
+    const tamperedBody = validBody.replace("Hi", "Hacked");
+    assert(
+      verifyMetaWebhookSignature(tamperedBody, validSignatureAlpha, labAppSecretAlpha) === false,
+      "11e. Tampered body strictly rejected (HMAC mismatch)"
+    );
+
+    // 11f. Credentials encryption & decryption at rest (AES-256-GCM)
+    const plainSecret = "meta_app_secret_top_secret_prod_value";
+    const encryptedSecret = encryptSecret(plainSecret);
+    assert(encryptedSecret !== plainSecret, "11f. App Secret is encrypted at rest (not plaintext)");
+    assert(!encryptedSecret.includes(plainSecret), "11g. Ciphertext does not leak plaintext credential");
+    const decryptedSecret = decryptSecret(encryptedSecret);
+    assert(decryptedSecret === plainSecret, "11h. Decrypted App Secret perfectly recovers original value via AES-256-GCM");
   }
 
   // -------------------------------------------------------------

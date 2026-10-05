@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -20,6 +20,7 @@ import {
   FolderKanban,
   Globe,
   LayoutDashboard,
+  LogOut,
   MessageSquare,
   PackageCheck,
   Settings,
@@ -47,6 +48,23 @@ interface LabSidebarProps {
 
 export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarProps) {
   const pathname = usePathname();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch {
+      // Fallback redirect on error
+    } finally {
+      window.location.href = "/login";
+    }
+  };
 
   const isStaff = user.role === UserRole.LAB_STAFF;
 
@@ -106,27 +124,17 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-slate-200 px-5">
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/branding/gyrex-labs.svg"
-                alt="Gyrex Labs"
-                width={100}
-                height={25}
-                className="h-5 w-auto"
-                priority
-              />
-              {lab.isVerified && (
-                <span title="Verified laboratory" className="inline-flex items-center rounded bg-emerald-50 px-1 py-0.2 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                  ✓ Verified
-                </span>
-              )}
-            </div>
-            <h1 className="truncate text-xs font-semibold text-slate-900" title={lab.name}>
-              {lab.name}
-            </h1>
-          </div>
+        <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
+          <Link href="/lab/dashboard" className="flex items-center gap-2">
+            <Image
+              src="/branding/gyrex-labs.svg"
+              alt="Gyrex Labs"
+              width={110}
+              height={28}
+              className="h-5 w-auto"
+              priority
+            />
+          </Link>
           {onClose && (
             <button onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Close navigation">
               <X className="h-4 w-4" />
@@ -134,9 +142,28 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
           )}
         </div>
 
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-2.5">
-          <span className="text-[11px] font-medium text-slate-500">Store status</span>
-          {getStatusBadge()}
+        {/* Tenant Laboratory Context */}
+        <div className="border-b border-slate-200 bg-slate-50/70 px-5 py-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Laboratory</span>
+            {lab.isVerified ? (
+              <span title="Verified laboratory" className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                <ShieldCheck className="h-3 w-3" />
+                Verified
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                Unverified
+              </span>
+            )}
+          </div>
+          <h2 className="truncate text-xs font-bold text-slate-900" title={lab.name}>
+            {lab.name}
+          </h2>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[10px] text-slate-500">Store status</span>
+            {getStatusBadge()}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
@@ -188,13 +215,15 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
               <p className="truncate text-xs font-semibold text-slate-900">{user.fullName}</p>
               <p className="text-[11px] text-slate-500">{user.role}</p>
             </div>
-            <form action="/api/auth/logout" method="POST">
+            <form onSubmit={handleLogout} action="/api/auth/logout" method="POST">
               <button
                 type="submit"
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 transition hover:border-red-200 hover:text-red-600"
+                disabled={isLoggingOut}
+                className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-50"
                 title="Sign out"
               >
-                Log out
+                <LogOut className="h-3 w-3 text-slate-400" />
+                <span>{isLoggingOut ? "Signing out..." : "Log out"}</span>
               </button>
             </form>
           </div>

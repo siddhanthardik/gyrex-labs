@@ -498,66 +498,128 @@ export class MetaWhatsAppService implements WhatsAppProvider {
   }
 
   /**
-   * Resolves the target laboratory from inbound webhook payload or query param.
+   * Resolves the target laboratory from inbound webhook payload and query param.
+   *
+   * STRICT MULTI-TENANT ISOLATION RULES:
+   * 1. If labId query param is supplied, it MUST match the payload's phone_number_id and WABA ID.
+   *    A labId match alone is NEVER sufficient if the payload metadata belongs to another lab or conflicts.
+   * 2. If phone_number_id or WABA ID belongs to a different laboratory, REJECT.
+   * 3. If payload contains unknown/unregistered phone_number_id or WABA ID, REJECT.
+   * 4. If no tenant can be unambiguously resolved, REJECT (return null).
+   * 5. ZERO fallback to any default or "first active" laboratory.
    */
   async resolveLabFromInbound(
     payload: any,
     labIdQuery?: string
   ): Promise<{ lab: any; settings: LabWhatsAppSettings } | null> {
-    // 1. Explicit query param (recommended integration url: ?labId=xxx)
-    if (labIdQuery) {
-      const lab = await prisma.lab.findUnique({
-        where: { id: labIdQuery },
-      });
-      if (lab) {
-        const settingRecord = await prisma.platformSettings.findUnique({
-          where: { key: this.getSettingsKey(lab.id) },
-        });
-        const settings = (settingRecord?.value as unknown as LabWhatsAppSettings) || ({} as LabWhatsAppSettings);
-        return { lab, settings };
-      }
-    }
-
-    // 2. Match from Meta metadata.phone_number_id or entry[0].id (WABA ID)
     const entry = payload?.entry?.[0];
-    const wabaId = entry?.id;
-    const phoneNumberId = entry?.changes?.[0]?.value?.metadata?.phone_number_id;
+    const wabaId = entry?.id ? String(entry.id).trim() : null;
+    const phoneNumberId = entry?.changes?.[0]?.value?.metadata?.phone_number_id
+      ? String(entry.changes[0].value.metadata.phone_number_id).trim()
+      : null;
 
-    if (phoneNumberId || wabaId) {
-      const settingsRecords = await prisma.platformSettings.findMany({
-        where: { key: { startsWith: "lab_whatsapp:" } },
-      });
-
-      for (const rec of settingsRecords) {
-        const val = rec.value as unknown as Partial<LabWhatsAppSettings>;
-        if (
-          (phoneNumberId && val.phoneNumberId === phoneNumberId) ||
-          (wabaId && val.wabaId === wabaId)
-        ) {
-          const labId = rec.key.replace("lab_whatsapp:", "");
-          const lab = await prisma.lab.findUnique({ where: { id: labId } });
-          if (lab) {
-            return { lab, settings: val as unknown as LabWhatsAppSettings };
-          }
-        }
-      }
-    }
-
-    // 3. Fallback: single active lab in system (development/testing convenience)
-    const firstLab = await prisma.lab.findFirst({
-      where: { status: "ACTIVE" },
-      orderBy: { createdAt: "asc" },
+    // Load all laboratory WhatsApp settings for multi-tenant conflict & ownership checks
+    const allSettingsRecords = await prisma.platformSettings.findMany({
+      where: { key: { startsWith: "lab_whatsapp:" } },
     });
 
-    if (firstLab) {
-      const settingRecord = await prisma.platformSettings.findUnique({
-        where: { key: this.getSettingsKey(firstLab.id) },
-      });
-      const settings = (settingRecord?.value as unknown as LabWhatsAppSettings) || ({} as LabWhatsAppSettings);
-      return { lab: firstLab, settings };
+    const settingsByLabId = new Map<string, LabWhatsAppSettings>();
+    for (const rec of allSettingsRecords) {
+      const lid = rec.key.replace("lab_whatsapp:", "");
+      settingsByLabId.set(lid, rec.value as unknown as LabWhatsAppSettings);
     }
 
-    return null;
+    // Determine tenant ownership for phone_number_id and wabaId across all laboratories
+    let phoneOwnerLabId: string | null = null;
+    let wabaOwnerLabId: string | null = null;
+
+    for (const [lid, val] of settingsByLabId.entries()) {
+      if (phoneNumberId && val.phoneNumberId === phoneNumberId) {
+        phoneOwnerLabId = lid;
+      }
+      if (wabaId && val.wabaId === wabaId) {
+        wabaOwnerLabId = lid;
+      }
+    }
+
+    // Scenario A: labId is provided in webhook query string (e.g. ?labId=xxx)
+    if (labIdQuery) {
+      const cleanLabId = labIdQuery.trim();
+      const lab = await prisma.lab.findUnique({
+        where: { id: cleanLabId },
+      });
+      if (!lab) {
+        // Unknown or invalid labId in query
+        return null;
+      }
+
+      const settings = settingsByLabId.get(cleanLabId) || ({} as LabWhatsAppSettings);
+
+      // CRITICAL CHECK: If payload metadata belongs to a DIFFERENT laboratory, REJECT!
+      if (phoneOwnerLabId && phoneOwnerLabId !== cleanLabId) {
+        return null; // Cross-tenant conflict: phone_number_id belongs to another lab
+      }
+      if (wabaOwnerLabId && wabaOwnerLabId !== cleanLabId) {
+        return null; // Cross-tenant conflict: WABA ID belongs to another lab
+      }
+
+      // CRITICAL CHECK: If payload has phone_number_id, it must match this lab's configured phone_number_id
+      if (phoneNumberId && settings.phoneNumberId && settings.phoneNumberId !== phoneNumberId) {
+        return null; // Mismatch between lab's configured phone_number_id and inbound payload
+      }
+
+      // CRITICAL CHECK: If payload has WABA ID, it must match this lab's configured WABA ID
+      if (wabaId && settings.wabaId && settings.wabaId !== wabaId) {
+        return null; // Mismatch between lab's configured WABA ID and inbound payload
+      }
+
+      // A labId query parameter alone is NOT sufficient if the payload contains an unregistered phone_number_id
+      // that is not configured on this lab:
+      if (phoneNumberId && !settings.phoneNumberId) {
+        return null; // Payload has phone_number_id but lab has none configured
+      }
+
+      return { lab, settings };
+    }
+
+    // Scenario B: No labId query parameter provided; resolve strictly from payload metadata
+    if (!phoneNumberId && !wabaId) {
+      // Missing all tenant identifiers
+      return null;
+    }
+
+    // If both phoneNumberId and wabaId are present in payload, they MUST resolve to the SAME lab
+    if (phoneOwnerLabId && wabaOwnerLabId && phoneOwnerLabId !== wabaOwnerLabId) {
+      return null; // Conflicting ownership between phone_number_id and WABA ID
+    }
+
+    const resolvedLabId = phoneOwnerLabId || wabaOwnerLabId;
+    if (!resolvedLabId) {
+      // Unknown phone_number_id and unknown WABA ID
+      return null;
+    }
+
+    const resolvedSettings = settingsByLabId.get(resolvedLabId);
+    if (!resolvedSettings) {
+      return null;
+    }
+
+    // Verify consistency: if payload has both, both must be compatible with resolvedSettings
+    if (phoneNumberId && resolvedSettings.phoneNumberId && resolvedSettings.phoneNumberId !== phoneNumberId) {
+      return null;
+    }
+    if (wabaId && resolvedSettings.wabaId && resolvedSettings.wabaId !== wabaId) {
+      return null;
+    }
+
+    const lab = await prisma.lab.findUnique({
+      where: { id: resolvedLabId },
+    });
+    if (!lab) {
+      return null;
+    }
+
+    return { lab, settings: resolvedSettings };
   }
 
   /**
@@ -581,7 +643,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       throw new Error("Invalid JSON in webhook payload.");
     }
 
-    // Resolve tenant laboratory
+    // 1. Resolve tenant laboratory with strict 3-way cross-verification
     const tenantInfo = await this.resolveLabFromInbound(payload, labIdQuery);
     if (!tenantInfo) {
       return { handled: false, eventType: "NO_MATCHING_LABORATORY" };
@@ -589,32 +651,61 @@ export class MetaWhatsAppService implements WhatsAppProvider {
 
     const { lab, settings } = tenantInfo;
 
-    // Cryptographic signature verification (X-Hub-Signature-256)
+    // 2. Cryptographic signature verification (X-Hub-Signature-256)
+    // MANDATORY SECURITY: Missing or invalid signature MUST be rejected.
+    // Processing is NEVER allowed merely because labId or phone_number_id is valid.
+    if (!signatureHeader || !signatureHeader.trim()) {
+      await recordAuditLog({
+        action: AuditAction.SECURITY_ALERT,
+        entityType: "Webhook",
+        entityId: "WHATSAPP_WEBHOOK",
+        labId: lab.id,
+        metadata: {
+          reason: "Missing X-Hub-Signature-256 header in Meta WhatsApp webhook request",
+        },
+      });
+      throw new Error("Missing Meta webhook signature.");
+    }
+
     const appSecretEncrypted = settings.appSecretEncrypted;
-    let appSecret = this.defaultAppSecret;
+    let appSecret: string | null = null;
     if (appSecretEncrypted) {
       try {
         appSecret = decryptSecret(appSecretEncrypted);
-      } catch {
-        // fallback to default
+      } catch (err) {
+        console.error(`Failed to decrypt appSecret for lab ${lab.id}:`, err);
       }
     }
+    if (!appSecret) {
+      appSecret = this.defaultAppSecret;
+    }
 
-    if (appSecret && signatureHeader) {
-      const isValid = verifyMetaWebhookSignature(rawBody, signatureHeader, appSecret);
-      if (!isValid) {
-        await recordAuditLog({
-          action: AuditAction.SECURITY_ALERT,
-          entityType: "Webhook",
-          entityId: "WHATSAPP_WEBHOOK",
-          labId: lab.id,
-          metadata: {
-            reason: "Invalid Meta WhatsApp webhook signature",
-            signatureHeader,
-          },
-        });
-        throw new Error("Invalid Meta webhook signature.");
-      }
+    if (!appSecret) {
+      await recordAuditLog({
+        action: AuditAction.SECURITY_ALERT,
+        entityType: "Webhook",
+        entityId: "WHATSAPP_WEBHOOK",
+        labId: lab.id,
+        metadata: {
+          reason: "Laboratory Meta App Secret is not configured for signature verification",
+        },
+      });
+      throw new Error("Laboratory Meta App Secret is not configured.");
+    }
+
+    const isValid = verifyMetaWebhookSignature(rawBody, signatureHeader, appSecret);
+    if (!isValid) {
+      await recordAuditLog({
+        action: AuditAction.SECURITY_ALERT,
+        entityType: "Webhook",
+        entityId: "WHATSAPP_WEBHOOK",
+        labId: lab.id,
+        metadata: {
+          reason: "Invalid Meta WhatsApp webhook signature (HMAC-SHA256 mismatch or tampered body)",
+          signatureHeader,
+        },
+      });
+      throw new Error("Invalid Meta webhook signature.");
     }
 
     const value = payload.entry?.[0]?.changes?.[0]?.value;

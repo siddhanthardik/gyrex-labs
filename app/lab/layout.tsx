@@ -1,5 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { requireLabAccess } from "@/lib/auth/context";
 import { prisma } from "@/lib/db/prisma";
 import { LabLayoutShell } from "@/components/lab/LabLayoutShell";
@@ -14,6 +15,19 @@ export default async function LabLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+
+  // Public onboarding routes bypass authentication and lab shell entirely
+  if (
+    pathname === "/lab/onboarding/signup" ||
+    pathname.startsWith("/lab/onboarding/signup/") ||
+    pathname === "/lab/onboarding/verify" ||
+    pathname.startsWith("/lab/onboarding/verify/")
+  ) {
+    return <>{children}</>;
+  }
+
   let context;
   try {
     context = await requireLabAccess();

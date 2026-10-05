@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import { ArrowUpRight, Menu, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Menu } from "lucide-react";
 
 interface LabHeaderProps {
   lab: {
@@ -34,19 +34,9 @@ export function LabHeader({ lab, user, onMenuToggle }: LabHeaderProps) {
           </button>
         )}
         <div className="flex items-center gap-2">
-          <span className="max-w-[200px] truncate text-sm font-semibold text-slate-900 sm:max-w-none">
-            {lab.name}
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Laboratory Workspace
           </span>
-          {lab.isVerified ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-              <ShieldCheck className="h-3 w-3" />
-              Verified
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-              Unverified
-            </span>
-          )}
         </div>
       </div>
 
