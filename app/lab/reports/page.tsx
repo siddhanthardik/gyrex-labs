@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { StatusBadge } from "@/components/lab/StatusBadge";
 import { EmptyState } from "@/components/lab/EmptyState";
 import { ReportStatus } from "@prisma/client";
@@ -191,7 +192,7 @@ export default function LabReportsPage() {
         ) : reports.length === 0 ? (
           <div className="p-8">
             <EmptyState
-              icon="📄"
+              icon={<FileText className="h-8 w-8 text-slate-400" />}
               title="No Diagnostic Reports Uploaded"
               description="Attach clinical PDF reports generated from your LIS to patient orders."
               actionText="+ Upload First Report"

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Home, Building2 } from "lucide-react";
 import { StatusBadge } from "@/components/lab/StatusBadge";
 import { OrderStatus } from "@prisma/client";
 
@@ -294,8 +295,18 @@ export default function LabOrderDetailPage() {
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white">Sample Collection Schedule</h3>
-                <span className="text-xs font-semibold text-purple-400">
-                  {order.collectionType === "HOME_COLLECTION" ? "🏠 Home Collection" : "🏥 Lab Visit"}
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-purple-400">
+                  {order.collectionType === "HOME_COLLECTION" ? (
+                    <>
+                      <Home className="h-3.5 w-3.5" />
+                      <span>Home Collection</span>
+                    </>
+                  ) : (
+                    <>
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>Lab Visit</span>
+                    </>
+                  )}
                 </span>
               </div>
 

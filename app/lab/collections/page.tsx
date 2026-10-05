@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Truck } from "lucide-react";
 import { EmptyState } from "@/components/lab/EmptyState";
 import { StatusBadge } from "@/components/lab/StatusBadge";
 
@@ -97,7 +98,7 @@ export default function LabCollectionsPage() {
         </div>
       ) : collections.length === 0 ? (
         <EmptyState
-          icon="🚚"
+          icon={<Truck className="h-8 w-8 text-slate-400" />}
           title="No Home Collections Scheduled"
           description="Home sample collection requests from patient orders will appear here automatically."
         />

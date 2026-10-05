@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadminApi } from "@/lib/auth/superadmin-auth";
 import {
   getSubscriptionPlans,
+  createSubscriptionPlan,
   updateSubscriptionPlan,
 } from "@/services/superadmin/subscriptions-service";
 
@@ -14,6 +15,22 @@ export async function GET() {
     const err = error as { statusCode?: number; message?: string };
     return NextResponse.json(
       { error: err.message || "Unable to fetch subscription plans." },
+      { status: err.statusCode || 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const actor = await requireSuperadminApi("subscriptions.manage");
+    const body = await req.json();
+
+    const plan = await createSubscriptionPlan(body, actor);
+    return NextResponse.json({ success: true, plan });
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    return NextResponse.json(
+      { error: err.message || "Failed to create subscription plan." },
       { status: err.statusCode || 500 }
     );
   }

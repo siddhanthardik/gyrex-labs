@@ -1,10 +1,11 @@
 import React from "react";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 interface EmptyStateProps {
   title: string;
   description: string;
-  icon?: string;
+  icon?: React.ReactNode;
   actionText?: string;
   actionHref?: string;
   onActionClick?: () => void;
@@ -13,14 +14,14 @@ interface EmptyStateProps {
 export function SuperadminEmptyState({
   title,
   description,
-  icon = "🔍",
+  icon = <Search className="h-6 w-6 text-slate-400" />,
   actionText,
   actionHref,
   onActionClick,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-2xl mb-4 text-slate-600">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 mb-4 text-slate-600">
         {icon}
       </div>
       <h3 className="text-base font-semibold text-slate-900">{title}</h3>

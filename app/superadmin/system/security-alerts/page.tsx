@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getSecurityAlerts } from "@/services/superadmin/system-service";
 import { SuperadminEmptyState } from "@/components/superadmin/SuperadminEmptyState";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export default async function SuperadminSecurityAlertsPage() {
           <span className="text-zinc-200">Security Alerts</span>
         </div>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <span>🚨 Platform Security & Traversal Alerts ({alerts.length})</span>
+          <ShieldAlert className="w-6 h-6 text-rose-500" />
+          <span>Platform Security & Traversal Alerts ({alerts.length})</span>
         </h1>
         <p className="mt-1 text-xs text-zinc-400">
           Real-time intrusion detection capturing cross-tenant traversal attempts, unauthorized Superadmin access, and brute-force events.
@@ -30,7 +32,7 @@ export default async function SuperadminSecurityAlertsPage() {
         <SuperadminEmptyState
           title="Security Perimeter Intact"
           description="Zero unauthorized cross-tenant traversal or brute force alerts recorded."
-          icon="🛡️"
+          icon={<ShieldCheck className="w-8 h-8 text-emerald-500" />}
           actionText="View Audit Logs"
           actionHref="/superadmin/system/audit-logs"
         />

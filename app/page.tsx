@@ -271,7 +271,7 @@ export default function HomePage() {
                     <div className="space-y-2 p-3 text-[10.5px]">
                       {/* Bot Welcome Message */}
                       <div className="max-w-[88%] rounded-xl rounded-tl-none bg-white p-2.5 shadow-sm text-slate-800">
-                        <p className="font-semibold text-slate-900">Hello! 👋</p>
+                        <p className="font-semibold text-slate-900">Hello!</p>
                         <p className="text-slate-600 mt-0.5">Book your lab test at Sharma Diagnostics</p>
                         <div className="mt-1.5 space-y-0.5 text-slate-700">
                           <p>1. Book a Test</p>

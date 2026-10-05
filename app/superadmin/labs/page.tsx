@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { Clock, Ban, CheckCircle2 } from "lucide-react";
 import { getAllLabs } from "@/services/superadmin/labs-service";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { SuperadminEmptyState } from "@/components/superadmin/SuperadminEmptyState";
@@ -50,15 +51,17 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
         <div className="flex items-center gap-2">
           <Link
             href="/superadmin/labs/pending"
-            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition"
           >
-            ⏳ Verification Queue
+            <Clock className="h-3.5 w-3.5" />
+            <span>Verification Queue</span>
           </Link>
           <Link
             href="/superadmin/labs/suspended"
-            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition"
           >
-            🚫 Suspended Labs
+            <Ban className="h-3.5 w-3.5" />
+            <span>Suspended Labs</span>
           </Link>
         </div>
       </div>
@@ -163,11 +166,13 @@ export default async function SuperadminLabsPage({ searchParams }: PageProps) {
                   <td className="px-4 py-3">
                     {lab.isVerified ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                        ✓ Verified
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Verified</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-                        ⏳ Unverified
+                        <Clock className="h-3 w-3" />
+                        <span>Unverified</span>
                       </span>
                     )}
                   </td>

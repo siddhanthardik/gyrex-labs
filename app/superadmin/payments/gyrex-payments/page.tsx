@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getGyrexSubscriptionPayments } from "@/services/superadmin/payments-service";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { SuperadminEmptyState } from "@/components/superadmin/SuperadminEmptyState";
+import { CreditCard } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +28,13 @@ export default async function SuperadminGyrexPaymentsPage({ searchParams }: Page
   return (
     <div className="space-y-6">
       {/* Financial Boundary Callout */}
-      <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/20 p-4 text-xs text-emerald-300">
-        <span className="font-bold">💼 GYREX REVENUE STREAM: </span>
-        These transactions represent <span className="font-bold text-white">GYREX SUBSCRIPTION PAYMENTS (Lab → Gyrex)</span>.
-        These are software platform fees paid by diagnostic laboratories to Gyrex Labs.
+      <div className="flex items-center gap-2 rounded-xl border border-emerald-800/60 bg-emerald-950/20 p-4 text-xs text-emerald-300">
+        <CreditCard className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div>
+          <span className="font-bold">GYREX REVENUE STREAM: </span>
+          These transactions represent <span className="font-bold text-white">GYREX SUBSCRIPTION PAYMENTS (Lab → Gyrex)</span>.
+          These are software platform fees paid by diagnostic laboratories to Gyrex Labs.
+        </div>
       </div>
 
       <div>

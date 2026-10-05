@@ -4,6 +4,7 @@ import { getAuditLogs } from "@/services/superadmin/system-service";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { SuperadminEmptyState } from "@/components/superadmin/SuperadminEmptyState";
 import { AuditAction } from "@prisma/client";
+import { ShieldAlert } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +49,10 @@ export default async function SuperadminAuditLogsPage({ searchParams }: PageProp
 
         <Link
           href="/superadmin/system/security-alerts"
-          className="rounded-lg border border-rose-800/80 bg-rose-950/40 px-3.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/40 transition"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-800/80 bg-rose-950/40 px-3.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/40 transition"
         >
-          🚨 View Security Alerts
+          <ShieldAlert className="w-3.5 h-3.5" />
+          <span>View Security Alerts</span>
         </Link>
       </div>
 

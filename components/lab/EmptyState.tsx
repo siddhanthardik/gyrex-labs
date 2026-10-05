@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { FileText } from "lucide-react";
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -11,7 +12,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon = <span>📋</span>,
+  icon = <FileText className="h-8 w-8 text-slate-400" />,
   title,
   description,
   actionText,
@@ -20,7 +21,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-3xl text-slate-700 shadow-sm">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm">
         {icon}
       </div>
       <h3 className="mt-4 text-base font-semibold text-slate-900">{title}</h3>

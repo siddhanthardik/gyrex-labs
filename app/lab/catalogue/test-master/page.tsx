@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { UploadCloud, Clock, FlaskConical, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface MasterTest {
   id: string;
@@ -125,7 +126,8 @@ export default function TestMasterSelectionPage() {
           href="/lab/catalogue/import"
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
-          <span>📥 Import from Excel / CSV Instead</span>
+          <UploadCloud className="h-4 w-4 text-slate-500" />
+          <span>Import from Excel / CSV Instead</span>
         </Link>
       </div>
 
@@ -216,10 +218,21 @@ export default function TestMasterSelectionPage() {
 
                   <h3 className="mt-2 text-sm font-bold text-slate-900">{test.name}</h3>
 
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
-                    <span>🧪 {test.sampleType}</span>
-                    <span>⏱️ {test.standardTatHours}h TAT</span>
-                    {test.fastingRequired && <span className="text-amber-700">⚠️ Fasting Req.</span>}
+                  <div className="mt-2 flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <FlaskConical className="h-3 w-3 text-slate-400" />
+                      <span>{test.sampleType}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-slate-400" />
+                      <span>{test.standardTatHours}h TAT</span>
+                    </span>
+                    {test.fastingRequired && (
+                      <span className="inline-flex items-center gap-1 text-amber-700 font-medium">
+                        <AlertCircle className="h-3 w-3 text-amber-600" />
+                        <span>Fasting Req.</span>
+                      </span>
+                    )}
                   </div>
 
                   {test.synonyms.length > 0 && (

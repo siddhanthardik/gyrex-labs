@@ -64,13 +64,94 @@ export async function getSubscriptionPlans() {
     isActive: p.isActive,
     displayOrder: p.displayOrder,
     subscriberCount: p._count.subscriptions,
+    createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
   }));
+}
+
+export async function createSubscriptionPlan(
+  data: {
+    name: string;
+    code: string;
+    description?: string;
+    priceMonthly: number;
+    priceYearly: number;
+    maxOrdersPerMonth?: number | null;
+    maxStaffAccounts?: number;
+    customBrandingEnabled?: boolean;
+    geminiPrescriptionAiEnabled?: boolean;
+    isActive?: boolean;
+    displayOrder?: number;
+    trialDays?: number;
+  },
+  actor: SessionUser
+) {
+  if (!data.name || !data.name.trim()) {
+    throw new Error("Plan name is required.");
+  }
+  if (!data.code || !data.code.trim()) {
+    throw new Error("Plan code is required.");
+  }
+  const cleanCode = data.code.trim().toUpperCase();
+  if (!cleanCode.startsWith("PLAN_")) {
+    throw new Error("Plan code must begin with 'PLAN_' prefix (e.g. PLAN_GROWTH).");
+  }
+
+  if (data.priceMonthly === undefined || isNaN(data.priceMonthly) || data.priceMonthly < 0) {
+    throw new Error("Monthly price must be a non-negative number.");
+  }
+  if (data.priceYearly === undefined || isNaN(data.priceYearly) || data.priceYearly < 0) {
+    throw new Error("Annual price must be a non-negative number.");
+  }
+  if (data.trialDays !== undefined && (isNaN(data.trialDays) || data.trialDays < 0)) {
+    throw new Error("Trial days must be a non-negative number.");
+  }
+
+  // Check unique code
+  const existingCode = await prisma.subscriptionPlan.findUnique({
+    where: { code: cleanCode },
+  });
+  if (existingCode) {
+    throw new Error(`A subscription plan with code '${cleanCode}' already exists.`);
+  }
+
+  const plan = await prisma.subscriptionPlan.create({
+    data: {
+      name: data.name.trim(),
+      code: cleanCode,
+      description: data.description?.trim() || null,
+      priceMonthly: data.priceMonthly,
+      priceYearly: data.priceYearly,
+      maxOrdersPerMonth: data.maxOrdersPerMonth ?? null,
+      maxStaffAccounts: data.maxStaffAccounts ?? 5,
+      customBrandingEnabled: data.customBrandingEnabled ?? true,
+      geminiPrescriptionAiEnabled: data.geminiPrescriptionAiEnabled ?? true,
+      isActive: data.isActive ?? true,
+      displayOrder: data.displayOrder ?? 0,
+    },
+  });
+
+  await recordAuditLog({
+    actorUserId: actor.userId,
+    actorRole: actor.role,
+    action: AuditAction.SUBSCRIPTION_CHANGED,
+    entityType: "SubscriptionPlan",
+    entityId: plan.id,
+    metadata: {
+      action: "CREATE_PLAN",
+      planCode: cleanCode,
+      name: plan.name,
+    },
+  });
+
+  return plan;
 }
 
 export async function updateSubscriptionPlan(
   planId: string,
   data: {
     name?: string;
+    code?: string;
     description?: string;
     priceMonthly?: number;
     priceYearly?: number;
@@ -79,6 +160,8 @@ export async function updateSubscriptionPlan(
     customBrandingEnabled?: boolean;
     geminiPrescriptionAiEnabled?: boolean;
     isActive?: boolean;
+    displayOrder?: number;
+    trialDays?: number;
   },
   actor: SessionUser
 ) {
@@ -87,11 +170,51 @@ export async function updateSubscriptionPlan(
     throw new Error(`SubscriptionPlan '${planId}' not found`);
   }
 
+  if (data.name !== undefined && !data.name.trim()) {
+    throw new Error("Plan name cannot be empty.");
+  }
+
+  let cleanCode: string | undefined = undefined;
+  if (data.code !== undefined) {
+    cleanCode = data.code.trim().toUpperCase();
+    if (!cleanCode) {
+      throw new Error("Plan code cannot be empty.");
+    }
+    if (cleanCode !== existing.code) {
+      const duplicateCode = await prisma.subscriptionPlan.findUnique({
+        where: { code: cleanCode },
+      });
+      if (duplicateCode) {
+        throw new Error(`A subscription plan with code '${cleanCode}' already exists.`);
+      }
+    }
+  }
+
+  if (data.priceMonthly !== undefined && (isNaN(data.priceMonthly) || data.priceMonthly < 0)) {
+    throw new Error("Monthly price must be a non-negative number.");
+  }
+  if (data.priceYearly !== undefined && (isNaN(data.priceYearly) || data.priceYearly < 0)) {
+    throw new Error("Annual price must be a non-negative number.");
+  }
+  if (data.trialDays !== undefined && (isNaN(data.trialDays) || data.trialDays < 0)) {
+    throw new Error("Trial days must be a non-negative number.");
+  }
+
+  // Cannot activate an invalid plan
+  if (data.isActive === true) {
+    const finalMonthly = data.priceMonthly !== undefined ? data.priceMonthly : Number(existing.priceMonthly);
+    const finalYearly = data.priceYearly !== undefined ? data.priceYearly : Number(existing.priceYearly);
+    if (finalMonthly < 0 || finalYearly < 0) {
+      throw new Error("Cannot activate a plan with invalid or negative pricing.");
+    }
+  }
+
   const updated = await prisma.subscriptionPlan.update({
     where: { id: planId },
     data: {
       ...(data.name && { name: data.name.trim() }),
-      ...(data.description !== undefined && { description: data.description }),
+      ...(cleanCode && { code: cleanCode }),
+      ...(data.description !== undefined && { description: data.description?.trim() || null }),
       ...(data.priceMonthly !== undefined && { priceMonthly: data.priceMonthly }),
       ...(data.priceYearly !== undefined && { priceYearly: data.priceYearly }),
       ...(data.maxOrdersPerMonth !== undefined && { maxOrdersPerMonth: data.maxOrdersPerMonth }),
@@ -99,6 +222,7 @@ export async function updateSubscriptionPlan(
       ...(data.customBrandingEnabled !== undefined && { customBrandingEnabled: data.customBrandingEnabled }),
       ...(data.geminiPrescriptionAiEnabled !== undefined && { geminiPrescriptionAiEnabled: data.geminiPrescriptionAiEnabled }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
+      ...(data.displayOrder !== undefined && { displayOrder: data.displayOrder }),
     },
   });
 

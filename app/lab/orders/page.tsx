@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Package, Home, Building2 } from "lucide-react";
 import { StatusBadge } from "@/components/lab/StatusBadge";
 import { EmptyState } from "@/components/lab/EmptyState";
 import { OrderStatus, PaymentStatus, CollectionType } from "@prisma/client";
@@ -138,7 +139,7 @@ export default function LabOrdersPage() {
         ) : orders.length === 0 ? (
           <div className="p-8">
             <EmptyState
-              icon="📦"
+              icon={<Package className="h-8 w-8 text-slate-400" />}
               title="No Diagnostic Orders Found"
               description="No orders match your filter criteria. When patients book tests, they will appear here."
             />
@@ -194,13 +195,19 @@ export default function LabOrdersPage() {
                     <td className="py-3.5 px-4 text-xs">
                       {o.collectionType === "HOME_COLLECTION" ? (
                         <div>
-                          <span className="text-sky-700 font-medium">🏠 Home Visit</span>
+                          <span className="inline-flex items-center gap-1 text-sky-700 font-medium">
+                            <Home className="h-3 w-3" />
+                            <span>Home Visit</span>
+                          </span>
                           {o.collection?.scheduledSlot && (
                             <p className="text-[11px] text-slate-500">{o.collection.scheduledSlot}</p>
                           )}
                         </div>
                       ) : (
-                        <span className="text-slate-600">🏥 Lab Visit</span>
+                        <span className="inline-flex items-center gap-1 text-slate-600">
+                          <Building2 className="h-3 w-3" />
+                          <span>Lab Visit</span>
+                        </span>
                       )}
                     </td>
 

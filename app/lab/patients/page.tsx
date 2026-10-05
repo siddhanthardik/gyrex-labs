@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Users } from "lucide-react";
 import { EmptyState } from "@/components/lab/EmptyState";
 
 interface LabPatientItem {
@@ -116,7 +117,7 @@ export default function LabPatientsPage() {
         ) : patients.length === 0 ? (
           <div className="p-8">
             <EmptyState
-              icon="👥"
+              icon={<Users className="h-8 w-8 text-slate-400" />}
               title="No Patient Records Found"
               description="When patients book tests through your digital store, their laboratory profile and order history will appear here."
             />

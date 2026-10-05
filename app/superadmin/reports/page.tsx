@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { SuperadminStatCard } from "@/components/superadmin/SuperadminStatCard";
 import { ConfirmationModal } from "@/components/superadmin/ConfirmationModal";
+import { FileText, CheckCircle, Clock, Edit, Search } from "lucide-react";
 
 interface ReportItem {
   id: string;
@@ -103,28 +104,28 @@ export default function SuperadminReportsPage() {
           title="Total Reports Generated"
           value={stats.total}
           subtitle="Signed clinical PDF assets"
-          icon="📄"
+          icon={<FileText className="w-4 h-4" />}
         />
         <SuperadminStatCard
           title="Final Reports Released"
           value={stats.finalCount}
           subtitle="Delivered or ready for patient"
           badgeVariant="success"
-          icon="✅"
+          icon={<CheckCircle className="w-4 h-4" />}
         />
         <SuperadminStatCard
           title="Draft / In-Progress"
           value={stats.draftCount}
           subtitle="Pending release by lab pathologist"
           badgeVariant="warning"
-          icon="⏳"
+          icon={<Clock className="w-4 h-4" />}
         />
         <SuperadminStatCard
           title="Amended Reports"
           value={stats.amendedCount}
           subtitle="Revised by laboratory with audit log"
           badgeVariant="info"
-          icon="📝"
+          icon={<Edit className="w-4 h-4" />}
         />
       </div>
 
@@ -219,9 +220,10 @@ export default function SuperadminReportsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedReport(r)}
-                      className="rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition"
+                      className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 transition shadow-2xs"
                     >
-                      Audit Inspect 🔍
+                      <Search className="w-3 h-3 text-slate-500" />
+                      <span>Audit Inspect</span>
                     </button>
                   </td>
                 </tr>

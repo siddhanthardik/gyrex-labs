@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { SuperadminStatusBadge } from "@/components/superadmin/SuperadminStatusBadge";
 import { ConfirmationModal } from "@/components/superadmin/ConfirmationModal";
 import { LabStatus } from "@prisma/client";
+import { Ban, RefreshCw, ExternalLink } from "lucide-react";
 
 interface LabDetailData {
   lab: {
@@ -240,9 +241,10 @@ export default function SuperadminLabDetailPage({
                 setSuspendAction(true);
                 setShowSuspendModal(true);
               }}
-              className="rounded-lg border border-rose-800 bg-rose-950 px-3.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-800 bg-rose-950 px-3.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900 transition"
             >
-              🚫 Suspend Storefront
+              <Ban className="w-3.5 h-3.5" />
+              Suspend Storefront
             </button>
           ) : lab.status === "SUSPENDED" ? (
             <button
@@ -251,9 +253,10 @@ export default function SuperadminLabDetailPage({
                 setSuspendAction(false);
                 setShowSuspendModal(true);
               }}
-              className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 transition shadow-xs"
             >
-              🔄 Reactivate Storefront
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reactivate Storefront
             </button>
           ) : null}
 
@@ -261,9 +264,10 @@ export default function SuperadminLabDetailPage({
             href={`/${lab.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-700 hover:text-white transition"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-700 hover:text-white transition"
           >
-            🏪 View Live Store ↗
+            <span>View Live Store</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>

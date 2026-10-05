@@ -670,7 +670,7 @@ export default function LabOnboardingPage() {
             {loading
               ? "Saving..."
               : currentStep === 6
-              ? "🚀 Publish My Lab Store"
+              ? "Publish My Lab Store"
               : "Save & Continue →"}
           </button>
         </div>

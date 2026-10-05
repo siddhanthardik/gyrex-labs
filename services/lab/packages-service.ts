@@ -278,6 +278,9 @@ export async function createLabPackage(
     if (isNaN(input.mrpPrice) || input.mrpPrice <= 0) {
       throw new Error("MRP price must be a valid positive number.");
     }
+    if (input.sellingPrice > input.mrpPrice) {
+      throw new Error("Package selling price cannot exceed the MRP / printed price.");
+    }
   }
 
   // 1. Verify and deduplicate test IDs
@@ -380,6 +383,12 @@ export async function updateLabPackage(
     if (isNaN(input.mrpPrice) || input.mrpPrice <= 0) {
       throw new Error("MRP price must be a valid positive number.");
     }
+  }
+
+  const effectiveSelling = input.sellingPrice !== undefined ? input.sellingPrice : Number(existing.sellingPrice);
+  const effectiveMrp = input.mrpPrice !== undefined ? input.mrpPrice : (existing.mrpPrice ? Number(existing.mrpPrice) : null);
+  if (effectiveMrp !== null && effectiveSelling > effectiveMrp) {
+    throw new Error("Package selling price cannot exceed the MRP / printed price.");
   }
 
   let uniqueTestIds: string[] | undefined;
