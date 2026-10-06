@@ -15,10 +15,10 @@ export default async function SuperadminCatalogueMatchingPage() {
             ← Catalogue
           </Link>
           <span className="text-slate-300">/</span>
-          <span className="text-slate-700 font-medium">Matching Oversight</span>
+          <span className="text-slate-700 font-medium">Catalogue Matching</span>
         </div>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-          Catalogue Import & Master Matching Centre
+          Catalogue Matching
         </h1>
         <p className="mt-1 text-xs text-slate-500">
           Platform visibility into laboratory bulk test imports and mapping rates against the Gyrex Test Master.

@@ -28,20 +28,20 @@ export default async function SuperadminGyrexPaymentsPage({ searchParams }: Page
   return (
     <div className="space-y-6">
       {/* Financial Boundary Callout */}
-      <div className="flex items-center gap-2 rounded-xl border border-emerald-800/60 bg-emerald-950/20 p-4 text-xs text-emerald-300">
-        <CreditCard className="w-4 h-4 text-emerald-400 shrink-0" />
+      <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-800">
+        <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
         <div>
           <span className="font-bold">GYREX REVENUE STREAM: </span>
-          These transactions represent <span className="font-bold text-white">GYREX SUBSCRIPTION PAYMENTS (Lab → Gyrex)</span>.
+          These transactions represent <span className="font-bold text-emerald-950">GYREX SUBSCRIPTION PAYMENTS (Lab → Gyrex)</span>.
           These are software platform fees paid by diagnostic laboratories to Gyrex Labs.
         </div>
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           Gyrex SaaS Subscription Payments ({total})
         </h1>
-        <p className="mt-1 text-xs text-zinc-400">
+        <p className="mt-1 text-xs text-slate-500">
           Commercial software licensing fees collected by Gyrex from diagnostic laboratories.
         </p>
       </div>
@@ -52,55 +52,57 @@ export default async function SuperadminGyrexPaymentsPage({ searchParams }: Page
           description="No laboratory SaaS payments have been recorded yet."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              <tr>
-                <th className="px-4 py-3">Payment Reference</th>
-                <th className="px-4 py-3">Invoice Number</th>
-                <th className="px-4 py-3">Paying Laboratory</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">Gateway</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-              {payments.map((p) => (
-                <tr key={p.id} className="hover:bg-zinc-800/30 transition">
-                  <td className="px-4 py-3 font-mono font-bold text-white">
-                    {p.paymentNumber}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-indigo-400">
-                    {p.invoiceNumber}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-white">
-                    <Link href={`/superadmin/labs/${p.labId}`} className="hover:underline">
-                      {p.labName}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 font-mono font-semibold text-white">
-                    ₹{p.amount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400">
-                    {p.gateway}
-                  </td>
-                  <td className="px-4 py-3">
-                    <SuperadminStatusBadge status={p.status} />
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400">
-                    {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : new Date(p.createdAt).toLocaleDateString()}
-                  </td>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Payment Reference</th>
+                  <th className="px-4 py-3">Invoice Number</th>
+                  <th className="px-4 py-3">Paying Laboratory</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Gateway</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                {payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/70 transition">
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                      {p.paymentNumber}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-sky-600">
+                      {p.invoiceNumber}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">
+                      <Link href={`/superadmin/labs/${p.labId}`} className="hover:text-sky-600 hover:underline">
+                        {p.labName}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                      ₹{p.amount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {p.gateway}
+                    </td>
+                    <td className="px-4 py-3">
+                      <SuperadminStatusBadge status={p.status} />
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : new Date(p.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-400">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <div>
-              Showing <span className="font-medium text-white">{payments.length}</span> of{" "}
-              <span className="font-medium text-white">{total}</span> payments
+              Showing <span className="font-semibold text-slate-800">{payments.length}</span> of{" "}
+              <span className="font-semibold text-slate-800">{total}</span> payments
             </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">

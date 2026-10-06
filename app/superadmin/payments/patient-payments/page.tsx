@@ -26,13 +26,13 @@ export default async function SuperadminPatientPaymentsPage({ searchParams }: Pa
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-xs text-indigo-700">
-        <span className="font-bold">Financial separation:</span> these transactions represent patient payments made directly to a laboratory for diagnostic services. Gyrex Labs is not the merchant of record for these funds.
+      <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-4 text-xs text-sky-850">
+        <span className="font-bold text-sky-950">Financial Separation:</span> These transactions represent patient diagnostic payments made directly to an individual laboratory. Gyrex Labs is not the merchant of record for these funds.
       </div>
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Patient payments ({total})
+          Patient Diagnostic Payments ({total})
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Audit ledger for patient payments processed directly between patients and laboratories.
@@ -45,57 +45,59 @@ export default async function SuperadminPatientPaymentsPage({ searchParams }: Pa
           description="No patient diagnostic transactions have been recorded yet."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 bg-zinc-950 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              <tr>
-                <th className="px-4 py-3">Payment Reference</th>
-                <th className="px-4 py-3">Order Number</th>
-                <th className="px-4 py-3">Receiving Laboratory</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">Method / Gateway</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-              {payments.map((p) => (
-                <tr key={p.id} className="hover:bg-zinc-800/30 transition">
-                  <td className="px-4 py-3 font-mono font-bold text-white">
-                    {p.paymentNumber}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-indigo-400">
-                    <Link href={`/superadmin/orders/${p.orderId}`} className="hover:underline">
-                      {p.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-white">
-                    <Link href={`/superadmin/labs/${p.labId}`} className="hover:underline">
-                      {p.labName}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 font-mono font-semibold text-white">
-                    ₹{p.amount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400">
-                    {p.method} • {p.gateway}
-                  </td>
-                  <td className="px-4 py-3">
-                    <SuperadminStatusBadge status={p.status} />
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400">
-                    {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : new Date(p.createdAt).toLocaleDateString()}
-                  </td>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Payment Reference</th>
+                  <th className="px-4 py-3">Order Number</th>
+                  <th className="px-4 py-3">Receiving Laboratory</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Method / Gateway</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                {payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/70 transition">
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                      {p.paymentNumber}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-sky-600">
+                      <Link href={`/superadmin/orders/${p.orderId}`} className="hover:underline">
+                        {p.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">
+                      <Link href={`/superadmin/labs/${p.labId}`} className="hover:text-sky-600 hover:underline">
+                        {p.labName}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                      ₹{p.amount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {p.method} • {p.gateway}
+                    </td>
+                    <td className="px-4 py-3">
+                      <SuperadminStatusBadge status={p.status} />
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : new Date(p.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-400">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
             <div>
-              Showing <span className="font-medium text-white">{payments.length}</span> of{" "}
-              <span className="font-medium text-white">{total}</span> payments
+              Showing <span className="font-semibold text-slate-800">{payments.length}</span> of{" "}
+              <span className="font-semibold text-slate-800">{total}</span> payments
             </div>
             {totalPages > 1 && (
               <div className="flex items-center gap-2">

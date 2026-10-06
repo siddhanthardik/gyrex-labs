@@ -382,7 +382,7 @@ export default function SuperadminSubscriptionPlansPage() {
 
       {/* Create / Edit Plan Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -552,7 +552,7 @@ export default function SuperadminSubscriptionPlansPage() {
                       className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
                     />
                     <span className="text-xs font-medium text-slate-700">
-                      Enable Prescription Vision AI
+                      Enable Prescription Vision Integration
                     </span>
                   </label>
 

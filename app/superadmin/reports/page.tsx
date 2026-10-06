@@ -103,7 +103,7 @@ export default function SuperadminReportsPage() {
         <SuperadminStatCard
           title="Total Reports Generated"
           value={stats.total}
-          subtitle="Signed clinical PDF assets"
+          subtitle="Uploaded clinical PDF documents"
           icon={<FileText className="w-4 h-4" />}
         />
         <SuperadminStatCard
@@ -169,7 +169,7 @@ export default function SuperadminReportsPage() {
       ) : reports.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center">
           <p className="text-sm font-semibold text-slate-900">No Diagnostic Reports Match Filter</p>
-          <p className="mt-1 text-xs text-slate-500">Reports will appear here once partner laboratories upload signed PDF documents.</p>
+          <p className="mt-1 text-xs text-slate-500">Reports will appear here once partner laboratories upload diagnostic PDF documents.</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

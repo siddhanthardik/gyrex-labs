@@ -10,8 +10,8 @@ export default async function SuperadminNotificationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Platform System Notifications ({notifications.length})</h1>
-        <p className="mt-1 text-xs text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Platform System Notifications ({notifications.length})</h1>
+        <p className="mt-1 text-xs text-slate-500">
           Automated transactional alerts, laboratory onboarding notifications, and subscription renewals.
         </p>
       </div>
@@ -24,14 +24,14 @@ export default async function SuperadminNotificationsPage() {
       ) : (
         <div className="space-y-3">
           {notifications.map((n) => (
-            <div key={n.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 space-y-1">
+            <div key={n.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-white text-xs">{n.title}</span>
-                <span className="text-[10px] font-mono text-zinc-500">{new Date(n.sentAt).toLocaleString()}</span>
+                <span className="font-semibold text-slate-900 text-xs">{n.title}</span>
+                <span className="text-[10px] font-mono text-slate-400">{new Date(n.sentAt).toLocaleString()}</span>
               </div>
-              <p className="text-xs text-zinc-400">{n.message}</p>
-              <div className="flex items-center gap-2 pt-2 text-[10px] text-zinc-500 font-mono">
-                <span className="rounded bg-zinc-800 px-1.5 py-0.5">{n.channel}</span>
+              <p className="text-xs text-slate-600">{n.message}</p>
+              <div className="flex items-center gap-2 pt-2 text-[10px] text-slate-500 font-mono">
+                <span className="rounded bg-slate-100 text-slate-700 px-1.5 py-0.5 border border-slate-200 font-semibold">{n.channel}</span>
                 <span>Recipient: {n.recipientType}</span>
                 <span>• {n.labName}</span>
               </div>
