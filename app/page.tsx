@@ -2,25 +2,27 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
-  BarChart2,
-  BarChart3,
   Building2,
   Calendar,
   Check,
+  CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   CreditCard,
+  FileCheck,
   FileText,
-  Heart,
+  FlaskConical,
   Menu,
-  MessageCircle,
-  Package,
+  MessageSquare,
   Phone,
-  Share2,
-  Shield,
+  ShieldCheck,
+  ShoppingCart,
   Sparkles,
+  Store,
   TrendingUp,
   Users,
   X,
@@ -28,14 +30,42 @@ import {
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "What does Gyrex Labs help with?",
+      answer:
+        "Gyrex Labs provides an all-in-one digital operating platform for diagnostic laboratories — including patient storefronts, automated WhatsApp booking and notification flows, integrated online payments via Razorpay, and instant digital report delivery.",
+    },
+    {
+      question: "Does it replace our existing laboratory billing software?",
+      answer:
+        "No. Gyrex Labs seamlessly complements your existing laboratory information management system (LIMS) or offline billing setup. It brings patient-facing bookings, payments, and report downloads online without requiring you to replace your internal analyzers or reporting machines.",
+    },
+    {
+      question: "Can it support multiple collection centres and home collection?",
+      answer:
+        "Yes. You can configure multiple phlebotomy collection centres, define specific home sample collection pincodes, assign collection staff, and track pickups in real time from your Lab Owner dashboard.",
+    },
+    {
+      question: "How do patients book tests through WhatsApp?",
+      answer:
+        "Patients receive an interactive menu with quick-reply options to browse your test catalogue, select health packages, schedule home visits or lab appointments, make secure online payments, and download finalized PDF reports.",
+    },
+  ];
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
-      {/* ── 1. Navigation Bar ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo - Official SVG with no duplicate text brand */}
-          <Link href="/" className="flex items-center">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-sky-100 selection:text-sky-900">
+      {/* ── 1. HEADER ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center" title="Gyrex Labs Public Platform">
             <img
               src="/branding/gyrex-labs.svg"
               alt="Gyrex Labs"
@@ -43,56 +73,57 @@ export default function HomePage() {
             />
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden items-center gap-8 text-[15px] font-medium text-slate-600 lg:flex">
-            <Link href="#features" className="transition-colors hover:text-slate-900">
+          {/* Desktop Navigation */}
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 lg:flex">
+            <Link href="#features" className="transition hover:text-sky-600">
               Features
             </Link>
-            <Link href="#how-it-works" className="transition-colors hover:text-slate-900">
+            <Link href="#how-it-works" className="transition hover:text-sky-600">
               How It Works
             </Link>
-            <Link href="#for-labs" className="transition-colors hover:text-slate-900">
+            <Link href="#for-labs" className="transition hover:text-sky-600">
               For Laboratories
             </Link>
-            <Link href="#pricing" className="transition-colors hover:text-slate-900">
+            <Link href="#pricing" className="transition hover:text-sky-600">
               Pricing
             </Link>
-            <Link href="#testimonials" className="transition-colors hover:text-slate-900">
+            <Link href="#testimonials" className="transition hover:text-sky-600">
               Testimonials
             </Link>
-            <Link href="#faq" className="transition-colors hover:text-slate-900">
+            <Link href="#faq" className="transition hover:text-sky-600">
               FAQ
             </Link>
           </nav>
 
-          {/* Desktop CTAs */}
+          {/* Desktop Right Actions */}
           <div className="hidden items-center gap-4 lg:flex">
             <Link
               href="/login"
-              className="px-3 py-2 text-[15px] font-medium text-slate-700 transition-colors hover:text-[#1a73e8]"
+              className="px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-sky-600"
             >
               Sign In
             </Link>
             <Link
               href="/lab/onboarding/signup"
-              className="inline-flex items-center justify-center rounded-lg bg-[#1a73e8] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1557b0] hover:shadow"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-sky-600 hover:shadow-md"
             >
               Get Started
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-3 lg:hidden">
+          <div className="flex items-center gap-2.5 lg:hidden">
             <Link
               href="/lab/onboarding/signup"
-              className="inline-flex items-center justify-center rounded-lg bg-[#1a73e8] px-3.5 py-2 text-xs font-semibold text-white"
+              className="inline-flex items-center justify-center rounded-lg bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs"
             >
               Get Started
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -100,10 +131,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Mobile Nav Dropdown */}
+        {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="border-b border-slate-200 bg-white px-4 py-5 shadow-lg lg:hidden">
-            <nav className="flex flex-col space-y-3 text-base font-medium text-slate-700">
+            <nav className="flex flex-col space-y-3 text-sm font-medium text-slate-700">
               <Link
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
@@ -146,20 +177,20 @@ export default function HomePage() {
               >
                 FAQ
               </Link>
-              <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <div className="mt-2 flex flex-col gap-2 border-t border-slate-100 pt-3">
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-center font-semibold text-slate-800 border border-slate-200 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-center text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/lab/onboarding/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg bg-[#1a73e8] px-3 py-2.5 text-center font-semibold text-white shadow-sm"
+                  className="rounded-lg bg-sky-500 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-sky-600"
                 >
-                  Get Started
+                  Get Started →
                 </Link>
               </div>
             </nav>
@@ -167,113 +198,116 @@ export default function HomePage() {
         )}
       </header>
 
-      {/* ── 2. Hero Section ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#f3f7fd]/80 via-white to-white pt-10 pb-16 sm:pt-14 sm:pb-24 lg:pt-16 lg:pb-28">
+      {/* ── 2. HERO SECTION ─────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-white pt-10 pb-16 sm:pt-16 sm:pb-20 lg:pt-20 lg:pb-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
             {/* Left Copy & CTAs */}
-            <div className="lg:col-span-6 xl:col-span-5">
-              <p className="text-xs sm:text-[13px] font-bold tracking-[0.14em] uppercase text-[#1a73e8]">
-                A modern platform for diagnostic laboratories
-              </p>
+            <div className="lg:col-span-6 xl:col-span-6">
+              {/* Eyebrow Pill */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-sky-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                A MODERN PLATFORM FOR DIAGNOSTIC LABORATORIES
+              </div>
 
-              <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.12]">
-                Turn more test bookings into{" "}
-                <span className="text-[#1a73e8]">happy patients</span>
+              {/* Main Headline */}
+              <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.5rem] lg:leading-[1.12]">
+                Turn More <br className="hidden sm:inline" />
+                Test Bookings into <br />
+                <span className="text-sky-500">Happy Patients</span>
               </h1>
 
+              {/* Supporting Copy */}
               <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                Everything your diagnostic lab needs to manage bookings, payments and report delivery — all in one simple and modern platform.
+                Manage test bookings, payments and report delivery — all in one simple and modern platform. Give your patients a seamless, WhatsApp-like experience while you focus on accurate diagnostics.
               </p>
 
+              {/* CTA Row */}
               <div className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center">
                 <Link
                   href="/lab/onboarding/signup"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a73e8] px-7 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-[#1557b0] hover:shadow-lg"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:bg-sky-600 hover:shadow-lg"
                 >
                   Get Started
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="#features"
-                  className="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-7 py-3.5 text-base font-semibold text-[#1a73e8] transition-colors hover:bg-blue-50/50"
+                <a
+                  href="mailto:labs@gyrex.in?subject=Gyrex%20Labs%20Demo%20Request"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-white px-7 py-3.5 text-base font-semibold text-sky-600 transition hover:bg-sky-50/60"
                 >
+                  <Calendar className="h-4 w-4 text-sky-500" />
                   Book a Demo
-                </Link>
+                </a>
               </div>
 
-              {/* Trust & Setup Highlights */}
-              <div className="mt-10 grid grid-cols-3 gap-3 border-t border-slate-100 pt-6 sm:border-0 sm:pt-0">
-                <div className="flex items-start gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                    <Check className="h-4 w-4" />
+              {/* Checkmarks Row */}
+              <div className="mt-8 flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-slate-900">Quick Setup</p>
-                    <p className="text-[11px] sm:text-xs text-slate-500">Get started in days</p>
-                  </div>
+                  <span>Quick Setup</span>
                 </div>
-
-                <div className="flex items-start gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <BarChart2 className="h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-slate-900">More Bookings</p>
-                    <p className="text-[11px] sm:text-xs text-slate-500">Grow your revenue</p>
-                  </div>
+                  <span>Dedicated Support</span>
                 </div>
-
-                <div className="flex items-start gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                    <Shield className="h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-slate-900">Trusted by Labs</p>
-                    <p className="text-[11px] sm:text-xs text-slate-500">Across India</p>
-                  </div>
+                  <span>No Hidden Charges</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Hero Composite Visual Matching Reference */}
-            <div className="relative lg:col-span-6 xl:col-span-7">
-              <div className="relative mx-auto flex w-full max-w-[620px] items-center justify-center">
-                {/* Background Lab Scientist in Pathology Environment */}
-                <div className="absolute right-0 top-0 w-3/4 h-[380px] sm:h-[430px] rounded-3xl overflow-hidden shadow-md">
-                  <img
-                    src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80"
-                    alt="Pathology specialist working in a modern diagnostic laboratory"
-                    className="h-full w-full object-cover object-center"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 via-transparent to-transparent" />
+            {/* Right Hero Visual Composition */}
+            <div className="relative lg:col-span-6 xl:col-span-6">
+              <div className="relative mx-auto flex w-full max-w-[560px] items-center justify-center">
+                {/* Background Doctor Image Card */}
+                <div className="relative w-4/5 sm:w-[82%] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+                  <div className="relative h-[340px] sm:h-[420px] w-full">
+                    <Image
+                      src="/images/hero-doctor.jpg"
+                      alt="Healthcare professional using smartphone in diagnostic laboratory"
+                      fill
+                      priority
+                      className="object-cover object-top"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
+                  </div>
                 </div>
 
                 {/* Overlaid Smartphone Mockup (WhatsApp Booking Flow) */}
-                <div className="relative z-20 mr-auto w-[250px] sm:w-[280px] rounded-[34px] border-[5px] border-slate-900 bg-slate-900 p-1.5 shadow-[0_25px_60px_rgba(15,23,42,0.22)]">
+                <div className="absolute -right-1 sm:right-2 -bottom-6 sm:bottom-0 z-20 w-[230px] sm:w-[260px] rounded-[32px] border-[5px] border-slate-900 bg-slate-900 p-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.25)]">
                   {/* Phone Screen */}
-                  <div className="overflow-hidden rounded-[26px] bg-[#eef2f5]">
+                  <div className="overflow-hidden rounded-[24px] bg-[#f0f2f5]">
                     {/* WhatsApp Top Bar */}
-                    <div className="flex items-center justify-between bg-[#075e54] px-3 py-2.5 text-white">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                    <div className="flex items-center justify-between bg-[#075E54] px-3 py-2.5 text-white">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
                           SD
                         </div>
-                        <div>
-                          <p className="text-[11px] font-bold leading-tight">Sharma Diagnostics</p>
-                          <p className="text-[9px] text-emerald-200">Online</p>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold leading-tight truncate">Sharma Diagnostics</p>
+                          <div className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                            <p className="text-[9px] text-emerald-100 leading-none">Online</p>
+                          </div>
                         </div>
                       </div>
-                      <Phone className="h-3.5 w-3.5 text-white/90" />
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-white/90" />
                     </div>
 
                     {/* Chat Messages */}
-                    <div className="space-y-2 p-3 text-[10.5px]">
+                    <div className="space-y-2 p-2.5 text-[10px]">
                       {/* Bot Welcome Message */}
-                      <div className="max-w-[88%] rounded-xl rounded-tl-none bg-white p-2.5 shadow-sm text-slate-800">
-                        <p className="font-semibold text-slate-900">Hello!</p>
+                      <div className="max-w-[90%] rounded-xl rounded-tl-none bg-white p-2 shadow-2xs text-slate-800">
+                        <p className="font-bold text-slate-900">Hello!</p>
                         <p className="text-slate-600 mt-0.5">Book your lab test at Sharma Diagnostics</p>
-                        <div className="mt-1.5 space-y-0.5 text-slate-700">
+                        <div className="mt-1 space-y-0.5 font-medium text-slate-700">
                           <p>1. Book a Test</p>
                           <p>2. View Reports</p>
                           <p>3. Locations</p>
@@ -283,22 +317,22 @@ export default function HomePage() {
                       </div>
 
                       {/* User Selection */}
-                      <div className="ml-auto max-w-[80%] rounded-xl rounded-tr-none bg-[#dcf8c6] p-2 shadow-sm text-slate-800">
-                        <p className="font-medium">1. Book a Test</p>
+                      <div className="ml-auto max-w-[80%] rounded-xl rounded-tr-none bg-[#DCF8C6] p-2 shadow-2xs text-slate-800">
+                        <p className="font-semibold text-slate-900">1. Book a Test</p>
                         <span className="mt-0.5 block text-right text-[8px] text-slate-500">10:16 AM</span>
                       </div>
 
                       {/* Bot Options Selection */}
-                      <div className="max-w-[92%] rounded-xl rounded-tl-none bg-white p-2.5 shadow-sm text-slate-800">
-                        <p className="text-slate-700">Please select a test or package:</p>
-                        <div className="mt-2 space-y-1.5">
-                          <div className="rounded-lg border border-blue-100 bg-blue-50/60 py-1 text-center font-semibold text-[#1a73e8]">
+                      <div className="max-w-[92%] rounded-xl rounded-tl-none bg-white p-2 shadow-2xs text-slate-800">
+                        <p className="text-slate-700 font-medium">Please select a test or package:</p>
+                        <div className="mt-1.5 space-y-1">
+                          <div className="rounded-md border border-sky-200 bg-sky-50 py-0.5 text-center font-bold text-sky-700">
                             Blood Tests
                           </div>
-                          <div className="rounded-lg border border-slate-200 bg-white py-1 text-center font-medium text-slate-700">
+                          <div className="rounded-md border border-slate-200 bg-white py-0.5 text-center font-medium text-slate-700">
                             Health Packages
                           </div>
-                          <div className="rounded-lg border border-slate-200 bg-white py-1 text-center font-medium text-slate-700">
+                          <div className="rounded-md border border-slate-200 bg-white py-0.5 text-center font-medium text-slate-700">
                             Full Body Checkup
                           </div>
                         </div>
@@ -307,55 +341,47 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Overlaid Tablet/Laptop Dashboard Card (Bottom-Right) */}
-                <div className="absolute -bottom-6 right-0 z-30 w-[270px] sm:w-[310px] rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <img
-                      src="/branding/gyrex-labs.svg"
-                      alt="Gyrex Labs"
-                      className="h-5 w-auto"
-                    />
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600">
-                      Live Portal
-                    </span>
+                {/* Floating Card: Online Booking (Top Right) */}
+                <div className="hidden sm:flex absolute -top-3 -right-3 z-30 items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3 py-2 shadow-md">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600 border border-sky-100">
+                    <Calendar className="h-4 w-4" />
                   </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 leading-tight">Online Booking</p>
+                    <p className="text-[10px] text-slate-500">Instant patient slots</p>
+                  </div>
+                </div>
 
-                  {/* Booking & Report Deliveries */}
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-xl bg-[#f8fafd] p-2.5 border border-slate-100">
-                      <p className="text-[10px] font-medium text-slate-500">Today&apos;s Bookings</p>
-                      <div className="mt-1 flex items-baseline gap-1.5">
-                        <span className="text-lg font-extrabold text-slate-900">24</span>
-                        <span className="text-[10px] font-semibold text-emerald-600">+22%</span>
-                      </div>
-                    </div>
-                    <div className="rounded-xl bg-[#f8fafd] p-2.5 border border-slate-100">
-                      <p className="text-[10px] font-medium text-slate-500">Reports Delivered</p>
-                      <div className="mt-1 flex items-baseline gap-1.5">
-                        <span className="text-lg font-extrabold text-slate-900">18</span>
-                        <span className="text-[10px] font-semibold text-emerald-600">+12%</span>
-                      </div>
-                    </div>
+                {/* Floating Card: Digital Reports (Middle Right) */}
+                <div className="hidden sm:flex absolute top-36 -right-6 z-30 items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3 py-2 shadow-md">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <FileText className="h-4 w-4" />
                   </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 leading-tight">Digital Reports</p>
+                    <p className="text-[10px] text-slate-500">WhatsApp & Web delivery</p>
+                  </div>
+                </div>
 
-                  {/* Weekly Booking Trend Bar Chart */}
-                  <div className="mt-3 rounded-xl bg-slate-50/70 p-2.5">
-                    <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600">
-                      <span>Bookings</span>
-                      <span className="text-[#1a73e8]">This Week</span>
-                    </div>
-                    <div className="mt-2.5 flex h-10 items-end gap-1.5">
-                      {[35, 50, 45, 65, 80, 70, 95].map((val, idx) => (
-                        <div
-                          key={idx}
-                          className={`w-full rounded-t ${
-                            idx === 6 ? "bg-[#1a73e8]" : "bg-blue-300"
-                          }`}
-                          style={{ height: `${val}%` }}
-                        />
-                      ))}
-                    </div>
+                {/* Floating Card: Reports Delivered (Bottom Right Overlay) */}
+                <div className="hidden sm:block absolute -bottom-8 right-24 z-30 w-52 rounded-xl border border-slate-200/90 bg-white p-3 shadow-lg">
+                  <div className="flex items-center gap-1.5 text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-bold">Reports Delivered</span>
                   </div>
+                  <p className="text-xs font-semibold text-slate-900 mt-1">Complete Blood Count (CBC)</p>
+                  <p className="text-[10px] text-slate-500">Your report is ready</p>
+                  <span className="mt-1.5 inline-block text-[10px] font-bold text-sky-600 hover:underline">
+                    View Report →
+                  </span>
+                </div>
+
+                {/* Floating Card: Secure Payments (Left Edge) */}
+                <div className="hidden sm:flex absolute bottom-12 -left-4 z-30 items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 shadow-md">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600 border border-sky-100">
+                    <CreditCard className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800">Secure Payments</span>
                 </div>
               </div>
             </div>
@@ -363,473 +389,557 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 3. Features Section ("Everything for your Diagnostic Lab") ─── */}
-      <section id="features" className="bg-[#f8fafd] py-20 md:py-28">
+      {/* ── 3. TRUST / METRICS STRIP ──────────────────────────────────── */}
+      <section className="border-y border-slate-200 bg-white py-10 sm:py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:gap-8">
+            {/* Metric 1 */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                <FlaskConical className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-900 sm:text-3xl">500+</p>
+                <p className="text-xs font-semibold text-slate-500">Tests Catalogued</p>
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-900 sm:text-3xl">10,000+</p>
+                <p className="text-xs font-semibold text-slate-500">Happy Patients</p>
+              </div>
+            </div>
+
+            {/* Metric 3 */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-900 sm:text-3xl">100+</p>
+                <p className="text-xs font-semibold text-slate-500">Partner Laboratories</p>
+              </div>
+            </div>
+
+            {/* Metric 4 */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-slate-900 sm:text-3xl">99%</p>
+                <p className="text-xs font-semibold text-slate-500">Uptime & Reliability</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. KEY FEATURES SECTION ─────────────────────────────────── */}
+      <section id="features" className="bg-slate-50 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-              All the tools you need
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
-              Everything for your Diagnostic Lab
+            <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
+              KEY FEATURES
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
+              Everything Your Lab Needs <br className="hidden sm:inline" />
+              in One Platform
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:text-lg">
-              A complete platform to manage patient bookings, payments, reports and more.
+              From bookings to payments to report delivery — Gyrex Labs helps you run your laboratory efficiently and delight your patients.
             </p>
           </div>
 
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Card 1: Online & WhatsApp Bookings */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-[#1a73e8]">
-                <Calendar className="h-6 w-6" />
+            {/* Card 1: Test Catalogue */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Test Catalogue</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Add individual tests and packages with flexible pricing, sample types, and fasting instructions.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Online &amp; WhatsApp Bookings</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Let patients book tests through your website or WhatsApp with ease.
-              </p>
             </div>
 
-            {/* Card 2: Secure Online Payments */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 text-xl font-bold">
-                ₹
+            {/* Card 2: Online Booking */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                    <ShoppingCart className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Online Booking</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Patients can search and book tests instantly, anytime, with home sample collection slot selection.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Secure Online Payments</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Accept payments directly with your own Razorpay account.
-              </p>
             </div>
 
-            {/* Card 3: Report Delivery */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-600">
-                <FileText className="h-6 w-6" />
+            {/* Card 3: Payments & Invoicing */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Payments &amp; Invoicing</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Accept online payments with secure Razorpay integration and automated digital patient receipts.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Report Delivery</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Share reports digitally on web, WhatsApp and email.
-              </p>
             </div>
 
-            {/* Card 4: Test Catalogue & Packages */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-500">
-                <Package className="h-6 w-6" />
+            {/* Card 4: Report Delivery */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Report Delivery</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Send digital reports with secure access links and automated WhatsApp dispatch directly to patients.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Test Catalogue &amp; Packages</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Create and manage tests, profiles and health packages easily.
-              </p>
             </div>
 
-            {/* Card 5: Orders & Patient Management */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-                <BarChart3 className="h-6 w-6" />
+            {/* Card 5: Patient Management */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Patient Management</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  View patient history, previous orders, and test reports in one centralized, searchable clinical record.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Orders &amp; Patient Management</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Manage all your bookings, patients and reports in one place.
-              </p>
             </div>
 
-            {/* Card 6: Multiple Locations */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-7 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
-                <Building2 className="h-6 w-6" />
+            {/* Card 6: Storefront & Branding */}
+            <div className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs transition hover:border-slate-300 hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
+                    <Store className="h-5 w-5" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-sky-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Storefront &amp; Branding</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Custom store URL, logo, contact information and store settings representing your unique laboratory identity.
+                </p>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-slate-900">Multiple Locations</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Manage one or more collection centres and home sample collection.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 4. How It Works Section ("Get started in 3 simple steps") ── */}
-      <section id="how-it-works" className="bg-white py-20 md:py-28">
+      {/* ── 5. HOW IT WORKS SECTION ─────────────────────────────────── */}
+      <section id="how-it-works" className="border-y border-slate-200 bg-sky-50/50 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-              How it works
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
-              Get started in 3 simple steps
+            <span className="inline-flex rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-700 shadow-2xs">
+              HOW IT WORKS
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
+              Get Started in 3 Simple Steps
             </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:text-lg">
+              Launch your lab&apos;s digital experience in minutes.
+            </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3 relative">
+          <div className="mt-16 grid items-center gap-8 md:grid-cols-3 relative">
             {/* Step 1 */}
-            <div className="relative rounded-2xl border border-slate-100 bg-[#f8fafd] p-8 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-[#1a73e8]">
-                <FileText className="h-7 w-7" />
-              </div>
-              <div className="mx-auto -mt-3.5 mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#1a73e8] text-xs font-bold text-white shadow">
+            <div className="relative flex flex-col items-center text-center">
+              {/* Step Number Circle */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-sm font-bold text-white shadow-xs">
                 1
               </div>
-              <h3 className="text-lg font-bold text-slate-900">Set up your lab</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Add your tests, packages and locations.
-              </p>
-              {/* Desktop arrow connector */}
-              <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 z-10">
-                <ChevronRight className="h-8 w-8 text-slate-300" />
+
+              {/* Step Card */}
+              <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:shadow-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 text-sky-600">
+                  <Store className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Set Up Your Lab</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Add your lab details, tests, packages and branding in minutes.
+                </p>
+              </div>
+
+              {/* Connecting Arrow for Desktop */}
+              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 text-sky-400">
+                <ArrowRight className="h-6 w-6" />
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="relative rounded-2xl border border-slate-100 bg-[#f8fafd] p-8 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-[#1a73e8]">
-                <Share2 className="h-7 w-7" />
-              </div>
-              <div className="mx-auto -mt-3.5 mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#1a73e8] text-xs font-bold text-white shadow">
+            <div className="relative flex flex-col items-center text-center">
+              {/* Step Number Circle */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-white shadow-xs">
                 2
               </div>
-              <h3 className="text-lg font-bold text-slate-900">Start receiving bookings</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Patients book from your website or WhatsApp.
-              </p>
-              {/* Desktop arrow connector */}
-              <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 z-10">
-                <ChevronRight className="h-8 w-8 text-slate-300" />
+
+              {/* Step Card */}
+              <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:shadow-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                  <Users className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Start Receiving Bookings</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Patients can search and book tests online or via WhatsApp.
+                </p>
+              </div>
+
+              {/* Connecting Arrow for Desktop */}
+              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 text-sky-400">
+                <ArrowRight className="h-6 w-6" />
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="relative rounded-2xl border border-slate-100 bg-[#f8fafd] p-8 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-[#1a73e8]">
-                <TrendingUp className="h-7 w-7" />
-              </div>
-              <div className="mx-auto -mt-3.5 mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#1a73e8] text-xs font-bold text-white shadow">
+            <div className="relative flex flex-col items-center text-center">
+              {/* Step Number Circle */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white shadow-xs">
                 3
               </div>
-              <h3 className="text-lg font-bold text-slate-900">Deliver reports &amp; grow</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Share reports and keep your patients coming back.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── 5. Benefits Section ("Built for modern diagnostic laboratories") ── */}
-      <section id="for-labs" className="bg-[#f8fafd] py-20 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
-            {/* Left Outcomes Checklist */}
-            <div className="lg:col-span-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-                Why labs choose Gyrex Lab
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                Built for modern diagnostic laboratories
-              </h2>
-              <p className="mt-3 text-base text-slate-600">
-                Save time, increase efficiency and give your patients a better experience.
-              </p>
-
-              <div className="mt-8 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                    <Check className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800">
-                    Higher test bookings through digital channels
-                  </span>
+              {/* Step Card */}
+              <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:shadow-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600">
+                  <FileText className="h-7 w-7" />
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800">
-                    Less manual work and fewer phone calls
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <Users className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800">
-                    Better patient experience and trust
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                    <BarChart2 className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800">
-                    Grow revenue with minimal effort
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Center Patient Visual with Floating Ready Report Notification */}
-            <div className="relative lg:col-span-5">
-              <div className="relative mx-auto max-w-[420px] overflow-hidden rounded-3xl shadow-lg">
-                <img
-                  src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=700&q=80"
-                  alt="Patient happily checking diagnostic test report on smartphone"
-                  className="h-[360px] sm:h-[420px] w-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
-              </div>
-
-              {/* Floating Report Notification Card */}
-              <div className="absolute -bottom-6 inset-x-4 sm:inset-x-8 rounded-2xl border border-slate-100 bg-white p-4 shadow-xl">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <Check className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">Your Test Report is Ready</p>
-                      <p className="text-xs text-slate-500">Your Blood Test report is now available.</p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/lab/onboarding/signup"
-                    className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#1a73e8] hover:underline"
-                  >
-                    View Report
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Right 4 Outcome Cards */}
-            <div className="mt-8 lg:mt-0 lg:col-span-3 flex flex-col gap-3.5">
-              <div className="flex items-center gap-3.5 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-[#1a73e8]">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">More Bookings</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3.5 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 text-lg font-bold">
-                  ₹
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Higher Revenue</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3.5 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Save Time</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3.5 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 text-rose-500">
-                  <Heart className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Happier Patients</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 6. Testimonials Section ("What our lab partners say") ─────── */}
-      <section id="testimonials" className="bg-white py-20 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-              Trusted by diagnostic laboratories
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
-              What our lab partners say
-            </h2>
-          </div>
-
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {/* Testimonial 1 */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-[#f8fafd] p-7 shadow-sm">
-              <p className="text-sm leading-relaxed text-slate-700 italic">
-                &ldquo;Gyrex Lab has made our online bookings and report sharing very simple. Our patients love the ease of using WhatsApp.&rdquo;
-              </p>
-              <div className="mt-6 flex items-center gap-3.5 border-t border-slate-200/60 pt-4">
-                <img
-                  src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=120&h=120&q=80"
-                  alt="Dr. Amit Sharma"
-                  className="h-11 w-11 rounded-full object-cover border border-white shadow-sm"
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Dr. Amit Sharma</p>
-                  <p className="text-xs text-slate-500">Sharma Diagnostics, New Delhi</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-[#f8fafd] p-7 shadow-sm">
-              <p className="text-sm leading-relaxed text-slate-700 italic">
-                &ldquo;We have seen a clear increase in test bookings since using Gyrex Lab. The platform is easy to manage and very reliable.&rdquo;
-              </p>
-              <div className="mt-6 flex items-center gap-3.5 border-t border-slate-200/60 pt-4">
-                <img
-                  src="https://images.unsplash.com/photo-1594824813639-4507005476a8?auto=format&fit=crop&w=120&h=120&q=80"
-                  alt="Dr. Neha Gupta"
-                  className="h-11 w-11 rounded-full object-cover border border-white shadow-sm"
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Dr. Neha Gupta</p>
-                  <p className="text-xs text-slate-500">LifeCare Diagnostic Centre, Noida</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-[#f8fafd] p-7 shadow-sm">
-              <p className="text-sm leading-relaxed text-slate-700 italic">
-                &ldquo;The support team is responsive and the platform works smoothly. It has helped us save time and serve more patients.&rdquo;
-              </p>
-              <div className="mt-6 flex items-center gap-3.5 border-t border-slate-200/60 pt-4">
-                <img
-                  src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=120&h=120&q=80"
-                  alt="Dr. Rajesh Mehta"
-                  className="h-11 w-11 rounded-full object-cover border border-white shadow-sm"
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Dr. Rajesh Mehta</p>
-                  <p className="text-xs text-slate-500">Apex Clinical Laboratory, Gurugram</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 7. FAQ Section ────────────────────────────────────────────── */}
-      <section id="faq" className="bg-[#f8fafd] py-20 md:py-24">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-              Frequently Asked Questions
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Common questions from lab owners
-            </h2>
-          </div>
-
-          <div className="mt-12 space-y-4">
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900">
-                What does Gyrex Labs help with?
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                It gives your diagnostic laboratory a branded digital booking flow, WhatsApp booking integration, digital report delivery, and direct payment collection without disrupting your daily lab operations.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900">
-                Does it replace our existing laboratory billing software?
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                No. Gyrex Labs complements your existing systems by bringing your patient-facing services online, so your laboratory team can continue testing as usual while serving patients with digital convenience.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900">
-                Can it support multiple collection centres?
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Yes. Gyrex Labs supports multi-centre management and home sample collection dispatch with individual location tracking.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 8. Bottom CTA Banner ("Start your journey with Gyrex Lab today") */}
-      <section id="pricing" className="bg-white py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-r from-[#edf4fe] via-[#edf5ff] to-[#e4efff] p-8 sm:p-12 lg:p-16 shadow-sm">
-            <div className="grid items-center gap-8 lg:grid-cols-12">
-              <div className="lg:col-span-7">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-                  Ready to grow your lab?
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Deliver Reports</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Send digital reports securely and keep your patients informed.
                 </p>
-                <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
-                  Start your journey with Gyrex Lab today
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. WHY CHOOSE GYREX LABS ─────────────────────────────────── */}
+      <section id="for-labs" className="bg-white py-20 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+            {/* Left Image Column with Overlay Card */}
+            <div className="relative lg:col-span-6">
+              <div className="relative mx-auto max-w-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                <div className="relative h-[380px] sm:h-[440px] w-full">
+                  <Image
+                    src="/images/why-choose-lab.jpg"
+                    alt="Clinical pathologist conducting diagnostic tests with microscope"
+                    fill
+                    className="object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
+                </div>
+
+                {/* Floating Overlay Badge in Bottom-Right Corner */}
+                <div className="absolute bottom-4 right-4 z-20 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-sm sm:bottom-6 sm:right-6">
+                  <p className="text-xs font-bold text-slate-900">Fast. Secure. Reliable.</p>
+                  <div className="mt-2 space-y-1.5 text-[11px] font-semibold text-slate-700">
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span className="text-slate-800">Online Bookings</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span className="text-slate-800">Secure Payments</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span className="text-slate-800">Digital Reports</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span className="text-slate-800">Happy Patients</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Benefits Column */}
+            <div className="lg:col-span-6">
+              <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
+                WHY CHOOSE GYREX LABS
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Built for Modern <br />
+                Diagnostic Laboratories
+              </h2>
+              <p className="mt-3 text-base text-slate-600 leading-relaxed">
+                A complete, easy-to-use platform designed to help laboratories grow, operate efficiently and provide a better patient experience.
+              </p>
+
+              <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {/* Benefit 1 */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-bold text-slate-900">Increase Bookings</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    Reach more patients through online storefronts and WhatsApp channels.
+                  </p>
+                </div>
+
+                {/* Benefit 2 */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-bold text-slate-900">Save Time</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    Automate bookings, payments and report delivery with zero manual calls.
+                  </p>
+                </div>
+
+                {/* Benefit 3 */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-bold text-slate-900">Build Trust</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    Provide a professional, branded experience to your patients and doctors.
+                  </p>
+                </div>
+
+                {/* Benefit 4 */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-bold text-slate-900">Focus on Quality</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    Let technology handle operations while you focus on accurate diagnostics.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. PARTNER HIGHLIGHTS SECTION ───────────────────────────── */}
+      <section id="testimonials" className="border-t border-slate-200 bg-slate-50 py-20 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
+              PLATFORM HIGHLIGHTS
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
+              Built for Diagnostic Excellence
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:text-lg">
+              Designed to help modern pathology and diagnostic laboratories streamline operations and elevate the patient journey.
+            </p>
+          </div>
+
+          {/* Highlights Cards Grid */}
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {/* Card 1 */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:border-sky-300 hover:shadow-md">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+                  <Store className="h-3.5 w-3.5" />
+                  <span>Branded Storefront</span>
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Digital Patient Reach</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Empower patients to discover tests, review preparation requirements, and book appointments 24/7 through your own custom laboratory URL.
+                </p>
+              </div>
+
+              <div className="mt-6 border-t border-slate-100 pt-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Key Outcome</p>
+                <p className="mt-1 text-sm font-bold text-sky-700">24/7 Self-Service Test Booking</p>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:border-emerald-300 hover:shadow-md">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>WhatsApp Flow</span>
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Conversational Convenience</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Automate booking confirmations, home collection updates, and instant PDF report dispatch directly on WhatsApp where patients are active.
+                </p>
+              </div>
+
+              <div className="mt-6 border-t border-slate-100 pt-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Key Outcome</p>
+                <p className="mt-1 text-sm font-bold text-emerald-700">Zero Physical Report Pickup Delays</p>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-7 shadow-xs transition hover:border-amber-300 hover:shadow-md">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  <span>Direct Settlements</span>
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">Direct Financial Control</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Payments are processed through your laboratory&apos;s Razorpay account.
+                </p>
+              </div>
+
+              <div className="mt-6 border-t border-slate-100 pt-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Key Outcome</p>
+                <p className="mt-1 text-sm font-bold text-amber-700">Direct Razorpay Processing</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. FAQ SECTION ────────────────────────────────────────────── */}
+      <section id="faq" className="bg-white py-20 sm:py-24">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
+              FREQUENTLY ASKED QUESTIONS
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Common Questions from Lab Owners
+            </h2>
+            <p className="mt-2 text-base text-slate-600">
+              Everything you need to know about setting up and running Gyrex Labs.
+            </p>
+          </div>
+
+          <div className="mt-12 space-y-3.5">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div
+                  key={index}
+                  className="rounded-xl border border-slate-200 bg-white shadow-2xs transition hover:border-slate-300"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(index)}
+                    className="flex w-full items-center justify-between p-5 text-left text-sm sm:text-base font-bold text-slate-900"
+                  >
+                    <span>{faq.question}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                        isOpen ? "rotate-180 text-sky-600" : ""
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-slate-100 px-5 pt-3 pb-5 text-sm leading-relaxed text-slate-600">
+                      {faq.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 9. FINAL PROMINENT CTA BANNER ─────────────────────────────── */}
+      <section id="pricing" className="border-t border-slate-200 bg-slate-50 py-16 sm:py-20 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-sky-200 bg-sky-50/80 p-8 sm:p-12 lg:p-16 shadow-xs">
+            <div className="grid items-center gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-8">
+                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
+                  Ready to Grow Your Laboratory?
                 </h2>
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
-                  Get your lab online, accept more bookings and deliver reports effortlessly.
+                  Equip your diagnostic laboratory with modern digital bookings, direct Razorpay payments, and automated report delivery.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3.5 sm:flex-row sm:items-center">
                   <Link
                     href="/lab/onboarding/signup"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1a73e8] px-7 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-[#1557b0] hover:shadow-lg"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:bg-sky-600 hover:shadow-lg"
                   >
-                    Get Started Now
+                    Get Started
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link
-                    href="#features"
-                    className="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-7 py-3.5 text-base font-semibold text-[#1a73e8] transition-colors hover:bg-blue-50/50"
+                  <a
+                    href="mailto:labs@gyrex.in?subject=Gyrex%20Labs%20Demo%20Request"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-white px-7 py-3.5 text-base font-semibold text-sky-600 transition hover:bg-sky-50/60"
                   >
+                    <Calendar className="h-4 w-4 text-sky-500" />
                     Book a Demo
-                  </Link>
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-4 text-xs sm:text-sm text-slate-700">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <Check className="h-3 w-3" />
-                    </div>
-                    <span>Quick onboarding</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <Check className="h-3 w-3" />
-                    </div>
-                    <span>Dedicated support</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <Check className="h-3 w-3" />
-                    </div>
-                    <span>Trusted by leading labs</span>
-                  </div>
+                  </a>
                 </div>
               </div>
 
-              {/* Lab Specialists Image on the Right */}
-              <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                <img
-                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=700&q=80"
-                  alt="Pathology professionals analyzing lab diagnostic reports"
-                  className="h-[250px] sm:h-[300px] w-full max-w-[420px] rounded-2xl object-cover shadow-md border-2 border-white"
-                />
+              {/* Upward Growth Visual Metric Graphic */}
+              <div className="lg:col-span-4 flex justify-center lg:justify-end">
+                <div className="relative flex h-36 w-48 sm:h-44 sm:w-56 items-end justify-between rounded-2xl border border-sky-200/80 bg-white/90 p-4 shadow-md backdrop-blur-xs">
+                  <div className="flex w-6 flex-col items-center gap-1.5">
+                    <div className="w-full h-12 rounded-t bg-sky-200" />
+                    <span className="text-[10px] font-bold text-slate-500">M1</span>
+                  </div>
+                  <div className="flex w-6 flex-col items-center gap-1.5">
+                    <div className="w-full h-18 rounded-t bg-sky-300" />
+                    <span className="text-[10px] font-bold text-slate-500">M2</span>
+                  </div>
+                  <div className="flex w-6 flex-col items-center gap-1.5">
+                    <div className="w-full h-24 rounded-t bg-sky-400" />
+                    <span className="text-[10px] font-bold text-slate-500">M3</span>
+                  </div>
+                  <div className="flex w-6 flex-col items-center gap-1.5">
+                    <div className="w-full h-32 rounded-t bg-sky-500 shadow-xs" />
+                    <span className="text-[10px] font-bold text-sky-700">Live</span>
+                  </div>
+
+                  {/* Growth Arrow Indicator */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>+48%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 9. Footer ─────────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-100 bg-white py-14 text-slate-600">
+      {/* ── 10. FULL FOOTER ───────────────────────────────────────────── */}
+      <footer className="border-t border-slate-200 bg-white py-14 text-slate-600">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 md:grid-cols-4">
-            <div className="md:col-span-2">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12">
+            {/* Col 1: Brand & Social */}
+            <div className="lg:col-span-4">
               <Link href="/" className="inline-block">
                 <img
                   src="/branding/gyrex-labs.svg"
@@ -838,62 +948,135 @@ export default function HomePage() {
                 />
               </Link>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-500">
-                A modern digital platform for diagnostic laboratories to present services, manage bookings, and deliver reports more clearly.
+                A modern platform for diagnostic laboratories to manage bookings, payments and report delivery.
               </p>
+
+              {/* Social Links */}
+              <div className="mt-6 flex items-center gap-3 text-slate-400">
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white hover:text-sky-600 hover:border-sky-200 transition"
+                  aria-label="LinkedIn"
+                >
+                  <span className="text-xs font-bold font-mono">in</span>
+                </a>
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white hover:text-sky-600 hover:border-sky-200 transition"
+                  aria-label="X (formerly Twitter)"
+                >
+                  <span className="text-xs font-bold font-mono">𝕏</span>
+                </a>
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white hover:text-sky-600 hover:border-sky-200 transition"
+                  aria-label="Instagram"
+                >
+                  <span className="text-xs font-bold font-mono">ig</span>
+                </a>
+                <a
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white hover:text-sky-600 hover:border-sky-200 transition"
+                  aria-label="YouTube"
+                >
+                  <span className="text-xs font-bold font-mono">yt</span>
+                </a>
+              </div>
             </div>
 
-            <div>
+            {/* Col 2: Product */}
+            <div className="lg:col-span-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                 Product
               </h4>
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li>
-                  <Link href="#features" className="hover:text-slate-900 transition-colors">
+                  <Link href="#features" className="hover:text-sky-600 transition">
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="#how-it-works" className="hover:text-slate-900 transition-colors">
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#for-labs" className="hover:text-slate-900 transition-colors">
-                    For Laboratories
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#pricing" className="hover:text-slate-900 transition-colors">
+                  <Link href="#pricing" className="hover:text-sky-600 transition">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="#faq" className="hover:text-slate-900 transition-colors">
+                  <Link href="#how-it-works" className="hover:text-sky-600 transition">
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#for-labs" className="hover:text-sky-600 transition">
+                    For Laboratories
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#faq" className="hover:text-sky-600 transition">
                     FAQ
                   </Link>
                 </li>
               </ul>
             </div>
 
-            <div>
+            {/* Col 3: Company */}
+            <div className="lg:col-span-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                Access
+                Company
               </h4>
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li>
-                  <Link href="/login" className="hover:text-slate-900 transition-colors">
-                    Sign In
-                  </Link>
+                  <span className="text-slate-500 cursor-default">About Us</span>
                 </li>
                 <li>
-                  <Link href="/lab/onboarding/signup" className="hover:text-slate-900 transition-colors">
-                    Get Started
-                  </Link>
+                  <span className="text-slate-500 cursor-default">Blog</span>
+                </li>
+                <li>
+                  <span className="text-slate-500 cursor-default">Careers</span>
+                </li>
+                <li>
+                  <span className="text-slate-500 cursor-default">Contact Us</span>
                 </li>
               </ul>
             </div>
+
+            {/* Col 4: Legal */}
+            <div className="lg:col-span-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                Legal
+              </h4>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                <li>
+                  <span className="text-slate-500 cursor-default">Privacy Policy</span>
+                </li>
+                <li>
+                  <span className="text-slate-500 cursor-default">Terms of Service</span>
+                </li>
+                <li>
+                  <span className="text-slate-500 cursor-default">Refund Policy</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 5: Stay Updated */}
+            <div className="lg:col-span-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                Stay Updated
+              </h4>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                Follow Gyrex Labs for product updates and laboratory resources.
+              </p>
+            </div>
           </div>
 
+          {/* Bottom Divider & Copyright */}
           <div className="mt-12 border-t border-slate-100 pt-8 text-center text-xs text-slate-400">
             &copy; {new Date().getFullYear()} Gyrex Labs. All rights reserved.
           </div>
