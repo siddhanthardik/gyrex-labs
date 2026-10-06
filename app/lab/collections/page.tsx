@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Truck } from "lucide-react";
+import { Truck, Calendar, User, FlaskConical } from "lucide-react";
 import { EmptyState } from "@/components/lab/EmptyState";
 import { StatusBadge } from "@/components/lab/StatusBadge";
 
@@ -73,8 +73,8 @@ export default function LabCollectionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Home Sample Collections</h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Home Sample Collections</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Monitor scheduled home sample collections, patient addresses, time slots, and phlebotomist assignments.
         </p>
       </div>
@@ -83,8 +83,8 @@ export default function LabCollectionsPage() {
         <div
           className={`rounded-xl p-4 text-xs font-medium border ${
             notification.type === "error"
-              ? "bg-rose-500/10 border-rose-500/25 text-rose-400"
-              : "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+              ? "bg-rose-50 border-rose-200 text-rose-800"
+              : "bg-emerald-50 border-emerald-200 text-emerald-800"
           }`}
         >
           {notification.message}
@@ -92,9 +92,9 @@ export default function LabCollectionsPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center p-16 text-zinc-400">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
-          <span className="ml-3 text-sm">Loading scheduled home collections...</span>
+        <div className="flex items-center justify-center p-16 text-slate-500">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+          <span className="ml-3 text-sm font-medium">Loading scheduled home collections...</span>
         </div>
       ) : collections.length === 0 ? (
         <EmptyState
@@ -103,83 +103,90 @@ export default function LabCollectionsPage() {
           description="Home sample collection requests from patient orders will appear here automatically."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {collections.map((item) => {
             const isCollected = !!item.collection.sampleCollectedAt;
 
             return (
               <div
                 key={item.orderId}
-                className="flex flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 backdrop-blur-sm space-y-4"
+                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition hover:border-slate-300"
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <Link
                       href={`/lab/orders/${item.orderNumber}`}
-                      className="font-mono text-xs font-bold text-sky-400 hover:underline"
+                      className="font-bold text-sm text-sky-600 hover:underline"
                     >
                       {item.orderNumber}
                     </Link>
-                    <StatusBadge status={item.orderStatus} type="order" />
+                    <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {item.orderStatus === "REPORT_READY"
+                        ? "Report Ready"
+                        : item.orderStatus.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase())}
+                    </span>
                   </div>
 
-                  <div className="mt-3">
-                    <h3 className="font-semibold text-white">{item.patientName}</h3>
-                    <p className="text-xs text-zinc-400">{item.patientPhone}</p>
-                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mt-2">{item.patientName}</h3>
 
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950 p-3 space-y-1.5 text-xs">
-                    <div>
-                      <span className="text-zinc-400">Scheduled Date & Slot:</span>
-                      <p className="font-semibold text-white">
-                        {new Date(item.collection.scheduledDate).toLocaleDateString("en-IN", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}{" "}
-                        • {item.collection.scheduledSlot}
-                      </p>
+                  <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 p-4 space-y-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600 shrink-0">
+                        <Calendar className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className="block text-[11px] font-medium text-slate-500">Scheduled Date & Slot</span>
+                        <p className="text-xs font-bold text-slate-900">
+                          {new Date(item.collection.scheduledDate).toLocaleDateString("en-IN", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })}{" "}
+                          • {item.collection.scheduledSlot}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="text-zinc-400">Collector / Phlebotomist:</span>
-                      <p className="font-medium text-zinc-200">
-                        {item.collection.phlebotomistName || "Assigned on dispatch"}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600 shrink-0">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className="block text-[11px] font-medium text-slate-500">Collector / Phlebotomist</span>
+                        <p className="text-xs font-bold text-slate-900">
+                          {item.collection.phlebotomistName || "Assigned on dispatch"}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="text-zinc-400">Tests to Collect:</span>
-                      <p className="text-zinc-300 truncate" title={item.tests}>
-                        {item.tests}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600 shrink-0">
+                        <FlaskConical className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[11px] font-medium text-slate-500">Tests to Collect</span>
+                        <p className="text-xs font-bold text-slate-900 truncate" title={item.tests}>
+                          {item.tests}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-zinc-800 flex items-center justify-between gap-2">
-                  <Link
-                    href={`/lab/orders/${item.orderNumber}`}
-                    className="text-xs text-zinc-400 hover:text-white"
-                  >
-                    View Order Details
-                  </Link>
-
-                  {!isCollected && item.orderStatus !== "COMPLETED" && item.orderStatus !== "CANCELLED" && (
+                <div className="mt-4 flex items-center justify-end">
+                  {isCollected ? (
+                    <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                      Sample in Lab ✓
+                    </span>
+                  ) : item.orderStatus !== "COMPLETED" && item.orderStatus !== "CANCELLED" ? (
                     <button
                       type="button"
                       onClick={() => handleMarkSampleCollected(item.orderId)}
-                      className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500 transition"
+                      className="rounded-lg bg-sky-500 hover:bg-sky-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
                     >
                       ✓ Sample Collected
                     </button>
-                  )}
-
-                  {isCollected && (
-                    <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/20">
-                      Sample In Lab ✓
-                    </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );
