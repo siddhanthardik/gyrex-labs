@@ -56,9 +56,7 @@ export function SuperadminLayoutShell({
         onToggleCollapse={handleToggleCollapse}
       />
 
-      <div className={`flex flex-1 flex-col min-w-0 transition-all duration-200 ${
-        isCollapsed ? "lg:pl-20" : "lg:pl-64"
-      }`}>
+      <div className="flex flex-1 flex-col min-w-0 transition-all duration-200">
         <SuperadminHeader
           userEmail={userEmail}
           userName={userName}

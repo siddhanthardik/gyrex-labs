@@ -45,8 +45,8 @@ export function SuperadminHeader({
     : "GS";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 sm:px-6 backdrop-blur-md">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
+      <div className="flex flex-1 items-center gap-3 mr-4 max-w-xl">
         {/* Mobile menu toggle */}
         <button
           type="button"
@@ -61,7 +61,7 @@ export function SuperadminHeader({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="hidden h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 lg:flex"
+          className="hidden h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 lg:flex shrink-0"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -69,17 +69,17 @@ export function SuperadminHeader({
         </button>
 
         {/* Central Search bar */}
-        <div className="relative">
+        <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search labs, orders, patients, invoices..."
-            className="w-56 sm:w-72 md:w-88 lg:w-96 rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+            className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         {/* Security alerts CTA */}
         <Link
           href="/superadmin/system/security-alerts"

@@ -135,7 +135,7 @@ export function SuperadminSidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xs transition-all duration-200 lg:static ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xs transition-all duration-200 lg:static lg:shrink-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${isCollapsed ? "w-72 lg:w-20" : "w-72 lg:w-64"}`}
       >
