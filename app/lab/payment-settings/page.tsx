@@ -364,7 +364,7 @@ export default function LabPaymentSettingsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>

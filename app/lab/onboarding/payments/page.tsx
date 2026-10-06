@@ -297,7 +297,7 @@ export default function LabOnboardingPaymentsPage() {
         )}
 
         {/* ── Healthcare Financial Model Trust Notice ──────────────────── */}
-        <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 p-5 shadow-sm">
+        <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-5 shadow-2xs">
           <div className="flex items-start gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
               <Building className="h-5 w-5" />

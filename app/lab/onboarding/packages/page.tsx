@@ -998,7 +998,7 @@ export default function LabOnboardingPackagesPage() {
               </div>
 
               {/* ── Live Preview & Economics Card ──────────────────────── */}
-              <div className="border border-blue-200 rounded-2xl p-5 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 space-y-3">
+              <div className="border border-sky-200 rounded-xl p-5 bg-sky-50/50 space-y-3">
                 <div className="flex items-center justify-between border-b border-blue-100 pb-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 uppercase tracking-wider">
                     <Sparkles className="h-4 w-4 text-blue-600" />

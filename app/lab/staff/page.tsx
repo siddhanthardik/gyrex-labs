@@ -150,7 +150,7 @@ export default function LabStaffPage() {
     switch (role) {
       case UserRole.LAB_OWNER:
         return (
-          <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700 border border-purple-200">
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
             <ShieldCheck className="h-3 w-3" />
             <span>LAB_OWNER</span>
           </span>

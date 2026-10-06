@@ -46,9 +46,18 @@ interface LabSidebarProps {
   };
   isOpen?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarProps) {
+export function LabSidebar({
+  lab,
+  user,
+  isOpen = false,
+  onClose,
+  isCollapsed = false,
+  onToggleCollapse,
+}: LabSidebarProps) {
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -69,8 +78,12 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
   };
 
   const isStaff = user.role === UserRole.LAB_STAFF;
+  const userInitial = user.fullName.trim().charAt(0).toUpperCase() || "U";
 
-  const navSections: Array<{ title: string; items: Array<{ label: string; href: string; icon: LucideIcon; show: boolean }> }> = [
+  const navSections: Array<{
+    title: string;
+    items: Array<{ label: string; href: string; icon: LucideIcon; show: boolean }>;
+  }> = [
     {
       title: "Operations",
       items: [
@@ -104,76 +117,52 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
     },
   ];
 
-  const getStatusBadge = () => {
-    switch (lab.status) {
-      case "ACTIVE":
-        return <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active store</span>;
-      case "PENDING_VERIFICATION":
-        return <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Pending verification</span>;
-      case "SUSPENDED":
-        return <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">Suspended</span>;
-      default:
-        return <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Draft</span>;
-    }
-  };
-
   return (
     <>
-      {isOpen && <div onClick={onClose} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" />}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden"
+        />
+      )}
 
       <aside
-        className={`fixed bottom-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white/95 shadow-xs backdrop-blur-sm transition-transform duration-200 lg:static lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xs transition-all duration-200 lg:static ${
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        } ${isCollapsed ? "w-72 lg:w-20" : "w-72 lg:w-64"}`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
-          <Link href="/lab/dashboard" className="flex items-center gap-2">
+        {/* Sidebar Header: Enlarged Gyrex Labs Branding */}
+        <div
+          className={`flex h-16 items-center border-b border-slate-200 px-4 ${
+            isCollapsed ? "justify-between lg:justify-center" : "justify-between"
+          }`}
+        >
+          <Link
+            href="/lab/dashboard"
+            className="flex items-center gap-2"
+            title="Gyrex Labs Operations"
+          >
             <Image
               src="/branding/gyrex-labs.svg"
               alt="Gyrex Labs"
-              width={110}
-              height={28}
-              className="h-5 w-auto"
+              width={140}
+              height={36}
+              className={`w-auto transition-all ${isCollapsed ? "h-6 lg:h-6" : "h-7"}`}
               priority
             />
           </Link>
           {onClose && (
-            <button onClick={onClose} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Close navigation">
-              <X className="h-4 w-4" />
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+              aria-label="Close navigation"
+            >
+              <X className="h-5 w-5" />
             </button>
           )}
         </div>
 
-        {/* Tenant Laboratory Context */}
-        <div className="border-b border-slate-200 bg-slate-50/70 px-5 py-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Laboratory
-            </span>
-            {lab.code && (
-              <span className="font-mono text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded">
-                {lab.code}
-              </span>
-            )}
-          </div>
-          <h2 className="truncate text-xs font-bold text-slate-900" title={lab.name}>
-            {lab.name}
-          </h2>
-
-          {lab.nablAccreditationNumber && (
-            <div className="flex items-center">
-              <span className="inline-flex items-center rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                <span>NABL Accredited</span>
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-0.5">
-            <span className="text-[10px] text-slate-500">Storefront</span>
-            {getStatusBadge()}
-          </div>
-        </div>
-
+        {/* Navigation Sections */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {navSections.map((section, idx) => {
             const visibleItems = section.items.filter((item) => item.show);
@@ -181,24 +170,40 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
 
             return (
               <div key={idx} className="space-y-1">
-                <h3 className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                <h3
+                  className={`px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 ${
+                    isCollapsed ? "lg:hidden" : ""
+                  }`}
+                >
                   {section.title}
                 </h3>
                 {visibleItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = item.href === "/lab/dashboard" ? pathname === "/lab/dashboard" || pathname === "/lab" : pathname.startsWith(item.href);
+                  const isActive =
+                    item.href === "/lab/dashboard"
+                      ? pathname === "/lab/dashboard" || pathname === "/lab"
+                      : pathname.startsWith(item.href);
 
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                        isActive ? "border border-sky-200 bg-sky-50 text-sky-700 font-semibold" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      title={isCollapsed ? item.label : undefined}
+                      className={`flex items-center gap-3 rounded-lg text-sm font-medium transition ${
+                        isCollapsed
+                          ? "px-3 py-2.5 lg:justify-center lg:px-2"
+                          : "px-3 py-2"
+                      } ${
+                        isActive
+                          ? "border border-sky-200 bg-sky-50 text-sky-700 font-semibold shadow-2xs"
+                          : "border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className={isCollapsed ? "lg:hidden truncate" : "truncate"}>
+                        {item.label}
+                      </span>
                     </Link>
                   );
                 })}
@@ -207,33 +212,66 @@ export function LabSidebar({ lab, user, isOpen = false, onClose }: LabSidebarPro
           })}
         </div>
 
-        <div className="border-t border-slate-200 bg-slate-50/80 p-4 space-y-3">
-          <Link
-            href={`/${lab.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-          >
-            <span>Preview digital store</span>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-
-          <div className="flex items-center justify-between pt-1">
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-slate-900">{user.fullName}</p>
-              <p className="text-[11px] text-slate-500">{user.role}</p>
-            </div>
-            <form onSubmit={handleLogout} action="/api/auth/logout" method="POST">
-              <button
-                type="submit"
-                disabled={isLoggingOut}
-                className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-50"
-                title="Sign out"
+        {/* Sidebar Footer */}
+        <div className="border-t border-slate-200 bg-slate-50/70 p-3 space-y-2">
+          {isCollapsed ? (
+            <div className="hidden lg:flex flex-col items-center gap-2">
+              <Link
+                href={`/${lab.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Preview digital store"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition shadow-2xs"
               >
-                <LogOut className="h-3 w-3 text-slate-400" />
-                <span>{isLoggingOut ? "Signing out..." : "Log out"}</span>
-              </button>
-            </form>
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <form onSubmit={handleLogout} action="/api/auth/logout" method="POST" className="w-full flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isLoggingOut}
+                  title="Sign out"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:border-slate-300 transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          ) : null}
+
+          {/* Full Footer view for expanded desktop & mobile drawer */}
+          <div className={isCollapsed ? "lg:hidden space-y-2" : "space-y-2"}>
+            <Link
+              href={`/${lab.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 shadow-2xs"
+            >
+              <span>Preview digital store</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="min-w-0 flex items-center gap-2">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-sky-100 text-[11px] font-bold text-sky-700">
+                  {userInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold text-slate-900 leading-tight">{user.fullName}</p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">{user.role}</p>
+                </div>
+              </div>
+              <form onSubmit={handleLogout} action="/api/auth/logout" method="POST">
+                <button
+                  type="submit"
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-50"
+                  title="Sign out"
+                >
+                  <LogOut className="h-3 w-3 text-slate-400" />
+                  <span>{isLoggingOut ? "..." : "Exit"}</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </aside>

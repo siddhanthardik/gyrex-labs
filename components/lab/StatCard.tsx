@@ -1,5 +1,15 @@
 import React from "react";
-import { Card } from "@/components/ui/Card";
+
+export type StatCardVariant =
+  | "default"
+  | "sky"
+  | "info"
+  | "emerald"
+  | "success"
+  | "amber"
+  | "warning"
+  | "teal"
+  | "rose";
 
 interface StatCardProps {
   label: string;
@@ -7,7 +17,8 @@ interface StatCardProps {
   icon?: React.ReactNode;
   helperText?: string;
   badge?: React.ReactNode;
-  variant?: "default" | "success" | "warning" | "info";
+  variant?: StatCardVariant;
+  className?: string;
 }
 
 export function StatCard({
@@ -17,27 +28,51 @@ export function StatCard({
   helperText,
   badge,
   variant = "default",
+  className = "",
 }: StatCardProps) {
-  const variantStyles = {
-    default: "bg-white hover:border-slate-300",
-    success: "border-emerald-200 bg-emerald-50/50 hover:border-emerald-300",
-    warning: "border-amber-200 bg-amber-50/50 hover:border-amber-300",
-    info: "border-sky-200 bg-sky-50/50 hover:border-sky-300",
-  }[variant];
+  const iconContainerStyles: Record<StatCardVariant, string> = {
+    default: "bg-slate-100 text-slate-700 border-slate-200",
+    sky: "bg-sky-50 text-sky-600 border-sky-100",
+    info: "bg-sky-50 text-sky-600 border-sky-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    success: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    warning: "bg-amber-50 text-amber-600 border-amber-100",
+    teal: "bg-teal-50 text-teal-600 border-teal-100",
+    rose: "bg-rose-50 text-rose-600 border-rose-100",
+  };
 
   return (
-    <Card className={`relative overflow-hidden ${variantStyles}`}>
-      <div className="flex items-center justify-between gap-3">
+    <div
+      className={`relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs transition-all hover:border-slate-300 ${className}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        {icon && (
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+              iconContainerStyles[variant] || iconContainerStyles.default
+            }`}
+          >
+            {icon}
+          </span>
+        )}
+        {badge && <div className="shrink-0">{badge}</div>}
+      </div>
+
+      <div className="mt-3">
         <span className="text-xs font-medium text-slate-500">{label}</span>
-        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 shadow-sm">{icon}</span>}
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="text-2xl font-bold tracking-tight text-slate-900">
+            {value}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-900">{value}</span>
-        {badge}
-      </div>
-
-      {helperText && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
-    </Card>
+      {helperText && (
+        <p className="mt-2 text-[11px] font-medium text-slate-400">
+          {helperText}
+        </p>
+      )}
+    </div>
   );
 }

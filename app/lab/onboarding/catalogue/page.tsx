@@ -769,7 +769,7 @@ export default function LabOnboardingCataloguePage() {
                                       item.matchType === "EXACT_CODE" || item.matchType === "EXACT_NAME"
                                         ? "bg-emerald-100 text-emerald-800"
                                         : item.matchType === "SYNONYM"
-                                        ? "bg-indigo-100 text-indigo-800"
+                                        ? "bg-sky-100 text-sky-800"
                                         : "bg-amber-100 text-amber-800"
                                     }`}
                                   >
