@@ -27,6 +27,8 @@ export interface PackageTestItem {
   sampleType: string;
   standardTatHours: number;
   sellingPrice: number;
+  homeCollectionEligible?: boolean;
+  isHomeCollectionAvailable?: boolean;
 }
 
 export interface PackageEditorProps {
@@ -99,15 +101,44 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
         const res = await fetch("/api/lab/catalogue?isActive=true");
         if (res.ok) {
           const data = await res.json();
-          const mapped: PackageTestItem[] = (data.tests || []).map((t: any) => ({
-            id: t.id,
-            name: t.masterTest?.name || "Unknown Investigation",
-            code: t.masterTest?.code || "",
-            categoryName: t.masterTest?.category?.name || "General Diagnostics",
-            sampleType: t.masterTest?.sampleType || "Blood",
-            standardTatHours: t.customTatHours || t.masterTest?.standardTatHours || 24,
-            sellingPrice: Number(t.sellingPrice) || 0,
-          }));
+          const mapped: PackageTestItem[] = (data.tests || []).map((t: any) => {
+            const canonicalName = t.name || t.masterTest?.name;
+            const canonicalCode = t.code || t.masterTest?.code || "";
+            const canonicalCategory = t.categoryName || t.masterTest?.category?.name;
+            const canonicalSampleType = t.sampleType || t.masterTest?.sampleType || "Specimen";
+            const canonicalTat = t.effectiveTatHours || t.customTatHours || t.masterTest?.standardTatHours || 24;
+            const canonicalPrice = Number(t.sellingPrice ?? t.price) || 0;
+
+            const homeEligible =
+              t.homeCollectionEligible ?? t.masterTest?.homeCollectionEligible ?? true;
+            const labHomeAvailable = t.isHomeCollectionAvailable ?? true;
+
+            if (!canonicalName) {
+              return {
+                id: t.id,
+                name: `[Data Integrity Error: Test #${t.id} Unresolved]`,
+                code: canonicalCode,
+                categoryName: canonicalCategory || "[Uncategorized]",
+                sampleType: canonicalSampleType,
+                standardTatHours: canonicalTat,
+                sellingPrice: canonicalPrice,
+                homeCollectionEligible: homeEligible,
+                isHomeCollectionAvailable: labHomeAvailable,
+              };
+            }
+
+            return {
+              id: t.id,
+              name: canonicalName,
+              code: canonicalCode,
+              categoryName: canonicalCategory || "[Uncategorized]",
+              sampleType: canonicalSampleType,
+              standardTatHours: canonicalTat,
+              sellingPrice: canonicalPrice,
+              homeCollectionEligible: homeEligible,
+              isHomeCollectionAvailable: labHomeAvailable,
+            };
+          });
           setCatalogueTests(mapped);
         }
       } catch (err) {
@@ -123,7 +154,9 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
   const categories = useMemo(() => {
     const set = new Set<string>();
     catalogueTests.forEach((t) => {
-      if (t.categoryName) set.add(t.categoryName);
+      if (t.categoryName && !t.categoryName.startsWith("[")) {
+        set.add(t.categoryName);
+      }
     });
     return Array.from(set).sort();
   }, [catalogueTests]);
@@ -154,13 +187,25 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
   // Add test to package (interactive, no reload, prevent duplicates)
   const handleAddTest = (test: PackageTestItem) => {
     if (selectedTestIds.has(test.id)) return;
-    setSelectedTests((prev) => [...prev, test]);
+    const updated = [...selectedTests, test];
+    setSelectedTests(updated);
     setNotification(null);
+
+    // Auto-update estimated TAT if current TAT is lower than the new test's TAT
+    const maxTat = Math.max(...updated.map((t) => t.standardTatHours), 24);
+    if (!initialData || Number(estimatedTatHours) < maxTat) {
+      setEstimatedTatHours(maxTat);
+    }
   };
 
   // Remove test from package (interactive, no reload)
   const handleRemoveTest = (testId: string) => {
-    setSelectedTests((prev) => prev.filter((t) => t.id !== testId));
+    const updated = selectedTests.filter((t) => t.id !== testId);
+    setSelectedTests(updated);
+    if (updated.length > 0) {
+      const maxTat = Math.max(...updated.map((t) => t.standardTatHours), 24);
+      setEstimatedTatHours(maxTat);
+    }
   };
 
   // Calculations
@@ -173,6 +218,15 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
 
   const savings = Math.max(0, testsSubtotal - numSellingPrice);
   const savingsPercentage = testsSubtotal > 0 ? Math.round((savings / testsSubtotal) * 100) : 0;
+
+  // Level 2 & Level 3 Home Collection Eligibility for Health Packages
+  const testsRequiringLabVisit = useMemo(() => {
+    return selectedTests.filter(
+      (t) => t.homeCollectionEligible === false || t.isHomeCollectionAvailable === false
+    );
+  }, [selectedTests]);
+
+  const isPackageHomeCollectionEligible = testsRequiringLabVisit.length === 0;
 
   // Validation checks
   const priceErrors = useMemo(() => {
@@ -215,7 +269,7 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
       description: description.trim() || undefined,
       sellingPrice: numSellingPrice,
       mrpPrice: numMrpPrice !== null ? numMrpPrice : undefined,
-      isHomeCollectionAvailable,
+      isHomeCollectionAvailable: isPackageHomeCollectionEligible ? isHomeCollectionAvailable : false,
       fastingRequired,
       estimatedTatHours: Number(estimatedTatHours) || 24,
       isActive,
@@ -375,18 +429,43 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
                 />
               </div>
 
-              <div className="flex flex-col justify-end space-y-2 pt-2 sm:pt-0">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isHomeCollectionAvailable}
-                    onChange={(e) => setIsHomeCollectionAvailable(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                  />
-                  <span className="text-xs font-medium text-slate-700">
-                    Home Sample Collection Available
-                  </span>
-                </label>
+              <div className="flex flex-col justify-end space-y-2.5 pt-2 sm:pt-0">
+                <div className="space-y-1.5">
+                  <label
+                    className={`flex items-center gap-2 ${
+                      !isPackageHomeCollectionEligible ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!isPackageHomeCollectionEligible}
+                      checked={isPackageHomeCollectionEligible ? isHomeCollectionAvailable : false}
+                      onChange={(e) => {
+                        if (!isPackageHomeCollectionEligible) return;
+                        setIsHomeCollectionAvailable(e.target.checked);
+                      }}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                    />
+                    <span className="text-xs font-medium text-slate-700">
+                      Home Sample Collection Available
+                    </span>
+                  </label>
+
+                  {!isPackageHomeCollectionEligible && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-800">
+                      <div className="font-semibold flex items-center gap-1.5 text-amber-900">
+                        <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                        <span>Home collection unavailable for this package</span>
+                      </div>
+                      <p className="mt-1 leading-relaxed">
+                        Home collection is unavailable for this package because the following tests require laboratory visit:{" "}
+                        <strong className="text-amber-950">
+                          {testsRequiringLabVisit.map((t) => t.name).join(", ")}
+                        </strong>
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -610,7 +689,7 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
               <button
                 type="submit"
                 disabled={saving || selectedTests.length === 0 || priceErrors.length > 0}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50 cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-xs font-medium text-white shadow-xs hover:bg-sky-700 transition disabled:opacity-50 cursor-pointer"
               >
                 <Save className="h-4 w-4" />
                 <span>

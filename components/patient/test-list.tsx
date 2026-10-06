@@ -16,6 +16,7 @@ interface Test {
   fastingRequired: boolean;
   preparationInstructions: string | null;
   categoryName: string;
+  homeCollectionAvailable?: boolean;
 }
 
 interface Category {
@@ -149,6 +150,7 @@ export function TestList({ tests, categories, initialCategory }: TestListProps) 
               fastingRequired={test.fastingRequired}
               preparationInstructions={test.preparationInstructions}
               categoryName={test.categoryName}
+              homeCollectionAvailable={test.homeCollectionAvailable}
             />
           ))}
         </div>

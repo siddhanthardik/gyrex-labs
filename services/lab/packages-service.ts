@@ -248,6 +248,8 @@ export async function getLabPackageById(labId: string, packageId: string) {
       categoryName: pt.labTest.masterTest.category?.name,
       sampleType: pt.labTest.masterTest.sampleType,
       price: Number(pt.labTest.sellingPrice),
+      isHomeCollectionAvailable: pt.labTest.isHomeCollectionAvailable,
+      homeCollectionEligible: pt.labTest.masterTest.homeCollectionEligible,
     })),
   };
 }
@@ -312,7 +314,31 @@ export async function createLabPackage(
   );
   const estimatedTatHours = input.estimatedTatHours || maxTat;
 
-  // 6. Create package with junction items in an atomic transaction
+  // 6. Clinical & Laboratory home collection eligibility validation
+  const clinicallyIneligibleTests = validLabTests.filter((t) => !t.masterTest.homeCollectionEligible);
+  const labUnavailableTests = validLabTests.filter((t) => !t.isHomeCollectionAvailable);
+
+  if (input.isHomeCollectionAvailable === true) {
+    if (clinicallyIneligibleTests.length > 0) {
+      const names = clinicallyIneligibleTests.map((t) => t.masterTest.name).join(", ");
+      throw new Error(
+        `The following tests require on-site clinical collection and cannot be offered for home sample collection: ${names}`
+      );
+    }
+    if (labUnavailableTests.length > 0) {
+      const names = labUnavailableTests.map((t) => t.masterTest.name).join(", ");
+      throw new Error(
+        `The following tests are not offered for home collection by your laboratory: ${names}`
+      );
+    }
+  }
+
+  const effectiveHomeCollection =
+    clinicallyIneligibleTests.length > 0 || labUnavailableTests.length > 0
+      ? false
+      : (input.isHomeCollectionAvailable ?? true);
+
+  // 7. Create package with junction items in an atomic transaction
   const createdPackage = await prisma.$transaction(
     async (tx) => {
       const pkg = await tx.package.create({
@@ -324,7 +350,7 @@ export async function createLabPackage(
           description: input.description?.trim() || null,
           sellingPrice: input.sellingPrice,
           mrpPrice: input.mrpPrice ?? (individualTestValue > 0 ? individualTestValue : input.sellingPrice),
-          isHomeCollectionAvailable: input.isHomeCollectionAvailable ?? true,
+          isHomeCollectionAvailable: effectiveHomeCollection,
           fastingRequired,
           preparationInstructions: input.preparationInstructions?.trim() || null,
           sampleTypes,
@@ -393,6 +419,10 @@ export async function updateLabPackage(
 
   let uniqueTestIds: string[] | undefined;
   let sampleTypes: string[] | undefined;
+  let activePackageLabTests: Array<{
+    isHomeCollectionAvailable: boolean;
+    masterTest: { name: string; homeCollectionEligible: boolean };
+  }> = [];
 
   // If tests are being replaced, strictly verify all belong to this lab and are active
   if (input.testIds) {
@@ -401,7 +431,57 @@ export async function updateLabPackage(
     sampleTypes = Array.from(
       new Set(validated.validLabTests.map((t) => t.masterTest.sampleType).filter(Boolean))
     );
+    activePackageLabTests = validated.validLabTests;
+  } else {
+    const existingPackageWithTests = await prisma.package.findFirst({
+      where: { id: packageId, labId },
+      include: {
+        packageTests: {
+          include: {
+            labTest: {
+              include: {
+                masterTest: {
+                  select: { name: true, homeCollectionEligible: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    activePackageLabTests =
+      existingPackageWithTests?.packageTests.map((pt) => pt.labTest) || [];
   }
+
+  const requestedHomeCollection = input.isHomeCollectionAvailable;
+  const clinicallyIneligible = activePackageLabTests.filter(
+    (t) => !t.masterTest.homeCollectionEligible
+  );
+  const labUnavailable = activePackageLabTests.filter(
+    (t) => !t.isHomeCollectionAvailable
+  );
+
+  if (requestedHomeCollection === true) {
+    if (clinicallyIneligible.length > 0) {
+      const names = clinicallyIneligible.map((t) => t.masterTest.name).join(", ");
+      throw new Error(
+        `The following tests require on-site clinical collection and cannot be offered for home sample collection: ${names}`
+      );
+    }
+    if (labUnavailable.length > 0) {
+      const names = labUnavailable.map((t) => t.masterTest.name).join(", ");
+      throw new Error(
+        `The following tests are not offered for home collection by your laboratory: ${names}`
+      );
+    }
+  }
+
+  const anyIneligible = clinicallyIneligible.length > 0 || labUnavailable.length > 0;
+  const effectiveHomeCollection = anyIneligible
+    ? false
+    : (requestedHomeCollection !== undefined
+        ? requestedHomeCollection
+        : existing.isHomeCollectionAvailable);
 
   const updatedPackage = await prisma.$transaction(
     async (tx) => {
@@ -414,10 +494,7 @@ export async function updateLabPackage(
           sellingPrice: input.sellingPrice !== undefined ? input.sellingPrice : undefined,
           mrpPrice: input.mrpPrice !== undefined ? input.mrpPrice : undefined,
           isActive: input.isActive !== undefined ? input.isActive : undefined,
-          isHomeCollectionAvailable:
-            input.isHomeCollectionAvailable !== undefined
-              ? input.isHomeCollectionAvailable
-              : undefined,
+          isHomeCollectionAvailable: effectiveHomeCollection,
           fastingRequired:
             input.fastingRequired !== undefined ? input.fastingRequired : undefined,
           preparationInstructions:

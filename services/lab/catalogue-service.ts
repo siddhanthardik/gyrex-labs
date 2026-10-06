@@ -10,6 +10,43 @@ export interface LabTestFilter {
   maxPrice?: number;
 }
 
+export interface StandardLabTestDTO {
+  id: string;
+  masterTestId: string;
+  name: string;
+  code: string;
+  categoryId: string;
+  categoryName: string;
+  sampleType: string;
+  tatHours: number;
+  price: number;
+  sellingPrice: number;
+  mrpPrice: number | null;
+  isHomeCollectionAvailable: boolean;
+  homeCollectionEligible: boolean;
+  isActive: boolean;
+  effectiveTatHours: number;
+  customTatHours?: number | null;
+  preparationInstructions?: string | null;
+  fastingRequired: boolean;
+  labSpecificNotes?: string | null;
+  masterTest: {
+    id: string;
+    code: string;
+    name: string;
+    sampleType: string;
+    standardTatHours: number;
+    fastingRequired: boolean;
+    homeCollectionEligible: boolean;
+    preparationInstructions: string | null;
+    description: string | null;
+    category: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
 export interface UpdateLabTestData {
   sellingPrice?: number;
   mrpPrice?: number;
@@ -115,24 +152,54 @@ export async function getLabTests(labId: string, filter?: LabTestFilter) {
     },
   });
 
-  return tests.map((t) => ({
-    id: t.id,
-    masterTestId: t.masterTestId,
-    name: t.masterTest.name,
-    code: t.masterTest.code,
-    categoryName: t.masterTest.category.name,
-    categoryId: t.masterTest.categoryId,
-    sampleType: t.masterTest.sampleType,
-    sellingPrice: Number(t.sellingPrice),
-    mrpPrice: t.mrpPrice ? Number(t.mrpPrice) : null,
-    isActive: t.isActive,
-    isHomeCollectionAvailable: t.isHomeCollectionAvailable,
-    effectiveTatHours: t.customTatHours ?? t.masterTest.standardTatHours,
-    customTatHours: t.customTatHours,
-    preparationInstructions: t.customPreparation ?? t.masterTest.preparationInstructions,
-    fastingRequired: t.masterTest.fastingRequired,
-    labSpecificNotes: t.labSpecificNotes,
-  }));
+  return tests.map((t): StandardLabTestDTO => {
+    if (!t.masterTest) {
+      throw new Error(`Data Integrity Error: LabTest ${t.id} references missing masterTestId ${t.masterTestId}`);
+    }
+    if (!t.masterTest.category) {
+      throw new Error(`Data Integrity Error: MasterTest ${t.masterTest.id} references missing categoryId ${t.masterTest.categoryId}`);
+    }
+
+    const effectiveTat = t.customTatHours ?? t.masterTest.standardTatHours;
+    const priceNum = Number(t.sellingPrice);
+
+    return {
+      id: t.id,
+      masterTestId: t.masterTestId,
+      name: t.masterTest.name,
+      code: t.masterTest.code,
+      categoryId: t.masterTest.categoryId,
+      categoryName: t.masterTest.category.name,
+      sampleType: t.masterTest.sampleType,
+      tatHours: effectiveTat,
+      price: priceNum,
+      sellingPrice: priceNum,
+      mrpPrice: t.mrpPrice ? Number(t.mrpPrice) : null,
+      isActive: t.isActive,
+      isHomeCollectionAvailable: t.isHomeCollectionAvailable,
+      homeCollectionEligible: t.masterTest.homeCollectionEligible,
+      effectiveTatHours: effectiveTat,
+      customTatHours: t.customTatHours,
+      preparationInstructions: t.customPreparation ?? t.masterTest.preparationInstructions,
+      fastingRequired: t.masterTest.fastingRequired,
+      labSpecificNotes: t.labSpecificNotes,
+      masterTest: {
+        id: t.masterTest.id,
+        code: t.masterTest.code,
+        name: t.masterTest.name,
+        sampleType: t.masterTest.sampleType,
+        standardTatHours: t.masterTest.standardTatHours,
+        fastingRequired: t.masterTest.fastingRequired,
+        homeCollectionEligible: t.masterTest.homeCollectionEligible,
+        preparationInstructions: t.masterTest.preparationInstructions,
+        description: t.masterTest.description,
+        category: {
+          id: t.masterTest.category.id,
+          name: t.masterTest.category.name,
+        },
+      },
+    };
+  });
 }
 
 /**
@@ -170,6 +237,7 @@ export async function getLabTestById(labId: string, labTestId: string) {
     customPreparation: labTest.customPreparation,
     labSpecificNotes: labTest.labSpecificNotes,
     fastingRequired: labTest.masterTest.fastingRequired,
+    homeCollectionEligible: labTest.masterTest.homeCollectionEligible,
     masterDescription: labTest.masterTest.description,
   };
 }
@@ -186,7 +254,7 @@ export async function updateLabTest(
 ) {
   const existing = await prisma.labTest.findFirst({
     where: { id: labTestId, labId },
-    include: { masterTest: { select: { name: true } } },
+    include: { masterTest: { select: { name: true, homeCollectionEligible: true } } },
   });
 
   if (!existing) {
@@ -197,6 +265,13 @@ export async function updateLabTest(
     throw new Error("Selling price cannot be negative.");
   }
 
+  // Clinical safety constraint: If TestMaster is not eligible, home collection cannot be offered
+  if (data.isHomeCollectionAvailable === true && !existing.masterTest.homeCollectionEligible) {
+    throw new Error(
+      "This investigation requires on-site clinical collection and cannot be offered for home sample collection."
+    );
+  }
+
   const updated = await prisma.labTest.update({
     where: { id: labTestId },
     data: {
@@ -204,7 +279,9 @@ export async function updateLabTest(
       mrpPrice: data.mrpPrice !== undefined ? data.mrpPrice : undefined,
       isActive: data.isActive !== undefined ? data.isActive : undefined,
       isHomeCollectionAvailable:
-        data.isHomeCollectionAvailable !== undefined ? data.isHomeCollectionAvailable : undefined,
+        data.isHomeCollectionAvailable !== undefined
+          ? (existing.masterTest.homeCollectionEligible ? data.isHomeCollectionAvailable : false)
+          : undefined,
       customTatHours: data.customTatHours !== undefined ? data.customTatHours : undefined,
       customPreparation: data.customPreparation !== undefined ? data.customPreparation : undefined,
       labSpecificNotes: data.labSpecificNotes !== undefined ? data.labSpecificNotes : undefined,
@@ -320,6 +397,16 @@ export async function addTestMasterToLab(
     throw new Error("Invalid Test Master reference.");
   }
 
+  if (data.isHomeCollectionAvailable === true && !master.homeCollectionEligible) {
+    throw new Error(
+      "This investigation requires on-site clinical collection and cannot be offered for home sample collection."
+    );
+  }
+
+  const effectiveHomeCollection = master.homeCollectionEligible
+    ? (data.isHomeCollectionAvailable ?? true)
+    : false;
+
   const labTest = await prisma.labTest.upsert({
     where: {
       labId_masterTestId: {
@@ -331,7 +418,7 @@ export async function addTestMasterToLab(
       sellingPrice: data.sellingPrice,
       mrpPrice: data.mrpPrice ?? null,
       isActive: true,
-      isHomeCollectionAvailable: data.isHomeCollectionAvailable ?? true,
+      isHomeCollectionAvailable: effectiveHomeCollection,
       customTatHours: data.customTatHours ?? null,
       customPreparation: data.customPreparation ?? null,
     },
@@ -341,7 +428,7 @@ export async function addTestMasterToLab(
       sellingPrice: data.sellingPrice,
       mrpPrice: data.mrpPrice ?? null,
       isActive: true,
-      isHomeCollectionAvailable: data.isHomeCollectionAvailable ?? true,
+      isHomeCollectionAvailable: effectiveHomeCollection,
       customTatHours: data.customTatHours ?? null,
       customPreparation: data.customPreparation ?? null,
     },
@@ -516,8 +603,18 @@ export async function confirmBulkImport(
 ) {
   let createdCount = 0;
 
+  const masterIds = Array.from(new Set(confirmedItems.map((i) => i.masterTestId)));
+  const masters = await prisma.testMaster.findMany({
+    where: { id: { in: masterIds } },
+    select: { id: true, homeCollectionEligible: true },
+  });
+  const eligibilityMap = new Map<string, boolean>(masters.map((m) => [m.id, m.homeCollectionEligible]));
+
   for (const item of confirmedItems) {
     if (item.sellingPrice < 0) continue;
+
+    const isEligible = eligibilityMap.get(item.masterTestId) ?? true;
+    const effectiveHomeCollection = isEligible ? (item.isHomeCollectionAvailable ?? true) : false;
 
     await prisma.labTest.upsert({
       where: {
@@ -530,7 +627,7 @@ export async function confirmBulkImport(
         sellingPrice: item.sellingPrice,
         mrpPrice: item.mrpPrice ?? null,
         isActive: true,
-        isHomeCollectionAvailable: item.isHomeCollectionAvailable ?? true,
+        isHomeCollectionAvailable: effectiveHomeCollection,
       },
       create: {
         labId,
@@ -538,7 +635,7 @@ export async function confirmBulkImport(
         sellingPrice: item.sellingPrice,
         mrpPrice: item.mrpPrice ?? null,
         isActive: true,
-        isHomeCollectionAvailable: item.isHomeCollectionAvailable ?? true,
+        isHomeCollectionAvailable: effectiveHomeCollection,
       },
     });
     createdCount++;

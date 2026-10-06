@@ -47,8 +47,10 @@ export default async function LabLayout({
       id: true,
       name: true,
       slug: true,
+      code: true,
       status: true,
       isVerified: true,
+      nablAccreditationNumber: true,
     },
   });
 
@@ -62,8 +64,10 @@ export default async function LabLayout({
         id: lab.id,
         name: lab.name,
         slug: lab.slug,
+        code: lab.code,
         status: lab.status,
         isVerified: lab.isVerified,
+        nablAccreditationNumber: lab.nablAccreditationNumber,
       }}
       user={{
         fullName: user.fullName,

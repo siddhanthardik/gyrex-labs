@@ -15,6 +15,7 @@ interface TestCardProps {
   fastingRequired?: boolean;
   categoryName?: string;
   preparationInstructions?: string | null;
+  homeCollectionAvailable?: boolean;
 }
 
 export function TestCard({
@@ -29,6 +30,7 @@ export function TestCard({
   fastingRequired = false,
   categoryName,
   preparationInstructions,
+  homeCollectionAvailable = true,
 }: TestCardProps) {
   const { items, addItem, removeItem, isHydrated } = useCart();
   const isInCart = isHydrated && items.some((i) => i.id === id);
@@ -50,6 +52,7 @@ export function TestCard({
         price: sellingPrice,
         sampleType,
         fastingRequired,
+        homeCollectionAvailable,
       });
     }
   };
@@ -64,13 +67,20 @@ export function TestCard({
     >
       {/* Card body */}
       <div className="flex-1 px-4 pt-4 pb-3">
-        {/* Category + fasting badge row */}
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          {categoryName && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">
-              {categoryName}
-            </span>
-          )}
+        {/* Category + fasting + collection badge row */}
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5">
+            {categoryName && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">
+                {categoryName}
+              </span>
+            )}
+            {!homeCollectionAvailable && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                Lab Visit Only
+              </span>
+            )}
+          </div>
           {fastingRequired && (
             <span className="flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
               <Utensils className="h-2.5 w-2.5" />

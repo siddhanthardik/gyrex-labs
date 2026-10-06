@@ -23,6 +23,7 @@ interface PackageCardProps {
   tests: Array<{ id: string; name: string }>;
   estimatedTatHours?: number | null;
   isPopular?: boolean;
+  homeCollectionAvailable?: boolean;
 }
 
 export function PackageCard({
@@ -36,6 +37,7 @@ export function PackageCard({
   tests,
   estimatedTatHours = 24,
   isPopular = false,
+  homeCollectionAvailable = true,
 }: PackageCardProps) {
   const { items, addItem, removeItem, isHydrated } = useCart();
   const [showTests, setShowTests] = useState(false);
@@ -56,6 +58,7 @@ export function PackageCard({
         name,
         code,
         price: sellingPrice,
+        homeCollectionAvailable,
       });
     }
   };
@@ -77,12 +80,17 @@ export function PackageCard({
       )}
 
       <div className="flex-1 px-4 pt-5 pb-3">
-        {/* Test count + savings badge */}
-        <div className="flex items-center gap-2">
+        {/* Test count + savings + collection badge */}
+        <div className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
             <FlaskConical className="h-3 w-3 text-sky-600" />
             {testCount} Tests
           </span>
+          {!homeCollectionAvailable && (
+            <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+              Lab Visit Only
+            </span>
+          )}
           {savings > 0 && (
             <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
               Save ₹{savings} ({discount}% off)

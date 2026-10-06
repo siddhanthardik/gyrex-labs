@@ -115,7 +115,7 @@ export default function LabCataloguePage() {
           </Link>
           <Link
             href="/lab/catalogue/test-master"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-600"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-2 text-xs font-medium text-white shadow-xs transition hover:bg-sky-700"
           >
             <Plus className="h-4 w-4 text-white" />
             <span>Add from Test Master</span>

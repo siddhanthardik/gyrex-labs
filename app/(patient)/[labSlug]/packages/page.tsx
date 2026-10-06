@@ -56,6 +56,7 @@ export default async function PackagesPage({
               testCount={pkg.testCount}
               tests={pkg.tests}
               estimatedTatHours={pkg.estimatedTatHours}
+              homeCollectionAvailable={pkg.homeCollectionAvailable}
             />
           ))}
         </div>

@@ -20,7 +20,17 @@ import {
 
 export default function CartPage() {
   const routeParams = useParams<{ labSlug: string }>();
-  const { items, collectionType, setCollectionType, removeItem, clearCart, subtotal, labSlug: cartLabSlug, isHydrated } = useCart();
+  const {
+    items,
+    collectionType,
+    setCollectionType,
+    removeItem,
+    clearCart,
+    subtotal,
+    labSlug: cartLabSlug,
+    isHydrated,
+    hasLabVisitOnlyItems,
+  } = useCart();
   const labSlug = routeParams?.labSlug || cartLabSlug;
 
   if (!isHydrated) {
@@ -176,21 +186,26 @@ export default function CartPage() {
         <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
+            disabled={hasLabVisitOnlyItems}
             onClick={() => setCollectionType("HOME_COLLECTION")}
             className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 text-center transition ${
-              collectionType === "HOME_COLLECTION"
+              hasLabVisitOnlyItems
+                ? "border-zinc-200 bg-zinc-50 opacity-50 cursor-not-allowed text-zinc-400"
+                : collectionType === "HOME_COLLECTION"
                 ? "border-sky-600 bg-sky-50/80 text-sky-900 dark:border-sky-500 dark:bg-sky-950/40 dark:text-sky-200"
                 : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
             }`}
           >
             <Home
               className={`h-5 w-5 mb-1.5 ${
-                collectionType === "HOME_COLLECTION" ? "text-sky-600 dark:text-sky-400" : "text-zinc-400"
+                collectionType === "HOME_COLLECTION" && !hasLabVisitOnlyItems
+                  ? "text-sky-600 dark:text-sky-400"
+                  : "text-zinc-400"
               }`}
             />
             <span className="text-xs font-bold">Home Collection</span>
             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Phlebotomist visits home
+              {hasLabVisitOnlyItems ? "Unavailable for cart items" : "Phlebotomist visits home"}
             </span>
           </button>
 
@@ -214,6 +229,12 @@ export default function CartPage() {
             </span>
           </button>
         </div>
+
+        {hasLabVisitOnlyItems && (
+          <div className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50/80 p-2.5 text-[11px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+            One or more investigations in your cart require on-site clinical collection. Booking is restricted to laboratory visit.
+          </div>
+        )}
       </div>
 
       {/* Bill Breakdown Card */}

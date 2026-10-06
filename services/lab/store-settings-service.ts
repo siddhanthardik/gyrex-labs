@@ -21,6 +21,8 @@ export interface UpdateStoreSettingsInput {
   freeHomeCollectionThreshold?: number;
   workingHours?: any;
   deliveryPromiseNotice?: string;
+  nablAccreditationNumber?: string | null;
+  licenseNumber?: string | null;
   metaTitle?: string;
   metaDescription?: string;
 }
@@ -87,6 +89,8 @@ export async function getLabStoreSettings(labId: string) {
       city: lab.city,
       state: lab.state,
       postalCode: lab.postalCode,
+      licenseNumber: lab.licenseNumber,
+      nablAccreditationNumber: lab.nablAccreditationNumber,
       status: lab.status,
       isVerified: lab.isVerified,
       verifiedAt: lab.verifiedAt,
@@ -143,6 +147,18 @@ export async function updateLabStoreSettings(
       state: input.state !== undefined ? input.state.trim() : undefined,
       postalCode:
         input.postalCode !== undefined ? input.postalCode.trim() : undefined,
+      licenseNumber:
+        input.licenseNumber !== undefined
+          ? input.licenseNumber
+            ? input.licenseNumber.trim()
+            : null
+          : undefined,
+      nablAccreditationNumber:
+        input.nablAccreditationNumber !== undefined
+          ? input.nablAccreditationNumber && input.nablAccreditationNumber.trim().length > 0
+            ? input.nablAccreditationNumber.trim().toUpperCase()
+            : null
+          : undefined,
     },
   });
 

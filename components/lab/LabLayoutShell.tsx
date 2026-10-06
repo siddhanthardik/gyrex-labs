@@ -10,8 +10,10 @@ interface LabLayoutShellProps {
     id: string;
     name: string;
     slug: string;
+    code?: string;
     status: string;
     isVerified: boolean;
+    nablAccreditationNumber?: string | null;
   };
   user: {
     fullName: string;

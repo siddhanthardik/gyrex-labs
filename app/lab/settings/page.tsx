@@ -23,6 +23,7 @@ import {
   QrCode,
   Globe,
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 type SettingsSection =
   | "profile"
@@ -38,7 +39,10 @@ type SettingsSection =
 function LabSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialSection = (searchParams.get("section") as SettingsSection) || "profile";
+  const initialSection =
+    (searchParams.get("section") as SettingsSection) ||
+    (searchParams.get("tab") as SettingsSection) ||
+    "profile";
 
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   const [loading, setLoading] = useState(true);
@@ -66,6 +70,9 @@ function LabSettingsContent() {
     freeHomeCollectionThreshold: 1000,
     deliveryPromiseNotice: "Reports delivered within 24 hours",
     primaryColor: "#0284c7",
+    licenseNumber: "",
+    isNablAccredited: false,
+    nablAccreditationNumber: "",
   });
 
   useEffect(() => {
@@ -82,6 +89,7 @@ function LabSettingsContent() {
         if (res.ok) {
           const d = await res.json();
           setLab(d.lab);
+          const hasNabl = Boolean(d.lab.nablAccreditationNumber && d.lab.nablAccreditationNumber.trim().length > 0);
           setFormData({
             name: d.lab.name || "",
             phone: d.lab.phone || "",
@@ -92,6 +100,9 @@ function LabSettingsContent() {
             city: d.lab.city || "",
             state: d.lab.state || "",
             postalCode: d.lab.postalCode || "",
+            licenseNumber: d.lab.licenseNumber || "",
+            isNablAccredited: hasNabl,
+            nablAccreditationNumber: d.lab.nablAccreditationNumber || "",
             heroHeadline: d.settings?.heroHeadline || "Book Diagnostic Tests Online",
             heroSubheadline: d.settings?.heroSubheadline || "Accurate reports, professional care.",
             homeCollectionAvailable: d.settings?.homeCollectionAvailable ?? true,
@@ -117,14 +128,30 @@ function LabSettingsContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.isNablAccredited && !formData.nablAccreditationNumber.trim()) {
+      setNotification({
+        type: "error",
+        message: "NABL Accreditation Number is required when NABL Accredited is ON.",
+      });
+      return;
+    }
+
     setSaving(true);
     setNotification(null);
+
+    const payload = {
+      ...formData,
+      nablAccreditationNumber: formData.isNablAccredited
+        ? formData.nablAccreditationNumber.trim().toUpperCase()
+        : null,
+    };
 
     try {
       const res = await fetch("/api/lab/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -148,7 +175,7 @@ function LabSettingsContent() {
 
   const navItems: Array<{ id: SettingsSection; label: string; icon: React.ReactNode }> = [
     { id: "profile", label: "Laboratory Profile", icon: <Building2 className="h-4 w-4" /> },
-    { id: "storefront", label: "Storefront", icon: <Store className="h-4 w-4" /> },
+    { id: "storefront", label: "Storefront Settings", icon: <Store className="h-4 w-4" /> },
     { id: "contact", label: "Contact & Location", icon: <MapPin className="h-4 w-4" /> },
     { id: "collection", label: "Collection Settings", icon: <Truck className="h-4 w-4" /> },
     { id: "payment", label: "Payment", icon: <CreditCard className="h-4 w-4" /> },
@@ -303,17 +330,103 @@ function LabSettingsContent() {
                       className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-500 font-mono"
                     />
                   </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-700">
+                      Clinical Establishment / License Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.licenseNumber}
+                      onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                      placeholder="e.g. CEA/2024/9842"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Accreditation & Regulatory Approvals */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Accreditation & Regulatory Approvals
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Declare your laboratory quality accreditation status.
+                      </p>
+                    </div>
+                    {formData.isNablAccredited && (
+                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                        <span>NABL Accredited</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/60 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-semibold text-slate-900 block">
+                          NABL Accredited
+                        </label>
+                        <p className="text-[11px] text-slate-500">
+                          Enable if your laboratory holds an active accreditation certificate from NABL.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.isNablAccredited}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setFormData({
+                              ...formData,
+                              isNablAccredited: checked,
+                              nablAccreditationNumber: checked ? formData.nablAccreditationNumber : "",
+                            });
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                      </label>
+                    </div>
+
+                    {formData.isNablAccredited && (
+                      <div className="pt-2">
+                        <label className="block text-xs font-medium text-slate-700">
+                          NABL Accreditation Number *
+                        </label>
+                        <input
+                          type="text"
+                          required={formData.isNablAccredited}
+                          value={formData.nablAccreditationNumber}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              nablAccreditationNumber: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. MC-1234 or CC-5678"
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 uppercase font-mono placeholder:normal-case placeholder:font-sans focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                        />
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Required when NABL Accredited is ON. Stored and presented strictly as NABL Accredited.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50"
+                    variant="primary"
+                    size="md"
+                    icon={Save}
+                    isLoading={saving}
                   >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Saving..." : "Save Profile"}</span>
-                  </button>
+                    {saving ? "Saving..." : "Save Profile"}
+                  </Button>
                 </div>
               </div>
             )}
@@ -364,15 +477,82 @@ function LabSettingsContent() {
                   </div>
                 </div>
 
+                {/* Level 1 Master Service: Home Sample Collection */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Home Sample Collection
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Master switch for offering home phlebotomy visits across your public storefront.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.homeCollectionAvailable}
+                        onChange={(e) =>
+                          setFormData({ ...formData, homeCollectionAvailable: e.target.checked })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                  </div>
+
+                  {!formData.homeCollectionAvailable ? (
+                    <div className="rounded-lg border border-slate-200 bg-white p-3 text-[11px] text-slate-600 leading-relaxed">
+                      Home sample collection is deactivated laboratory-wide. All tests and packages will require on-site laboratory visit.
+                    </div>
+                  ) : (
+                    <div className="pt-2 border-t border-slate-200/60 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700">
+                          Home Sample Collection Fee (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.homeCollectionFee}
+                          onChange={(e) =>
+                            setFormData({ ...formData, homeCollectionFee: Number(e.target.value) })
+                          }
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700">
+                          Free Collection Order Threshold (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.freeHomeCollectionThreshold}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              freeHomeCollectionThreshold: Number(e.target.value),
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end pt-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50"
+                    variant="primary"
+                    size="md"
+                    icon={Save}
+                    isLoading={saving}
                   >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Saving..." : "Save Storefront"}</span>
-                  </button>
+                    {saving ? "Saving..." : "Save Storefront"}
+                  </Button>
                 </div>
               </div>
             )}
@@ -455,88 +635,27 @@ function LabSettingsContent() {
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50"
+                    variant="primary"
+                    size="md"
+                    icon={Save}
+                    isLoading={saving}
                   >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Saving..." : "Save Contact & Location"}</span>
-                  </button>
+                    {saving ? "Saving..." : "Save Contact & Location"}
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* Section: Collection Settings */}
             {activeSection === "collection" && (
-              <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-4 shadow-xs">
                 <div className="border-b border-slate-100 pb-4">
-                  <h2 className="text-base font-semibold text-slate-900">Home Collection Rules</h2>
+                  <h2 className="text-base font-semibold text-slate-900">Collection Settings</h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Configure phlebotomist home visit fees and free collection order thresholds.
+                    Master home sample collection availability, visit fees, and waiver thresholds are managed under Storefront Settings.
                   </p>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.homeCollectionAvailable}
-                      onChange={(e) =>
-                        setFormData({ ...formData, homeCollectionAvailable: e.target.checked })
-                      }
-                      className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-                    />
-                    <span className="text-xs font-medium text-slate-900">
-                      Offer Home Sample Collection to patients booking via your store
-                    </span>
-                  </label>
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700">
-                        Home Sample Collection Fee (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.homeCollectionFee}
-                        onChange={(e) =>
-                          setFormData({ ...formData, homeCollectionFee: Number(e.target.value) })
-                        }
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700">
-                        Free Collection Order Threshold (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.freeHomeCollectionThreshold}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            freeHomeCollectionThreshold: Number(e.target.value),
-                          })
-                        }
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Saving..." : "Save Collection Settings"}</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -647,14 +766,15 @@ function LabSettingsContent() {
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition disabled:opacity-50"
+                    variant="primary"
+                    size="md"
+                    icon={Save}
+                    isLoading={saving}
                   >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Saving..." : "Save WhatsApp Channel"}</span>
-                  </button>
+                    {saving ? "Saving..." : "Save WhatsApp Channel"}
+                  </Button>
                 </div>
               </div>
             )}

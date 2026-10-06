@@ -94,7 +94,7 @@ export default function LabPackagesPage() {
 
         <Link
           href="/lab/packages/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-600 transition"
+          className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white shadow-xs hover:bg-sky-700 transition"
         >
           <Plus className="h-4 w-4" />
           <span>Create Health Package</span>

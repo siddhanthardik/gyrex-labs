@@ -220,6 +220,7 @@ export default async function StorefrontPage({
                 tatHours={test.tatHours}
                 fastingRequired={test.fastingRequired}
                 categoryName={test.categoryName}
+                homeCollectionAvailable={test.homeCollectionAvailable}
               />
             ))}
           </div>
@@ -254,6 +255,7 @@ export default async function StorefrontPage({
                 testCount={pkg.testCount}
                 tests={pkg.tests}
                 estimatedTatHours={pkg.estimatedTatHours}
+                homeCollectionAvailable={pkg.homeCollectionAvailable}
               />
             ))}
           </div>

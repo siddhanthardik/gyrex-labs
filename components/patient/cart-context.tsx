@@ -10,6 +10,7 @@ export interface CartItem {
   price: number;
   sampleType?: string;
   fastingRequired?: boolean;
+  homeCollectionAvailable?: boolean;
 }
 
 interface CartContextType {
@@ -23,6 +24,7 @@ interface CartContextType {
   subtotal: number;
   itemCount: number;
   isHydrated: boolean;
+  hasLabVisitOnlyItems: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -39,6 +41,15 @@ export function CartProvider({
   const [collectionType, setCollectionType] = useState<"HOME_COLLECTION" | "LAB_VISIT">("HOME_COLLECTION");
   const [isHydrated, setIsHydrated] = useState(false);
 
+  const hasLabVisitOnlyItems = items.some((i) => i.homeCollectionAvailable === false);
+
+  // If any item requires lab visit, force collectionType to LAB_VISIT
+  useEffect(() => {
+    if (hasLabVisitOnlyItems && collectionType === "HOME_COLLECTION") {
+      setCollectionType("LAB_VISIT");
+    }
+  }, [hasLabVisitOnlyItems, collectionType]);
+
   // Read persisted cart data inside useEffect after the component mounts
   useEffect(() => {
     try {
@@ -47,9 +58,12 @@ export function CartProvider({
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed.items)) {
           setItems(parsed.items);
-        }
-        if (parsed.collectionType === "HOME_COLLECTION" || parsed.collectionType === "LAB_VISIT") {
-          setCollectionType(parsed.collectionType);
+          const containsIneligible = parsed.items.some((i: any) => i.homeCollectionAvailable === false);
+          if (containsIneligible) {
+            setCollectionType("LAB_VISIT");
+          } else if (parsed.collectionType === "HOME_COLLECTION" || parsed.collectionType === "LAB_VISIT") {
+            setCollectionType(parsed.collectionType);
+          }
         }
       }
     } catch {
@@ -71,6 +85,14 @@ export function CartProvider({
       // Ignore storage write errors
     }
   }, [items, collectionType, labSlug, isHydrated]);
+
+  const safeSetCollectionType = (type: "HOME_COLLECTION" | "LAB_VISIT") => {
+    if (type === "HOME_COLLECTION" && hasLabVisitOnlyItems) {
+      setCollectionType("LAB_VISIT");
+      return;
+    }
+    setCollectionType(type);
+  };
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {
@@ -103,13 +125,14 @@ export function CartProvider({
         labSlug,
         items,
         collectionType,
-        setCollectionType,
+        setCollectionType: safeSetCollectionType,
         addItem,
         removeItem,
         clearCart,
         subtotal,
         itemCount: items.length,
         isHydrated,
+        hasLabVisitOnlyItems,
       }}
     >
       {children}

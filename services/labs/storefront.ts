@@ -56,6 +56,9 @@ export interface LabStorefrontData {
     fastingRequired: boolean;
     preparationInstructions: string | null;
     categoryName: string;
+    homeCollectionAvailable: boolean;
+    isHomeCollectionAvailable: boolean;
+    homeCollectionEligible: boolean;
   }>;
   packages: Array<{
     id: string;
@@ -69,6 +72,8 @@ export interface LabStorefrontData {
     sampleTypes: string[];
     estimatedTatHours: number | null;
     isPopular: boolean;
+    homeCollectionAvailable: boolean;
+    isHomeCollectionAvailable: boolean;
     tests: Array<{
       id: string;
       name: string;
@@ -139,37 +144,61 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
     testCount: c.count,
   }));
 
-  const popularTests = lab.labTests.map((lt) => ({
-    id: lt.id,
-    code: lt.masterTest.code,
-    name: lt.masterTest.name,
-    slug: lt.masterTest.slug,
-    sellingPrice: Number(lt.sellingPrice),
-    mrpPrice: lt.mrpPrice ? Number(lt.mrpPrice) : null,
-    sampleType: lt.masterTest.sampleType,
-    tatHours: lt.customTatHours || lt.masterTest.standardTatHours,
-    fastingRequired: lt.masterTest.fastingRequired,
-    preparationInstructions: lt.customPreparation || lt.masterTest.preparationInstructions,
-    categoryName: lt.masterTest.category.name,
-  }));
+  const labHomeServiceAvailable = lab.storeSettings?.homeCollectionAvailable ?? true;
 
-  const packages = lab.packages.map((pkg) => ({
-    id: pkg.id,
-    name: pkg.name,
-    slug: pkg.slug,
-    code: pkg.code,
-    description: pkg.description,
-    sellingPrice: Number(pkg.sellingPrice),
-    mrpPrice: pkg.mrpPrice ? Number(pkg.mrpPrice) : null,
-    testCount: pkg.packageTests.length,
-    sampleTypes: pkg.sampleTypes,
-    estimatedTatHours: pkg.estimatedTatHours,
-    isPopular: pkg.isPopular,
-    tests: pkg.packageTests.map((pt) => ({
-      id: pt.labTest.id,
-      name: pt.labTest.masterTest.name,
-    })),
-  }));
+  const popularTests = lab.labTests.map((lt) => {
+    const isAvailable = Boolean(
+      labHomeServiceAvailable &&
+      lt.masterTest.homeCollectionEligible &&
+      lt.isHomeCollectionAvailable
+    );
+    return {
+      id: lt.id,
+      code: lt.masterTest.code,
+      name: lt.masterTest.name,
+      slug: lt.masterTest.slug,
+      sellingPrice: Number(lt.sellingPrice),
+      mrpPrice: lt.mrpPrice ? Number(lt.mrpPrice) : null,
+      sampleType: lt.masterTest.sampleType,
+      tatHours: lt.customTatHours || lt.masterTest.standardTatHours,
+      fastingRequired: lt.masterTest.fastingRequired,
+      preparationInstructions: lt.customPreparation || lt.masterTest.preparationInstructions,
+      categoryName: lt.masterTest.category.name,
+      homeCollectionAvailable: isAvailable,
+      isHomeCollectionAvailable: isAvailable,
+      homeCollectionEligible: lt.masterTest.homeCollectionEligible,
+    };
+  });
+
+  const packages = lab.packages.map((pkg) => {
+    const allTestsEligible = pkg.packageTests.every(
+      (pt) => pt.labTest.masterTest.homeCollectionEligible && pt.labTest.isHomeCollectionAvailable
+    );
+    const isAvailable = Boolean(
+      labHomeServiceAvailable &&
+      pkg.isHomeCollectionAvailable &&
+      allTestsEligible
+    );
+    return {
+      id: pkg.id,
+      name: pkg.name,
+      slug: pkg.slug,
+      code: pkg.code,
+      description: pkg.description,
+      sellingPrice: Number(pkg.sellingPrice),
+      mrpPrice: pkg.mrpPrice ? Number(pkg.mrpPrice) : null,
+      testCount: pkg.packageTests.length,
+      sampleTypes: pkg.sampleTypes,
+      estimatedTatHours: pkg.estimatedTatHours,
+      isPopular: pkg.isPopular,
+      homeCollectionAvailable: isAvailable,
+      isHomeCollectionAvailable: isAvailable,
+      tests: pkg.packageTests.map((pt) => ({
+        id: pt.labTest.id,
+        name: pt.labTest.masterTest.name,
+      })),
+    };
+  });
 
   return {
     lab: {

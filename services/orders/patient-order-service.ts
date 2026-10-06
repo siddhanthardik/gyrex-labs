@@ -67,6 +67,13 @@ export async function calculateOrderTotal(
     throw new Error(`Laboratory not found: ${labId}`);
   }
 
+  // Level 1: Laboratory Master Service Enforcement
+  if (collectionType === CollectionType.HOME_COLLECTION && !lab.storeSettings?.homeCollectionAvailable) {
+    throw new Error(
+      `Home sample collection is not currently offered by ${lab.name}. Please select laboratory visit.`
+    );
+  }
+
   let subtotal = 0;
   const itemSnapshots: CalculatedOrderSummary["itemSnapshots"] = [];
 
@@ -86,6 +93,20 @@ export async function calculateOrderTotal(
         throw new Error(`Security Violation: Test '${labTest.masterTest.name}' does not belong to laboratory '${lab.name}'.`);
       }
 
+      // Level 2 & Level 3 Validation for Home Collection
+      if (collectionType === CollectionType.HOME_COLLECTION) {
+        if (!labTest.masterTest.homeCollectionEligible) {
+          throw new Error(
+            `Test '${labTest.masterTest.name}' requires on-site clinical collection and cannot be booked for home collection.`
+          );
+        }
+        if (!labTest.isHomeCollectionAvailable) {
+          throw new Error(
+            `Test '${labTest.masterTest.name}' is not currently offered for home collection by ${lab.name}.`
+          );
+        }
+      }
+
       const price = Number(labTest.sellingPrice);
       subtotal += price;
       itemSnapshots.push({
@@ -98,6 +119,15 @@ export async function calculateOrderTotal(
     } else if (item.itemType === "PACKAGE") {
       const pkg = await prisma.package.findUnique({
         where: { id: item.id },
+        include: {
+          packageTests: {
+            include: {
+              labTest: {
+                include: { masterTest: true },
+              },
+            },
+          },
+        },
       });
 
       if (!pkg) {
@@ -107,6 +137,27 @@ export async function calculateOrderTotal(
       // STRICT MULTI-TENANT CHECK: Package must belong to this laboratory!
       if (pkg.labId !== labId) {
         throw new Error(`Security Violation: Package '${pkg.name}' does not belong to laboratory '${lab.name}'.`);
+      }
+
+      // Level 2 & Level 3 Validation for Home Collection
+      if (collectionType === CollectionType.HOME_COLLECTION) {
+        if (!pkg.isHomeCollectionAvailable) {
+          throw new Error(
+            `Health package '${pkg.name}' is not offered for home collection by ${lab.name}.`
+          );
+        }
+        for (const pt of pkg.packageTests) {
+          if (!pt.labTest.masterTest.homeCollectionEligible) {
+            throw new Error(
+              `Health package '${pkg.name}' includes '${pt.labTest.masterTest.name}' which requires on-site clinical collection and cannot be booked for home collection.`
+            );
+          }
+          if (!pt.labTest.isHomeCollectionAvailable) {
+            throw new Error(
+              `Health package '${pkg.name}' includes '${pt.labTest.masterTest.name}' which is not offered for home collection by ${lab.name}.`
+            );
+          }
+        }
       }
 
       const price = Number(pkg.sellingPrice);
