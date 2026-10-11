@@ -66,14 +66,18 @@ export function LabSidebar({
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", {
+      const res = await fetch("/api/auth/logout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
       });
+      const data = await res.json().catch(() => null);
+      const targetUrl = data?.redirectUrl || "/login";
+      window.location.replace(targetUrl);
     } catch {
-      // Fallback redirect on error
-    } finally {
-      window.location.href = "/login";
+      window.location.replace("/login");
     }
   };
 

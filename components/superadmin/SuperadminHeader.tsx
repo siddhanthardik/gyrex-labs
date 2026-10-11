@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { LogOut, Menu, PanelLeft, PanelLeftClose, Search, ShieldAlert } from "lucide-react";
 
 interface SuperadminHeaderProps {
@@ -20,17 +19,23 @@ export function SuperadminHeader({
   isCollapsed,
   onToggleCollapse,
 }: SuperadminHeaderProps) {
-  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json().catch(() => null);
+      const targetUrl = data?.redirectUrl || "/";
+      window.location.replace(targetUrl);
     } catch {
-      setIsLoggingOut(false);
+      window.location.replace("/");
     }
   };
 

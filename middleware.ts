@@ -58,63 +58,78 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Authentication required." }, { status: 401 });
       }
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Tenant users (LAB_OWNER, LAB_ADMIN, LAB_STAFF) MUST NEVER access Superadmin!
-    if (!isPlatformRole(session.role)) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Access denied: Platform administrator role required." },
-          { status: 403 }
-        );
-      }
-      return NextResponse.redirect(new URL("/login?error=forbidden", request.url));
-    }
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 5. Protect Laboratory Admin routes (/lab/* and /api/lab/*)
-  const isLabRoute =
-    pathname === "/lab" ||
-    pathname.startsWith("/lab/") ||
-    pathname === "/api/lab" ||
-    pathname.startsWith("/api/lab/");
-  if (isLabRoute) {
-    if (!session) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-      }
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+  // Tenant users (LAB_OWNER, LAB_ADMIN, LAB_STAFF) MUST NEVER access Superadmin!
+  if (!isPlatformRole(session.role)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Access denied: Platform administrator role required." },
+        { status: 403 }
+      );
     }
+    const forbiddenUrl = request.nextUrl.clone();
+    forbiddenUrl.pathname = "/login";
+    forbiddenUrl.search = "?error=forbidden";
+    return NextResponse.redirect(forbiddenUrl);
+  }
+}
 
-    // Platform admins are allowed, or laboratory members with valid lab memberships
-    const hasLabMembership = session.labMemberships.length > 0 || isPlatformRole(session.role);
-    if (!hasLabMembership) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Access denied: No laboratory membership found." },
-          { status: 403 }
-        );
-      }
-      return NextResponse.redirect(new URL("/login?error=no_lab_membership", request.url));
+// 5. Protect Laboratory Admin routes (/lab/* and /api/lab/*)
+const isLabRoute =
+  pathname === "/lab" ||
+  pathname.startsWith("/lab/") ||
+  pathname === "/api/lab" ||
+  pathname.startsWith("/api/lab/");
+if (isLabRoute) {
+  if (!session) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 6. Forward request with authenticated user context in headers
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
-  if (session) {
-    response.headers.set("x-user-id", session.userId);
-    response.headers.set("x-user-role", session.role);
-    if (session.activeLabId) {
-      response.headers.set("x-lab-id", session.activeLabId);
+  // Platform admins are allowed, or laboratory members with valid lab memberships
+  const hasLabMembership = session.labMemberships.length > 0 || isPlatformRole(session.role);
+  if (!hasLabMembership) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Access denied: No laboratory membership found." },
+        { status: 403 }
+      );
     }
+    const noMembershipUrl = request.nextUrl.clone();
+    noMembershipUrl.pathname = "/login";
+    noMembershipUrl.search = "?error=no_lab_membership";
+    return NextResponse.redirect(noMembershipUrl);
   }
+}
 
-  return response;
+// 6. Forward request with authenticated user context in headers
+const response = NextResponse.next({ request: { headers: requestHeaders } });
+if (session) {
+  response.headers.set("x-user-id", session.userId);
+  response.headers.set("x-user-role", session.role);
+  if (session.activeLabId) {
+    response.headers.set("x-lab-id", session.activeLabId);
+  }
+}
+
+// Prevent browser bfcache restoration for authenticated admin pages
+if (isSuperadminRoute || isLabRoute) {
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+}
+
+return response;
 }
 
 export const config = {
