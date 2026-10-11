@@ -30,7 +30,12 @@ import {
   SendWhatsAppTextParams,
   WhatsAppSendResult,
 } from "@/lib/integrations/types";
-import { encryptSecret, decryptSecret, verifyMetaWebhookSignature } from "@/lib/integrations/crypto";
+import {
+  encryptSecret,
+  decryptSecret,
+  verifyMetaWebhookSignature,
+  safeTimingSafeEqual,
+} from "@/lib/integrations/crypto";
 import { recordAuditLog } from "@/lib/db/audit";
 import { AuditAction } from "@prisma/client";
 import crypto from "crypto";
@@ -63,6 +68,9 @@ export interface SafeLabWhatsAppResponse {
   hasAccessToken: boolean;
   hasAppSecret: boolean;
   webhookUrl: string;
+  overrideWebhookUrl?: string;
+  platformVerifyToken: string;
+  labVerifyToken: string;
   webhookVerifyToken: string;
   lastVerifiedAt: string | null;
   errorMessage: string | null;
@@ -130,6 +138,79 @@ export class MetaWhatsAppService implements WhatsAppProvider {
   }
 
   /**
+   * Platform-wide centralized webhook configuration key in PlatformSettings.
+   */
+  private readonly platformWebhookSettingsKey = "platform_whatsapp_webhook";
+
+  /**
+   * Retrieves or initializes the high-entropy platform-level webhook verification token.
+   * Priority:
+   * 1. WHATSAPP_VERIFY_TOKEN environment variable (if explicitly configured).
+   * 2. Persisted platform token from PlatformSettings ('platform_whatsapp_webhook').
+   * 3. Automatically generated cryptographically secure random token (32 bytes hex), persisted to PlatformSettings.
+   */
+  async getOrGeneratePlatformVerifyToken(): Promise<string> {
+    if (this.defaultVerifyToken && this.defaultVerifyToken.trim()) {
+      return this.defaultVerifyToken.trim();
+    }
+
+    try {
+      // 1. Check if token is already persisted
+      const record = await prisma.platformSettings.findUnique({
+        where: { key: this.platformWebhookSettingsKey },
+      });
+      const data = (record?.value as { verifyToken?: string }) || {};
+      if (data.verifyToken && typeof data.verifyToken === "string" && data.verifyToken.trim()) {
+        return data.verifyToken.trim();
+      }
+
+      // 2. Generate high-entropy 32-byte hex token (64 hex characters)
+      const generatedToken = crypto.randomBytes(32).toString("hex");
+
+      // 3. Concurrency-safe insert/upsert:
+      // An empty update ({}) guarantees that if another process created the token concurrently,
+      // its existing token is NOT overwritten.
+      try {
+        await prisma.platformSettings.create({
+          data: {
+            key: this.platformWebhookSettingsKey,
+            value: { verifyToken: generatedToken, generatedAt: new Date().toISOString() },
+            description: "Gyrex Central Meta WhatsApp Cloud API Webhook Verify Token",
+          },
+        });
+        return generatedToken;
+      } catch (createErr: any) {
+        // Unique constraint violation (P2002) - concurrent insert won the race
+        if (createErr.code === "P2002" || createErr.message?.includes("Unique constraint")) {
+          const winningRecord = await prisma.platformSettings.findUnique({
+            where: { key: this.platformWebhookSettingsKey },
+          });
+          const winningData = (winningRecord?.value as { verifyToken?: string }) || {};
+          if (winningData.verifyToken && typeof winningData.verifyToken === "string" && winningData.verifyToken.trim()) {
+            return winningData.verifyToken.trim();
+          }
+        }
+        throw createErr;
+      }
+    } catch (err) {
+      // In case of transient DB read error, re-check once before fallback
+      try {
+        const recheck = await prisma.platformSettings.findUnique({
+          where: { key: this.platformWebhookSettingsKey },
+        });
+        const recheckData = (recheck?.value as { verifyToken?: string }) || {};
+        if (recheckData.verifyToken && typeof recheckData.verifyToken === "string" && recheckData.verifyToken.trim()) {
+          return recheckData.verifyToken.trim();
+        }
+      } catch {}
+
+      // Fallback to secure derived fallback from AUTH_SECRET
+      const fallbackSecret = process.env.AUTH_SECRET || "gyrex-whatsapp-fallback-token";
+      return crypto.createHash("sha256").update(`${fallbackSecret}:whatsapp_webhook`).digest("hex");
+    }
+  }
+
+  /**
    * Retrieves laboratory WhatsApp configuration from PlatformSettings.
    * STRICT SECURITY: Secrets are never returned decrypted in client responses.
    */
@@ -153,11 +234,17 @@ export class MetaWhatsAppService implements WhatsAppProvider {
     const isEnabled = rawData.isEnabled ?? configured;
     const status = rawData.status || (configured ? "CONNECTED" : "DISCONNECTED");
 
-    const defaultVerifyToken = `gyr_wa_${lab.slug.replace(/[^a-zA-Z0-9]/g, "")}_${labId.slice(-6)}`;
-    const webhookVerifyToken = rawData.webhookVerifyToken || defaultVerifyToken;
+    // Standard platform-level centralized webhook token & URL
+    const platformVerifyToken = await this.getOrGeneratePlatformVerifyToken();
+    const labVerifyToken =
+      rawData.webhookVerifyToken && rawData.webhookVerifyToken.trim()
+        ? rawData.webhookVerifyToken.trim()
+        : `gyr_wa_${lab.slug.replace(/[^a-zA-Z0-9]/g, "")}_${labId.slice(-6)}`;
+    const webhookVerifyToken = platformVerifyToken;
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://labs.gyrex.in";
-    const webhookUrl = `${baseUrl}/api/webhooks/whatsapp?labId=${labId}`;
+    const webhookUrl = `${baseUrl}/api/webhooks/whatsapp`;
+    const overrideWebhookUrl = `${baseUrl}/api/webhooks/whatsapp?labId=${labId}`;
 
     const previewMessage = this.generateWelcomeMessage({
       labName: lab.name,
@@ -178,6 +265,9 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       hasAccessToken: Boolean(rawData.accessTokenEncrypted),
       hasAppSecret: Boolean(rawData.appSecretEncrypted),
       webhookUrl,
+      overrideWebhookUrl,
+      platformVerifyToken,
+      labVerifyToken,
       webhookVerifyToken,
       lastVerifiedAt: rawData.lastVerifiedAt || null,
       errorMessage: rawData.errorMessage || null,
@@ -224,11 +314,11 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       input.displayPhoneNumber !== undefined
         ? input.displayPhoneNumber.trim() || null
         : existingData.displayPhoneNumber || null;
-    const defaultVerifyToken = `gyr_wa_${labId.slice(-6)}`;
+    const platformVerifyToken = await this.getOrGeneratePlatformVerifyToken();
     const webhookVerifyToken =
       input.webhookVerifyToken !== undefined
-        ? input.webhookVerifyToken.trim() || existingData.webhookVerifyToken || defaultVerifyToken
-        : existingData.webhookVerifyToken || defaultVerifyToken;
+        ? input.webhookVerifyToken.trim() || existingData.webhookVerifyToken || platformVerifyToken
+        : existingData.webhookVerifyToken || platformVerifyToken;
     const isEnabled = input.isEnabled !== undefined ? Boolean(input.isEnabled) : existingData.isEnabled ?? true;
     const welcomeMessageCustom =
       input.welcomeMessageCustom !== undefined
@@ -466,32 +556,62 @@ export class MetaWhatsAppService implements WhatsAppProvider {
   ): Promise<string | null> {
     if (!verifyToken || !challenge) return null;
 
-    // 1. If labId provided in query, verify against that specific lab's token strictly
-    if (labIdQuery) {
-      const settingRecord = await prisma.platformSettings.findUnique({
-        where: { key: this.getSettingsKey(labIdQuery) },
-      });
-      const data = (settingRecord?.value as Partial<LabWhatsAppSettings>) || {};
-      return data.webhookVerifyToken === verifyToken ? challenge : null;
-    }
-
-    // 2. Platform default token check
-    if (this.defaultVerifyToken && this.defaultVerifyToken === verifyToken) {
-      return challenge;
-    }
-
-    // 3. Search all configured lab settings for matching verify token
-    const allSettings = await prisma.platformSettings.findMany({
-      where: {
-        key: { startsWith: "lab_whatsapp:" },
-      },
-    });
-
-    for (const rec of allSettings) {
-      const data = (rec.value as Partial<LabWhatsAppSettings>) || {};
-      if (data.webhookVerifyToken === verifyToken) {
+    // 1. Check against Central Platform Webhook Token first (App-Level Webhook)
+    try {
+      const platformToken = await this.getOrGeneratePlatformVerifyToken();
+      if (platformToken && safeTimingSafeEqual(platformToken, verifyToken)) {
         return challenge;
       }
+    } catch {
+      // Proceed to fallback checks on transient DB error
+    }
+
+    // 2. If labId provided in query (?labId=...), verify against that specific lab's token strictly
+    if (labIdQuery) {
+      try {
+        const cleanLabId = labIdQuery.trim();
+        const settingRecord = await prisma.platformSettings.findUnique({
+          where: { key: this.getSettingsKey(cleanLabId) },
+        });
+        const data = (settingRecord?.value as Partial<LabWhatsAppSettings>) || {};
+        if (data.webhookVerifyToken && safeTimingSafeEqual(data.webhookVerifyToken, verifyToken)) {
+          return challenge;
+        }
+
+        // Backward compatibility: If no record in DB yet, check deterministic legacy token for that lab
+        const lab = await prisma.lab.findUnique({
+          where: { id: cleanLabId },
+          select: { id: true, slug: true },
+        });
+        if (lab) {
+          const legacyToken1 = `gyr_wa_${lab.slug.replace(/[^a-zA-Z0-9]/g, "")}_${cleanLabId.slice(-6)}`;
+          const legacyToken2 = `gyr_wa_${cleanLabId.slice(-6)}`;
+          if (safeTimingSafeEqual(legacyToken1, verifyToken) || safeTimingSafeEqual(legacyToken2, verifyToken)) {
+            return challenge;
+          }
+        }
+      } catch {
+        // Continue to fallback
+      }
+      return null;
+    }
+
+    // 3. Centralized Webhook with Lab-Specific Token (Search all configured lab settings)
+    try {
+      const allSettings = await prisma.platformSettings.findMany({
+        where: {
+          key: { startsWith: "lab_whatsapp:" },
+        },
+      });
+
+      for (const rec of allSettings) {
+        const data = (rec.value as Partial<LabWhatsAppSettings>) || {};
+        if (data.webhookVerifyToken && safeTimingSafeEqual(data.webhookVerifyToken, verifyToken)) {
+          return challenge;
+        }
+      }
+    } catch {
+      // In case of DB read error, do not match
     }
 
     return null;
@@ -519,9 +639,15 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       : null;
 
     // Load all laboratory WhatsApp settings for multi-tenant conflict & ownership checks
-    const allSettingsRecords = await prisma.platformSettings.findMany({
-      where: { key: { startsWith: "lab_whatsapp:" } },
-    });
+    let allSettingsRecords: any[] = [];
+    try {
+      allSettingsRecords = await prisma.platformSettings.findMany({
+        where: { key: { startsWith: "lab_whatsapp:" } },
+      });
+    } catch (dbErr) {
+      console.error("Database failure loading WhatsApp settings during inbound resolution:", dbErr);
+      return null;
+    }
 
     const settingsByLabId = new Map<string, LabWhatsAppSettings>();
     for (const rec of allSettingsRecords) {
@@ -545,9 +671,15 @@ export class MetaWhatsAppService implements WhatsAppProvider {
     // Scenario A: labId is provided in webhook query string (e.g. ?labId=xxx)
     if (labIdQuery) {
       const cleanLabId = labIdQuery.trim();
-      const lab = await prisma.lab.findUnique({
-        where: { id: cleanLabId },
-      });
+      let lab: any = null;
+      try {
+        lab = await prisma.lab.findUnique({
+          where: { id: cleanLabId },
+        });
+      } catch (err) {
+        console.error("Database failure resolving lab query:", err);
+        return null;
+      }
       if (!lab) {
         // Unknown or invalid labId in query
         return null;
@@ -612,14 +744,18 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       return null;
     }
 
-    const lab = await prisma.lab.findUnique({
-      where: { id: resolvedLabId },
-    });
-    if (!lab) {
+    try {
+      const lab = await prisma.lab.findUnique({
+        where: { id: resolvedLabId },
+      });
+      if (!lab) {
+        return null;
+      }
+      return { lab, settings: resolvedSettings };
+    } catch (err) {
+      console.error("Database failure resolving lab record:", err);
       return null;
     }
-
-    return { lab, settings: resolvedSettings };
   }
 
   /**
@@ -702,7 +838,6 @@ export class MetaWhatsAppService implements WhatsAppProvider {
         labId: lab.id,
         metadata: {
           reason: "Invalid Meta WhatsApp webhook signature (HMAC-SHA256 mismatch or tampered body)",
-          signatureHeader,
         },
       });
       throw new Error("Invalid Meta webhook signature.");

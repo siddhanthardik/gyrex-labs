@@ -29,6 +29,9 @@ interface SafeWhatsAppSettings {
   hasAccessToken: boolean;
   hasAppSecret: boolean;
   webhookUrl: string;
+  overrideWebhookUrl?: string;
+  platformVerifyToken?: string;
+  labVerifyToken?: string;
   webhookVerifyToken: string;
   lastVerifiedAt: string | null;
   errorMessage: string | null;
@@ -325,65 +328,127 @@ export default function LabWhatsAppPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Callback URL */}
-          <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/60 flex flex-col justify-between">
+          {/* Centralized Platform Callback (Recommended) */}
+          <div className="p-3.5 rounded-lg border border-sky-100 bg-sky-50/30 flex flex-col justify-between">
             <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">
+                  Centralized App Callback
+                </span>
+                <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold border border-sky-200">
+                  Recommended Default
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Use in Meta App Dashboard → <strong>WhatsApp → Configuration → Webhook</strong>.
+              </p>
+
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                 Callback URL
-              </span>
-              <code className="text-xs text-slate-800 font-mono break-all select-all block bg-white p-2 rounded border border-slate-200">
-                {settings?.webhookUrl || "Loading..."}
-              </code>
-            </div>
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => settings?.webhookUrl && handleCopy(settings.webhookUrl, "webhookUrl")}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs"
-              >
-                {copiedField === "webhookUrl" ? (
-                  <>
+              </label>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
+                  {settings?.webhookUrl || "Loading..."}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => settings?.webhookUrl && handleCopy(settings.webhookUrl, "centralUrl")}
+                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
+                  title="Copy Central Callback URL"
+                >
+                  {copiedField === "centralUrl" ? (
                     <Check className="h-3.5 w-3.5 text-emerald-600" />
-                    Copied
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <Copy className="h-3.5 w-3.5 text-slate-400" />
-                    Copy URL
-                  </>
-                )}
-              </button>
+                  )}
+                </button>
+              </div>
+
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                Platform Verify Token
+              </label>
+              <div className="flex items-center gap-1.5">
+                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
+                  {settings?.platformVerifyToken || settings?.webhookVerifyToken || "Loading..."}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const token = settings?.platformVerifyToken || settings?.webhookVerifyToken;
+                    if (token) handleCopy(token, "platformToken");
+                  }}
+                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
+                  title="Copy Platform Verify Token"
+                >
+                  {copiedField === "platformToken" ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5 text-slate-400" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Webhook Verify Token */}
+          {/* Per-WABA / Direct Lab Override */}
           <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/60 flex flex-col justify-between">
             <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">
-                Verify Token
-              </span>
-              <code className="text-xs text-slate-800 font-mono break-all select-all block bg-white p-2 rounded border border-slate-200">
-                {settings?.webhookVerifyToken || "Loading..."}
-              </code>
-            </div>
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => settings?.webhookVerifyToken && handleCopy(settings.webhookVerifyToken, "verifyToken")}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs"
-              >
-                {copiedField === "verifyToken" ? (
-                  <>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+                  Per-WABA / Direct Override
+                </span>
+                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                  Direct Override
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Use only when configuring an isolated webhook exclusively for this laboratory.
+              </p>
+
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                Override Callback URL
+              </label>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
+                  {settings?.overrideWebhookUrl || "Loading..."}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => settings?.overrideWebhookUrl && handleCopy(settings.overrideWebhookUrl, "overrideUrl")}
+                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
+                  title="Copy Override Callback URL"
+                >
+                  {copiedField === "overrideUrl" ? (
                     <Check className="h-3.5 w-3.5 text-emerald-600" />
-                    Copied
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <Copy className="h-3.5 w-3.5 text-slate-400" />
-                    Copy Token
-                  </>
-                )}
-              </button>
+                  )}
+                </button>
+              </div>
+
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                Laboratory Verify Token
+              </label>
+              <div className="flex items-center gap-1.5">
+                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
+                  {settings?.labVerifyToken || "Loading..."}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const token = settings?.labVerifyToken;
+                    if (token) handleCopy(token, "labToken");
+                  }}
+                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
+                  title="Copy Laboratory Verify Token"
+                >
+                  {copiedField === "labToken" ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5 text-slate-400" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
