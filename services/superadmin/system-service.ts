@@ -174,7 +174,130 @@ export async function getSystemHealth() {
   };
 }
 
+/**
+ * Pure evaluation function for Meta WhatsApp Cloud API status in Superadmin.
+ * Accurately distinguishes platform callback readiness, saved credentials, and verified connection.
+ */
+export function evaluateWhatsAppIntegrationStatus(params: {
+  hasPlatformToken: boolean;
+  labSettingsRecords: Array<{ key: string; value: unknown }>;
+}): {
+  configured: boolean;
+  maskedKey: string;
+  description: string;
+} {
+  const { hasPlatformToken, labSettingsRecords } = params;
+
+  let configuredLabsCount = 0;
+  let verifiedConnectedLabsCount = 0;
+
+  for (const rec of labSettingsRecords) {
+    if (!rec || typeof rec.value !== "object" || rec.value === null || Array.isArray(rec.value)) {
+      continue;
+    }
+    const val = rec.value as Record<string, unknown>;
+    const hasPhoneId = typeof val.phoneNumberId === "string" && val.phoneNumberId.trim().length > 0;
+    const hasAccessToken = typeof val.accessTokenEncrypted === "string" && val.accessTokenEncrypted.trim().length > 0;
+    const hasCreds = hasPhoneId && hasAccessToken;
+
+    if (hasCreds) {
+      configuredLabsCount++;
+      // A laboratory is verified connected only if status is CONNECTED, isEnabled is true, and lastVerifiedAt exists
+      const isConnected = val.status === "CONNECTED";
+      const isEnabled = val.isEnabled !== false;
+      const hasVerifiedAt = typeof val.lastVerifiedAt === "string" && val.lastVerifiedAt.trim().length > 0;
+
+      if (isConnected && isEnabled && hasVerifiedAt) {
+        verifiedConnectedLabsCount++;
+      }
+    }
+  }
+
+  if (!hasPlatformToken && configuredLabsCount === 0) {
+    return {
+      configured: false,
+      maskedKey: "NOT_CONFIGURED",
+      description: "WhatsApp configuration incomplete. Platform webhook token and tenant credentials are not configured.",
+    };
+  }
+
+  if (hasPlatformToken && configuredLabsCount === 0) {
+    return {
+      configured: false,
+      maskedKey: "CALLBACK_READY_0_LABS",
+      description: "Platform callback configured; no laboratories connected.",
+    };
+  }
+
+  if (hasPlatformToken && configuredLabsCount > 0) {
+    if (verifiedConnectedLabsCount > 0) {
+      return {
+        configured: true,
+        maskedKey: `${verifiedConnectedLabsCount}_LABS_CONNECTED`,
+        description: `Platform callback configured; ${verifiedConnectedLabsCount} laboratory(ies) verified and actively connected.`,
+      };
+    }
+    return {
+      configured: false,
+      maskedKey: `${configuredLabsCount}_LABS_CONFIGURED`,
+      description: `Platform callback configured; ${configuredLabsCount} laboratory(ies) credentials configured; connection not verified.`,
+    };
+  }
+
+  // Configured labs exist, but platform-level central token not found in DB or env
+  return {
+    configured: false,
+    maskedKey: `${configuredLabsCount}_LABS_NO_PLATFORM_TOKEN`,
+    description: `WhatsApp configuration incomplete. ${configuredLabsCount} laboratory(ies) have credentials, but platform webhook verify token is missing.`,
+  };
+}
+
 export async function getIntegrationsStatus() {
+  // Query WhatsApp Cloud API platform token and lab tenant settings dynamically
+  let whatsAppConfigured = false;
+  let whatsAppMaskedKey = "STATUS_UNAVAILABLE";
+  let whatsAppDescription = "Configuration status unavailable because the settings could not be checked.";
+
+  try {
+    const [platformSetting, labSettingsRecords] = await Promise.all([
+      prisma.platformSettings.findUnique({
+        where: { key: "platform_whatsapp_webhook" },
+      }),
+      prisma.platformSettings.findMany({
+        where: { key: { startsWith: "lab_whatsapp:" } },
+      }),
+    ]);
+
+    const hasPlatformEnvToken = Boolean(process.env.WHATSAPP_VERIFY_TOKEN?.trim());
+    let hasPlatformDbToken = false;
+    if (
+      platformSetting?.value &&
+      typeof platformSetting.value === "object" &&
+      !Array.isArray(platformSetting.value)
+    ) {
+      const platformData = platformSetting.value as Record<string, unknown>;
+      hasPlatformDbToken = Boolean(
+        typeof platformData.verifyToken === "string" && platformData.verifyToken.trim().length > 0
+      );
+    }
+    const hasPlatformToken = hasPlatformEnvToken || hasPlatformDbToken;
+
+    const evalResult = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken,
+      labSettingsRecords,
+    });
+
+    whatsAppConfigured = evalResult.configured;
+    whatsAppMaskedKey = evalResult.maskedKey;
+    whatsAppDescription = evalResult.description;
+  } catch {
+    // Log generic error with safe error category only; never log SQL parameters, tokens, or credentials
+    console.error("[SuperadminSystem] Database read failure when resolving WhatsApp platform settings (category: DB_READ_ERROR)");
+    whatsAppConfigured = false;
+    whatsAppMaskedKey = "STATUS_UNAVAILABLE";
+    whatsAppDescription = "Configuration status unavailable because the settings could not be checked.";
+  }
+
   return [
     {
       name: "Razorpay Diagnostic & SaaS Engine",
@@ -211,10 +334,10 @@ export async function getIntegrationsStatus() {
     {
       name: "Meta WhatsApp Cloud API",
       type: "Messaging Gateway",
-      configured: false,
+      configured: whatsAppConfigured,
       environment: "GRAPH_API",
-      maskedKey: "PENDING_ARTIFACT_06",
-      description: "Automated booking dispatch and direct report PDF delivery via WhatsApp.",
+      maskedKey: whatsAppMaskedKey,
+      description: whatsAppDescription,
     },
   ];
 }

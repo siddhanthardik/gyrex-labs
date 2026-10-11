@@ -779,9 +779,33 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       throw new Error("Invalid JSON in webhook payload.");
     }
 
+    // Helper for safe structured observability (strictly non-sensitive metadata)
+    const logWebhookOutcome = (outcome: {
+      eventType: string;
+      labId?: string | null;
+      isDuplicate?: boolean;
+      replySent?: boolean;
+    }) => {
+      try {
+        console.info(
+          JSON.stringify({
+            event: "WHATSAPP_WEBHOOK_EVENT",
+            timestamp: new Date().toISOString(),
+            eventType: outcome.eventType,
+            labId: outcome.labId || null,
+            isDuplicate: outcome.isDuplicate ?? false,
+            replySent: outcome.replySent ?? false,
+          })
+        );
+      } catch {
+        // Observability logging must never disrupt webhook processing
+      }
+    };
+
     // 1. Resolve tenant laboratory with strict 3-way cross-verification
     const tenantInfo = await this.resolveLabFromInbound(payload, labIdQuery);
     if (!tenantInfo) {
+      logWebhookOutcome({ eventType: "NO_MATCHING_LABORATORY" });
       return { handled: false, eventType: "NO_MATCHING_LABORATORY" };
     }
 
@@ -848,15 +872,18 @@ export class MetaWhatsAppService implements WhatsAppProvider {
     // Check for message delivery status update (DELIVERED, READ, SENT, FAILED)
     if (value?.statuses?.[0]) {
       const statusObj = value.statuses[0];
+      const eventType = `STATUS_${statusObj.status?.toUpperCase() || "UNKNOWN"}`;
+      logWebhookOutcome({ eventType, labId: lab.id });
       return {
         handled: true,
-        eventType: `STATUS_${statusObj.status?.toUpperCase() || "UNKNOWN"}`,
+        eventType,
       };
     }
 
     // Process inbound message
     const message = value?.messages?.[0];
     if (!message) {
+      logWebhookOutcome({ eventType: "UNHANDLED_CHANGE_EVENT", labId: lab.id });
       return { handled: true, eventType: "UNHANDLED_CHANGE_EVENT" };
     }
 
@@ -868,6 +895,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
 
     // Idempotency: skip duplicate message delivery from Meta retries
     if (messageId && isMessageAlreadyProcessed(messageId)) {
+      logWebhookOutcome({ eventType: "DUPLICATE_MESSAGE_ACKNOWLEDGED", labId: lab.id, isDuplicate: true });
       return {
         handled: true,
         eventType: "DUPLICATE_MESSAGE_ACKNOWLEDGED",
@@ -878,6 +906,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
 
     // Check if channel is enabled for this lab
     if (settings.isEnabled === false) {
+      logWebhookOutcome({ eventType: "CHANNEL_DISABLED", labId: lab.id });
       return {
         handled: true,
         eventType: "CHANNEL_DISABLED",
@@ -908,6 +937,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
         phoneNumberId,
         accessToken,
       });
+      logWebhookOutcome({ eventType: "PATIENT_OPT_OUT", labId: lab.id, replySent: sendResult.success });
       return {
         handled: true,
         eventType: "PATIENT_OPT_OUT",
@@ -926,6 +956,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
         phoneNumberId,
         accessToken,
       });
+      logWebhookOutcome({ eventType: "PATIENT_OPT_IN", labId: lab.id, replySent: sendResult.success });
       return {
         handled: true,
         eventType: "PATIENT_OPT_IN",
@@ -951,6 +982,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       accessToken,
     });
 
+    logWebhookOutcome({ eventType: "WELCOME_REPLY_SENT", labId: lab.id, replySent: sendResult.success });
     return {
       handled: true,
       eventType: "WELCOME_REPLY_SENT",

@@ -331,6 +331,201 @@ async function runTests() {
     }
   }
 
+  // --- 10. Superadmin WhatsApp Integration Status ---
+  console.log("\n--- 10. Superadmin WhatsApp Integration Status (Live & Deterministic Scenarios) ---");
+  {
+    const { getIntegrationsStatus, evaluateWhatsAppIntegrationStatus } = await import(
+      "../services/superadmin/system-service"
+    );
+
+    // Scenario 10.1: Live Superadmin status output & secret non-leakage
+    const liveIntegrations = await getIntegrationsStatus();
+    const waIntegration = liveIntegrations.find((i) => i.name === "Meta WhatsApp Cloud API");
+
+    assert(Boolean(waIntegration), "Meta WhatsApp Cloud API integration card exists in Superadmin");
+    assert(waIntegration?.maskedKey !== "PENDING_ARTIFACT_06", "Status is no longer hard-coded to PENDING_ARTIFACT_06");
+
+    // MaskedKey and description must NEVER leak plaintext tokens or secrets
+    const payloadStr = JSON.stringify(waIntegration);
+    assert(!payloadStr.includes(platformToken), "Platform verify token is NOT leaked in status response");
+    assert(!payloadStr.toLowerCase().includes("eaag"), "Access tokens are NOT leaked in status response");
+    assert(!payloadStr.toLowerCase().includes("appsecret"), "App secrets are NOT leaked in status response");
+    assert(!payloadStr.includes("test_secret_for_registered_lab"), "Test secrets are NOT leaked in status response");
+
+    // Scenario 10.2 Deterministic: No platform token and no lab credentials
+    const caseNoPlatformNoLabs = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken: false,
+      labSettingsRecords: [],
+    });
+    assert(caseNoPlatformNoLabs.configured === false, "Case 1: unconfigured when no token and no labs");
+    assert(caseNoPlatformNoLabs.maskedKey === "NOT_CONFIGURED", "Case 1: maskedKey is NOT_CONFIGURED");
+    assert(caseNoPlatformNoLabs.description.includes("Platform webhook token and tenant credentials are not configured"), "Case 1: description explains missing token and credentials");
+
+    // Scenario 10.3 Deterministic: Platform token exists but 0 labs have credentials
+    const caseTokenZeroLabs = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken: true,
+      labSettingsRecords: [],
+    });
+    assert(caseTokenZeroLabs.configured === false, "Case 2: unconfigured when 0 labs connected");
+    assert(caseTokenZeroLabs.maskedKey === "CALLBACK_READY_0_LABS", "Case 2: maskedKey is CALLBACK_READY_0_LABS");
+    assert(caseTokenZeroLabs.description === "Platform callback configured; no laboratories connected.", "Case 2: description confirms platform callback ready with 0 labs");
+
+    // Scenario 10.4 Deterministic: Lab has credentials but connection is not verified (lastVerifiedAt null)
+    const caseCredsUnverified = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken: true,
+      labSettingsRecords: [
+        {
+          key: "lab_whatsapp:lab_1",
+          value: {
+            phoneNumberId: "phone_123",
+            accessTokenEncrypted: "enc_token_123",
+            status: "CONNECTED",
+            isEnabled: true,
+            lastVerifiedAt: null, // Unverified
+          },
+        },
+      ],
+    });
+    assert(caseCredsUnverified.configured === false, "Case 3: unconfirmed connection is NOT reported as configured=true");
+    assert(caseCredsUnverified.maskedKey === "1_LABS_CONFIGURED", "Case 3: maskedKey indicates 1_LABS_CONFIGURED");
+    assert(caseCredsUnverified.description.includes("connection not verified"), "Case 3: description explicitly states 'connection not verified'");
+
+    // Scenario 10.5 Deterministic: Genuinely confirmed connected lab (status CONNECTED + lastVerifiedAt populated)
+    const caseGenuinelyConnected = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken: true,
+      labSettingsRecords: [
+        {
+          key: "lab_whatsapp:lab_1",
+          value: {
+            phoneNumberId: "phone_123",
+            accessTokenEncrypted: "enc_token_123",
+            status: "CONNECTED",
+            isEnabled: true,
+            lastVerifiedAt: "2026-10-11T12:00:00.000Z",
+          },
+        },
+      ],
+    });
+    assert(caseGenuinelyConnected.configured === true, "Case 4: genuinely confirmed lab is reported as configured=true");
+    assert(caseGenuinelyConnected.maskedKey === "1_LABS_CONNECTED", "Case 4: maskedKey is 1_LABS_CONNECTED");
+    assert(caseGenuinelyConnected.description.includes("1 laboratory(ies) verified and actively connected"), "Case 4: description states verified and actively connected");
+
+    // Scenario 10.6 Deterministic: Malformed / null / corrupt / array settings records handled safely without crash
+    const caseMalformed = evaluateWhatsAppIntegrationStatus({
+      hasPlatformToken: true,
+      labSettingsRecords: [
+        { key: "lab_whatsapp:corrupt_1", value: null },
+        { key: "lab_whatsapp:corrupt_2", value: "unexpected_string_format" },
+        { key: "lab_whatsapp:corrupt_3", value: { phoneNumberId: null } },
+        { key: "lab_whatsapp:corrupt_4", value: [{ phoneNumberId: "phone_in_array", accessTokenEncrypted: "token" }] }, // Malformed array
+      ],
+    });
+    assert(caseMalformed.configured === false, "Case 5: corrupt/array records safely ignored and treated as unconfigured");
+    assert(caseMalformed.maskedKey === "CALLBACK_READY_0_LABS", "Case 5: maskedKey remains CALLBACK_READY_0_LABS when only malformed records exist");
+    try {
+      const { prisma: realPrisma } = await import("../lib/db/prisma");
+      const origFindMany = realPrisma.platformSettings.findMany;
+      // Temporarily mock findMany to throw a database error
+      (realPrisma.platformSettings as any).findMany = async () => {
+        throw new Error("Simulated PostgreSQL connection timeout (connection refused on port 5432)");
+      };
+
+      try {
+        const errorIntegrations = await getIntegrationsStatus();
+        const waErrorCard = errorIntegrations.find((i) => i.name === "Meta WhatsApp Cloud API");
+
+        assert(waErrorCard?.configured === false, "DB Failure: configured is false");
+        assert(waErrorCard?.maskedKey === "STATUS_UNAVAILABLE", "DB Failure: maskedKey is STATUS_UNAVAILABLE");
+        assert(
+          waErrorCard?.description === "Configuration status unavailable because the settings could not be checked.",
+          "DB Failure: safe description returned"
+        );
+        const errPayloadStr = JSON.stringify(waErrorCard);
+        assert(!errPayloadStr.includes("PostgreSQL"), "DB Failure: raw database error details NOT exposed");
+        assert(!errPayloadStr.includes("5432"), "DB Failure: connection parameters NOT exposed");
+      } finally {
+        // Restore original findMany method
+        (realPrisma.platformSettings as any).findMany = origFindMany;
+      }
+    } catch (testErr) {
+      assert(false, "DB Failure simulation encountered unexpected exception", String(testErr));
+    }
+  }
+
+  // --- 11. Meta Sample Event vs Genuine Message Safety & Observability Non-Leakage ---
+  console.log("\n--- 11. Meta Sample Event Rejection & Safe Observability ---");
+  {
+    // Meta sample event with dummy test IDs (e.g. 0 or 1048... unconfigured tenant)
+    const testSecret = "sensitive_app_secret_never_leak_xyz";
+    const testPhone = "919876543210";
+    const testMsgBody = "CONFIDENTIAL_PATIENT_TEST_REQUEST";
+    const metaSamplePayload = {
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "0",
+          changes: [
+            {
+              value: {
+                messaging_product: "whatsapp",
+                metadata: {
+                  display_phone_number: "+1 555-000-0000",
+                  phone_number_id: "0",
+                },
+                messages: [
+                  {
+                    from: testPhone,
+                    id: "wamid.sample_test_message_123",
+                    timestamp: "1710000000",
+                    type: "text",
+                    text: { body: testMsgBody },
+                  },
+                ],
+              },
+              field: "messages",
+            },
+          ],
+        },
+      ],
+    };
+
+    // Intercept console.info calls to strictly verify logged fields
+    const loggedOutputs: string[] = [];
+    const originalConsoleInfo = console.info;
+    console.info = (...args: any[]) => {
+      loggedOutputs.push(args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" "));
+      originalConsoleInfo(...args);
+    };
+
+    try {
+      const resolvedSample = await whatsAppService.resolveLabFromInbound(metaSamplePayload);
+      assert(resolvedSample === null, "Meta sample payload with dummy ID is safely not mapped to any laboratory (fail closed)");
+
+      const sampleRes = await whatsAppService.handleInboundWebhook(JSON.stringify(metaSamplePayload), null);
+      assert(sampleRes.handled === false && sampleRes.eventType === "NO_MATCHING_LABORATORY", "Meta sample event returns handled=false and NO_MATCHING_LABORATORY without processing");
+
+      // Verify observability logging strictly excludes sensitive request content
+      const allLogs = loggedOutputs.join("\n");
+      assert(!allLogs.includes(testPhone), "Webhook log NEVER records patient phone number");
+      assert(!allLogs.includes(testMsgBody), "Webhook log NEVER records inbound message body");
+      assert(!allLogs.includes(testSecret), "Webhook log NEVER records app secret or verification tokens");
+      assert(allLogs.includes("WHATSAPP_WEBHOOK_EVENT"), "Webhook log contains structured event name");
+      assert(allLogs.includes("NO_MATCHING_LABORATORY"), "Webhook log contains outcome eventType");
+
+      // Verify logger resilience: if console.info throws, webhook processing does NOT crash
+      console.info = () => {
+        throw new Error("Simulated stdout write/pipe failure");
+      };
+      const resilientRes = await whatsAppService.handleInboundWebhook(JSON.stringify(metaSamplePayload), null);
+      assert(
+        resilientRes.handled === false && resilientRes.eventType === "NO_MATCHING_LABORATORY",
+        "Webhook processing returns normal result even when observability logger throws"
+      );
+    } finally {
+      console.info = originalConsoleInfo;
+    }
+  }
+
   console.log("\n============================================================");
   console.log(`WHATSAPP WEBHOOK TESTS: ${passed} PASSED, ${failed} FAILED`);
   console.log("============================================================\n");
