@@ -149,6 +149,21 @@ export function verifyMetaWebhookSignature(
 }
 
 /**
+ * Compares two token strings in constant time to prevent timing attacks.
+ */
+export function safeTimingSafeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") {
+    return false;
+  }
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
  * Calculates SHA-256 checksum of a file buffer.
  */
 export function calculateSha256Checksum(buffer: Buffer): string {
