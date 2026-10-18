@@ -22,6 +22,9 @@ export async function getActiveSubscriptionPlans() {
     maxStaffAccounts: p.maxStaffAccounts,
     customBrandingEnabled: p.customBrandingEnabled,
     geminiPrescriptionAiEnabled: p.geminiPrescriptionAiEnabled,
+    canUseSharedWhatsApp: p.canUseSharedWhatsApp,
+    monthlySharedWhatsAppQuota: p.monthlySharedWhatsAppQuota,
+    canConfigureCustomWaba: p.canConfigureCustomWaba,
     isActive: p.isActive,
     displayOrder: p.displayOrder,
   }));
@@ -75,6 +78,9 @@ export async function getLabSubscription(labId: string) {
       maxStaffAccounts: sub.plan.maxStaffAccounts,
       customBrandingEnabled: sub.plan.customBrandingEnabled,
       geminiPrescriptionAiEnabled: sub.plan.geminiPrescriptionAiEnabled,
+      canUseSharedWhatsApp: sub.plan.canUseSharedWhatsApp,
+      monthlySharedWhatsAppQuota: sub.plan.monthlySharedWhatsAppQuota,
+      canConfigureCustomWaba: sub.plan.canConfigureCustomWaba,
     },
     invoices: sub.invoices.map((inv) => ({
       id: inv.id,
@@ -276,6 +282,9 @@ export async function getLabSubscriptionDetails(labId: string, autoCreateDefault
     maxStaffAccounts: p.maxStaffAccounts,
     customBrandingEnabled: p.customBrandingEnabled,
     geminiPrescriptionAiEnabled: p.geminiPrescriptionAiEnabled,
+    canUseSharedWhatsApp: p.canUseSharedWhatsApp,
+    monthlySharedWhatsAppQuota: p.monthlySharedWhatsAppQuota,
+    canConfigureCustomWaba: p.canConfigureCustomWaba,
   }));
 
   if (!sub) {
@@ -319,6 +328,9 @@ export async function getLabSubscriptionDetails(labId: string, autoCreateDefault
         maxStaffAccounts: sub.plan.maxStaffAccounts,
         customBrandingEnabled: sub.plan.customBrandingEnabled,
         geminiPrescriptionAiEnabled: sub.plan.geminiPrescriptionAiEnabled,
+        canUseSharedWhatsApp: sub.plan.canUseSharedWhatsApp,
+        monthlySharedWhatsAppQuota: sub.plan.monthlySharedWhatsAppQuota,
+        canConfigureCustomWaba: sub.plan.canConfigureCustomWaba,
       },
       effectivePrice: price,
       invoices: sub.invoices.map((inv) => ({

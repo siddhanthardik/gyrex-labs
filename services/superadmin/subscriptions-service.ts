@@ -61,6 +61,9 @@ export async function getSubscriptionPlans() {
     maxStaffAccounts: p.maxStaffAccounts,
     customBrandingEnabled: p.customBrandingEnabled,
     geminiPrescriptionAiEnabled: p.geminiPrescriptionAiEnabled,
+    canUseSharedWhatsApp: p.canUseSharedWhatsApp,
+    monthlySharedWhatsAppQuota: p.monthlySharedWhatsAppQuota,
+    canConfigureCustomWaba: p.canConfigureCustomWaba,
     isActive: p.isActive,
     displayOrder: p.displayOrder,
     subscriberCount: p._count.subscriptions,
@@ -80,6 +83,9 @@ export async function createSubscriptionPlan(
     maxStaffAccounts?: number;
     customBrandingEnabled?: boolean;
     geminiPrescriptionAiEnabled?: boolean;
+    canUseSharedWhatsApp?: boolean;
+    monthlySharedWhatsAppQuota?: number;
+    canConfigureCustomWaba?: boolean;
     isActive?: boolean;
     displayOrder?: number;
     trialDays?: number;
@@ -106,6 +112,12 @@ export async function createSubscriptionPlan(
   if (data.trialDays !== undefined && (isNaN(data.trialDays) || data.trialDays < 0)) {
     throw new Error("Trial days must be a non-negative number.");
   }
+  if (
+    data.monthlySharedWhatsAppQuota !== undefined &&
+    (!Number.isInteger(data.monthlySharedWhatsAppQuota) || data.monthlySharedWhatsAppQuota < 0)
+  ) {
+    throw new Error("Monthly shared WhatsApp quota must be a non-negative integer.");
+  }
 
   // Check unique code
   const existingCode = await prisma.subscriptionPlan.findUnique({
@@ -126,6 +138,9 @@ export async function createSubscriptionPlan(
       maxStaffAccounts: data.maxStaffAccounts ?? 5,
       customBrandingEnabled: data.customBrandingEnabled ?? true,
       geminiPrescriptionAiEnabled: data.geminiPrescriptionAiEnabled ?? true,
+      canUseSharedWhatsApp: data.canUseSharedWhatsApp ?? false,
+      monthlySharedWhatsAppQuota: data.monthlySharedWhatsAppQuota ?? 0,
+      canConfigureCustomWaba: data.canConfigureCustomWaba ?? false,
       isActive: data.isActive ?? true,
       displayOrder: data.displayOrder ?? 0,
     },
@@ -159,6 +174,9 @@ export async function updateSubscriptionPlan(
     maxStaffAccounts?: number;
     customBrandingEnabled?: boolean;
     geminiPrescriptionAiEnabled?: boolean;
+    canUseSharedWhatsApp?: boolean;
+    monthlySharedWhatsAppQuota?: number;
+    canConfigureCustomWaba?: boolean;
     isActive?: boolean;
     displayOrder?: number;
     trialDays?: number;
@@ -199,6 +217,12 @@ export async function updateSubscriptionPlan(
   if (data.trialDays !== undefined && (isNaN(data.trialDays) || data.trialDays < 0)) {
     throw new Error("Trial days must be a non-negative number.");
   }
+  if (
+    data.monthlySharedWhatsAppQuota !== undefined &&
+    (!Number.isInteger(data.monthlySharedWhatsAppQuota) || data.monthlySharedWhatsAppQuota < 0)
+  ) {
+    throw new Error("Monthly shared WhatsApp quota must be a non-negative integer.");
+  }
 
   // Cannot activate an invalid plan
   if (data.isActive === true) {
@@ -221,6 +245,9 @@ export async function updateSubscriptionPlan(
       ...(data.maxStaffAccounts !== undefined && { maxStaffAccounts: data.maxStaffAccounts }),
       ...(data.customBrandingEnabled !== undefined && { customBrandingEnabled: data.customBrandingEnabled }),
       ...(data.geminiPrescriptionAiEnabled !== undefined && { geminiPrescriptionAiEnabled: data.geminiPrescriptionAiEnabled }),
+      ...(data.canUseSharedWhatsApp !== undefined && { canUseSharedWhatsApp: data.canUseSharedWhatsApp }),
+      ...(data.monthlySharedWhatsAppQuota !== undefined && { monthlySharedWhatsAppQuota: data.monthlySharedWhatsAppQuota }),
+      ...(data.canConfigureCustomWaba !== undefined && { canConfigureCustomWaba: data.canConfigureCustomWaba }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
       ...(data.displayOrder !== undefined && { displayOrder: data.displayOrder }),
     },

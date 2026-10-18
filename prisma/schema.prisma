@@ -87,6 +87,14 @@ enum BillingCycle {
   YEARLY
 }
 
+enum WhatsAppReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+  PENDING_RECONCILIATION
+  RECONCILED_FAILED
+}
+
 enum InvoiceStatus {
   DRAFT
   ISSUED
@@ -286,6 +294,8 @@ model Lab {
   notifications           Notification[]
   supportTickets          SupportTicket[]
   auditLogs               AuditLog[]
+  whatsAppQuotaPeriods    LabWhatsAppQuotaPeriod[]
+  whatsAppReservations    LabWhatsAppReservation[]
 
   @@index([slug])
   @@index([status])
@@ -745,6 +755,9 @@ model SubscriptionPlan {
   maxStaffAccounts            Int            @default(5)
   customBrandingEnabled       Boolean        @default(true)
   geminiPrescriptionAiEnabled Boolean        @default(true)
+  canUseSharedWhatsApp        Boolean        @default(false)
+  monthlySharedWhatsAppQuota  Int            @default(0)
+  canConfigureCustomWaba       Boolean        @default(false)
   isActive                    Boolean        @default(true)
   displayOrder                Int            @default(0)
   createdAt                   DateTime       @default(now())
@@ -828,6 +841,54 @@ model SubscriptionPayment {
   @@index([subscriptionInvoiceId])
   @@index([labId])
   @@index([gatewayPaymentId])
+}
+
+// ============================================================
+// 9B. WHATSAPP QUOTA LEDGER & RESERVATIONS
+// ============================================================
+
+model LabWhatsAppQuotaPeriod {
+  id                 String                    @id @default(cuid())
+  labId              String
+  periodStart        DateTime
+  periodEnd          DateTime
+  quotaLimit         Int
+  messagesReserved   Int                       @default(0)
+  messagesConfirmed  Int                       @default(0)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  lab                Lab                       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  reservations       LabWhatsAppReservation[]
+
+  @@unique([labId, periodStart, periodEnd])
+  @@index([labId])
+}
+
+model LabWhatsAppReservation {
+  id                 String                    @id @default(cuid())
+  labId              String
+  periodId           String
+  idempotencyKey     String
+  status             WhatsAppReservationStatus @default(RESERVED)
+  recipientPhone     String
+  eventType          String
+  providerMessageId  String?
+  reservedAt         DateTime                  @default(now())
+  expiresAt          DateTime
+  confirmedAt        DateTime?
+  releasedAt         DateTime?
+  reconciledAt       DateTime?
+  failureReason      String?
+  metadata           Json?
+
+  lab                Lab                       @relation(fields: [labId], references: [id], onDelete: Cascade)
+  period             LabWhatsAppQuotaPeriod    @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, idempotencyKey])
+  @@index([periodId, status])
+  @@index([labId, status])
+  @@index([expiresAt])
 }
 
 // ============================================================

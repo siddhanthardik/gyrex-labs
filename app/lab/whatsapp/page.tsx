@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   MessageSquare,
   CheckCircle2,
@@ -9,14 +8,12 @@ import {
   Copy,
   Check,
   RefreshCw,
-  ExternalLink,
-  ShieldCheck,
-  Smartphone,
-  Send,
-  HelpCircle,
-  Building2,
   Lock,
-  Info,
+  Settings,
+  Link2,
+  User,
+  Send,
+  CheckCheck,
 } from "lucide-react";
 
 interface SafeWhatsAppSettings {
@@ -101,6 +98,7 @@ export default function LabWhatsAppPage() {
   }, []);
 
   const handleCopy = (text: string, fieldName: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
     setTimeout(() => setCopiedField(null), 2500);
@@ -198,28 +196,19 @@ export default function LabWhatsAppPage() {
   const isError = settings?.status === "ERROR";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-16">
-      {/* Top Breadcrumb & Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
-          <Link href="/lab/dashboard" className="hover:text-slate-800 transition">
-            Laboratory Admin
-          </Link>
-          <span>/</span>
-          <span className="text-sky-600">WhatsApp Integration</span>
+    <div className="max-w-7xl mx-auto space-y-6 pb-16">
+      {/* Top Header */}
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-xs shrink-0">
+          <MessageSquare className="h-6 w-6 fill-white" />
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
-              <span className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-100">
-                <MessageSquare className="h-6 w-6" />
-              </span>
-              Meta WhatsApp Business Integration
-            </h1>
-            <p className="mt-1 text-sm text-slate-600 max-w-3xl">
-              Connect your laboratory&apos;s official Meta WhatsApp Business account. Your laboratory owns the Meta Business Account and phone number; Gyrex Labs provides the webhook endpoint, real-time message routing, and automated storefront entry.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            WhatsApp Settings
+          </h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Connect your WhatsApp Business account and manage patient notifications.
+          </p>
         </div>
       </div>
 
@@ -242,580 +231,492 @@ export default function LabWhatsAppPage() {
           <div className="flex-1">{notification.message}</div>
           <button
             onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-slate-600 transition"
+            className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Card C: Connection Status & Test */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Connection Status:
-              </span>
+      {/* Connection Status & Test Banner */}
+      <div className="bg-emerald-50/40 border border-emerald-200/70 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span
+            className={`h-3 w-3 rounded-full shrink-0 ${
+              isConnected ? "bg-emerald-500" : isError ? "bg-rose-500" : "bg-slate-300"
+            }`}
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900">Connection Status</span>
               {isConnected ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Active & Connected
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Connected
                 </span>
               ) : isError ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                  <span className="h-2 w-2 rounded-full bg-rose-500" />
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
                   Connection Error
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                  <span className="h-2 w-2 rounded-full bg-slate-400" />
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                   Not Connected
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
-              <span className="flex items-center gap-1">
-                <Smartphone className="h-3.5 w-3.5 text-slate-400" />
-                Display Number: <strong className="text-slate-800">{settings?.displayPhoneNumber || "Not configured"}</strong>
-              </span>
-              <span>•</span>
-              <span>
-                Phone Number ID: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono text-[11px]">{settings?.phoneNumberId || "None"}</code>
-              </span>
-              <span>•</span>
-              <span className="text-slate-400">
-                Last checked: {settings?.lastVerifiedAt ? new Date(settings.lastVerifiedAt).toLocaleString("en-IN") : "Never"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={handleTestConnection}
-              disabled={testing || !settings?.configured}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50 transition shadow-xs cursor-pointer"
-            >
-              <RefreshCw className={`h-4 w-4 ${testing ? "animate-spin" : ""}`} />
-              {testing ? "Testing..." : "Test Connection"}
-            </button>
-          </div>
-        </div>
-
-        {isError && settings?.errorMessage && (
-          <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-rose-600 flex items-center gap-1.5">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{settings.errorMessage}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Card B: Gyrex Webhook Configuration */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-sky-500" />
-              Gyrex Webhook Configuration
-            </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enter these values into your Meta App Dashboard under <strong>WhatsApp → Configuration → Webhook</strong>.
+              {isConnected
+                ? "Launched with Gyrex Labs WhatsApp infrastructure"
+                : isError
+                ? settings?.errorMessage || "Connection verification failed with Meta Graph API"
+                : "Configure your Meta credentials below to connect your WhatsApp Business number"}
             </p>
           </div>
-          <span className="text-xs text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
-            HTTP Handshake: GET & POST
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Centralized Platform Callback (Recommended) */}
-          <div className="p-3.5 rounded-lg border border-sky-100 bg-sky-50/30 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">
-                  Centralized App Callback
-                </span>
-                <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold border border-sky-200">
-                  Recommended Default
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mb-2">
-                Use in Meta App Dashboard → <strong>WhatsApp → Configuration → Webhook</strong>.
-              </p>
-
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                Callback URL
-              </label>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
-                  {settings?.webhookUrl || "Loading..."}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => settings?.webhookUrl && handleCopy(settings.webhookUrl, "centralUrl")}
-                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
-                  title="Copy Central Callback URL"
-                >
-                  {copiedField === "centralUrl" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5 text-slate-400" />
-                  )}
-                </button>
-              </div>
-
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                Platform Verify Token
-              </label>
-              <div className="flex items-center gap-1.5">
-                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
-                  {settings?.platformVerifyToken || settings?.webhookVerifyToken || "Loading..."}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const token = settings?.platformVerifyToken || settings?.webhookVerifyToken;
-                    if (token) handleCopy(token, "platformToken");
-                  }}
-                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
-                  title="Copy Platform Verify Token"
-                >
-                  {copiedField === "platformToken" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5 text-slate-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Per-WABA / Direct Lab Override */}
-          <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/60 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
-                  Per-WABA / Direct Override
-                </span>
-                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium border border-slate-200">
-                  Direct Override
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 mb-2">
-                Use only when configuring an isolated webhook exclusively for this laboratory.
-              </p>
-
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                Override Callback URL
-              </label>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
-                  {settings?.overrideWebhookUrl || "Loading..."}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => settings?.overrideWebhookUrl && handleCopy(settings.overrideWebhookUrl, "overrideUrl")}
-                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
-                  title="Copy Override Callback URL"
-                >
-                  {copiedField === "overrideUrl" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5 text-slate-400" />
-                  )}
-                </button>
-              </div>
-
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                Laboratory Verify Token
-              </label>
-              <div className="flex items-center gap-1.5">
-                <code className="text-xs text-slate-800 font-mono break-all select-all flex-1 bg-white p-2 rounded border border-slate-200">
-                  {settings?.labVerifyToken || "Loading..."}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const token = settings?.labVerifyToken;
-                    if (token) handleCopy(token, "labToken");
-                  }}
-                  className="px-2.5 py-2 rounded-md text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition border border-slate-200 cursor-pointer shadow-xs shrink-0"
-                  title="Copy Laboratory Verify Token"
-                >
-                  {copiedField === "labToken" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5 text-slate-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Step-by-step setup guide */}
-        <div className="pt-2 border-t border-slate-100">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5" />
-            Meta Webhook Setup Instructions
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-slate-600">
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-              <span className="font-semibold text-slate-800 block mb-0.5">1. Meta Developer App</span>
-              Open your business app in{" "}
-              <a
-                href="https://developers.facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sky-600 hover:underline inline-flex items-center gap-0.5"
-              >
-                Meta Developer Portal <ExternalLink className="h-3 w-3" />
-              </a>.
-            </div>
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-              <span className="font-semibold text-slate-800 block mb-0.5">2. Webhook Settings</span>
-              Navigate to WhatsApp → Configuration → Edit Webhook.
-            </div>
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-              <span className="font-semibold text-slate-800 block mb-0.5">3. Paste Gyrex Values</span>
-              Paste the Callback URL and Verify Token from above, then click &ldquo;Verify and Save&rdquo;.
-            </div>
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-              <span className="font-semibold text-slate-800 block mb-0.5">4. Subscribe Field</span>
-              In Webhook fields, click &ldquo;Manage&rdquo; and subscribe to the <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[11px] font-mono">messages</code> field.
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={handleTestConnection}
+          disabled={testing || !settings?.configured}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-sky-300 text-sky-600 hover:bg-sky-50 disabled:opacity-50 transition shadow-2xs cursor-pointer shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 ${testing ? "animate-spin" : ""}`} />
+          {testing ? "Testing..." : "Test Connection"}
+        </button>
       </div>
 
-      {/* Main Grid: Card A (Form) & Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Card A: Meta WhatsApp Business Details */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-          <div className="border-b border-slate-100 pb-4 mb-5">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Lock className="h-4 w-4 text-sky-500" />
-              Your Meta WhatsApp Business Details
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Your credentials are encrypted using AES-256-GCM. Plain secret values are never transmitted to the browser after saving.
-            </p>
-          </div>
-
-          <form onSubmit={handleSave} className="space-y-4">
-            {/* Enable Channel Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50/60">
-              <div>
-                <label className="text-xs font-semibold text-slate-800 block">
-                  Enable WhatsApp Automated Inbound
-                </label>
-                <p className="text-[11px] text-slate-500">
-                  Respond to inbound patient messages with your laboratory&apos;s verified storefront links.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={isEnabled}
-                onChange={(e) => setIsEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500 cursor-pointer"
-              />
-            </div>
-
-            {/* WABA ID */}
+      {/* Main 2-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Webhook Setup & WhatsApp Configuration */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* Webhook Setup Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                WhatsApp Business Account ID (WABA ID)
-              </label>
-              <input
-                type="text"
-                value={wabaId}
-                onChange={(e) => setWabaId(e.target.value)}
-                placeholder="e.g. 102938475610293"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                Found in Meta Business Suite → WhatsApp Accounts.
-              </span>
+              <div className="flex items-center gap-2 text-slate-900">
+                <Link2 className="h-5 w-5 text-sky-500" />
+                <h2 className="text-base font-bold">Webhook Setup</h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Copy the callback URL and verify token into your Meta Developer Dashboard under{" "}
+                <strong className="text-slate-700">WhatsApp → Configuration → Webhook</strong>.
+              </p>
             </div>
 
-            {/* Phone Number ID & Display Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Callback URL */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Phone Number ID <span className="text-rose-500">*</span>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Callback URL
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={phoneNumberId}
-                  onChange={(e) => setPhoneNumberId(e.target.value)}
-                  placeholder="e.g. 594837261524310"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    readOnly
+                    value={settings?.webhookUrl || "https://labs.gyrex.in/api/webhooks/whatsapp"}
+                    className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-800 font-mono bg-slate-50/60 select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(
+                        settings?.webhookUrl || "https://labs.gyrex.in/api/webhooks/whatsapp",
+                        "webhookUrl"
+                      )
+                    }
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                    title="Copy Callback URL"
+                  >
+                    {copiedField === "webhookUrl" ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
+              {/* Verify Token */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Display Phone Number
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Verify Token
                 </label>
-                <input
-                  type="text"
-                  value={displayPhoneNumber}
-                  onChange={(e) => setDisplayPhoneNumber(e.target.value)}
-                  placeholder="e.g. +91 98765 43210"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      settings?.platformVerifyToken ||
+                      settings?.webhookVerifyToken ||
+                      "••••••••••••••••••••"
+                    }
+                    className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-800 font-mono bg-slate-50/60 select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const token = settings?.platformVerifyToken || settings?.webhookVerifyToken;
+                      if (token) handleCopy(token, "verifyToken");
+                    }}
+                    className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                    title="Copy Verify Token"
+                  >
+                    {copiedField === "verifyToken" ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Permanent Access Token */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Permanent Access Token <span className="text-rose-500">*</span>
+          {/* WhatsApp Configuration Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="flex items-center gap-2 mb-4 text-slate-900">
+              <Settings className="h-5 w-5 text-sky-500" />
+              <h2 className="text-base font-bold">WhatsApp Configuration</h2>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-4">
+              {/* Grid of 4 Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Meta Business Account ID (WABA ID) */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Meta Business Account ID (WABA ID)
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={wabaId}
+                      onChange={(e) => setWabaId(e.target.value)}
+                      placeholder="e.g. 71825303c355986..."
+                      className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono bg-slate-50/40"
+                    />
+                    {wabaId && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(wabaId, "wabaId")}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                        title="Copy WABA ID"
+                      >
+                        {copiedField === "wabaId" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phone Number ID */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Phone Number ID
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={phoneNumberId}
+                      onChange={(e) => setPhoneNumberId(e.target.value)}
+                      placeholder="e.g. 123456789012345"
+                      className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono bg-slate-50/40"
+                    />
+                    {phoneNumberId && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(phoneNumberId, "phoneNumberId")}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                        title="Copy Phone Number ID"
+                      >
+                        {copiedField === "phoneNumberId" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Display Phone Number */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Display Phone Number
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={displayPhoneNumber}
+                      onChange={(e) => setDisplayPhoneNumber(e.target.value)}
+                      placeholder="e.g. +91 98765 43210"
+                      className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono bg-slate-50/40"
+                    />
+                    {displayPhoneNumber && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(displayPhoneNumber, "displayPhoneNumber")}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                        title="Copy Display Phone Number"
+                      >
+                        {copiedField === "displayPhoneNumber" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Access Token */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-slate-700">
+                      Access Token
+                    </label>
+                    {settings?.hasAccessToken && (
+                      <span className="text-[10px] text-emerald-700 font-medium">
+                        Encrypted
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="password"
+                      value={accessToken}
+                      onChange={(e) => setAccessToken(e.target.value)}
+                      placeholder={settings?.hasAccessToken ? "••••••••••••••••••••" : "Permanent Access Token"}
+                      className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono bg-slate-50/40"
+                    />
+                    {accessToken && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(accessToken, "accessToken")}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                        title="Copy Access Token"
+                      >
+                        {copiedField === "accessToken" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* App Secret */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-slate-700">
+                    App Secret (for HMAC-SHA256 verification)
+                  </label>
+                  {settings?.hasAppSecret && (
+                    <span className="text-[10px] text-emerald-700 font-medium">
+                      Encrypted
+                    </span>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type="password"
+                    value={appSecret}
+                    onChange={(e) => setAppSecret(e.target.value)}
+                    placeholder={settings?.hasAppSecret ? "••••••••••••••••••••" : "Meta App Secret"}
+                    className="w-full px-3 py-2 pr-9 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono bg-slate-50/40"
+                  />
+                  {appSecret && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(appSecret, "appSecret")}
+                      className="absolute right-2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition"
+                      title="Copy App Secret"
+                    >
+                      {copiedField === "appSecret" ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Enable Channel Toggle */}
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <label
+                    className="text-xs font-semibold text-slate-800 block cursor-pointer"
+                    onClick={() => setIsEnabled(!isEnabled)}
+                  >
+                    Enable WhatsApp Automated Inbound
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    Receive and respond to patient messages (e.g., booking, tracking, opt-out).
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={(e) => setIsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                 </label>
-                {settings?.hasAccessToken && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                    Encrypted on Server
-                  </span>
-                )}
               </div>
-              <input
-                type="password"
-                value={accessToken}
-                onChange={(e) => setAccessToken(e.target.value)}
-                placeholder={settings?.hasAccessToken ? "•••••••••••••••••••• (Leave blank to keep existing token)" : "EAAG..."}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                Generate in Meta Business Settings → System Users with <code className="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">whatsapp_business_messaging</code> permission.
-              </span>
-            </div>
 
-            {/* Meta App Secret */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Meta App Secret (for HMAC-SHA256 Verification)
+              {/* Custom Welcome Message */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Custom Welcome Message <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
-                {settings?.hasAppSecret && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                    Encrypted on Server
-                  </span>
-                )}
-              </div>
-              <input
-                type="password"
-                value={appSecret}
-                onChange={(e) => setAppSecret(e.target.value)}
-                placeholder={settings?.hasAppSecret ? "•••••••••••••••••••• (Leave blank to keep existing secret)" : "Meta App Secret from App Settings -> Basic"}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                Enables timing-safe HMAC-SHA256 signature verification for incoming webhook events.
-              </span>
-            </div>
-
-            {/* Custom Welcome Message */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Custom Welcome Message (Optional)
-              </label>
-              <textarea
-                rows={3}
-                value={welcomeMessageCustom}
-                onChange={(e) => setWelcomeMessageCustom(e.target.value)}
-                placeholder="Leave blank to use the standard Gyrex Labs branded welcome message."
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              />
-              <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-slate-500">
-                Variables:{" "}
-                <code className="bg-slate-100 px-1 py-0.5 rounded">{"{{patient_name}}"}</code>
-                <code className="bg-slate-100 px-1 py-0.5 rounded">{"{{lab_name}}"}</code>
-                <code className="bg-slate-100 px-1 py-0.5 rounded">{"{{store_url}}"}</code>
-                <code className="bg-slate-100 px-1 py-0.5 rounded">{"{{packages_url}}"}</code>
-                <code className="bg-slate-100 px-1 py-0.5 rounded">{"{{reports_url}}"}</code>
-              </div>
-            </div>
-
-            {/* Transactional Notification Preferences */}
-            <div className="pt-3 border-t border-slate-100">
-              <div className="flex items-center gap-2 mb-1">
-                <Send className="h-3.5 w-3.5 text-sky-500" />
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Transactional Patient Notifications
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-500 mb-3">
-                Automated clinical notifications sent to patients. All messages include booking and tracking links with patient opt-out support.
-              </p>
-
-              <div className="space-y-2.5 bg-slate-50/70 p-3 rounded-lg border border-slate-200">
-                {/* Order Confirmation */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-800 cursor-pointer">
-                      Order Confirmation
-                    </label>
-                    <p className="text-[11px] text-slate-500">
-                      Send instant confirmation with schedule details and tracking link when a patient books tests.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifyOrderConfirmation}
-                    onChange={(e) => setNotifyOrderConfirmation(e.target.checked)}
-                    className="h-4 w-4 mt-0.5 rounded border-slate-300 text-sky-500 focus:ring-sky-500 cursor-pointer"
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    maxLength={500}
+                    value={welcomeMessageCustom}
+                    onChange={(e) => setWelcomeMessageCustom(e.target.value)}
+                    placeholder="Leave blank to use the standard Gyrex Labs branded welcome message."
+                    className="w-full px-3 py-2 pb-6 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 bg-slate-50/40 resize-none"
                   />
-                </div>
-
-                {/* Payment Confirmation */}
-                <div className="flex items-start justify-between gap-3 pt-2 border-t border-slate-200/80">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-800 cursor-pointer">
-                      Payment Confirmation
-                    </label>
-                    <p className="text-[11px] text-slate-500">
-                      Notify patient with receipt details immediately when payment is verified.
-                    </p>
+                  <div className="absolute right-3 bottom-2 text-[10px] text-slate-400 font-mono">
+                    {welcomeMessageCustom.length}/500
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={notifyPaymentConfirmation}
-                    onChange={(e) => setNotifyPaymentConfirmation(e.target.checked)}
-                    className="h-4 w-4 mt-0.5 rounded border-slate-300 text-sky-500 focus:ring-sky-500 cursor-pointer"
-                  />
-                </div>
-
-                {/* Sample Collected */}
-                <div className="flex items-start justify-between gap-3 pt-2 border-t border-slate-200/80">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-800 cursor-pointer">
-                      Sample Collection Status
-                    </label>
-                    <p className="text-[11px] text-slate-500">
-                      Alert patient when sample is collected by phlebotomist and is being processed.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifySampleCollected}
-                    onChange={(e) => setNotifySampleCollected(e.target.checked)}
-                    className="h-4 w-4 mt-0.5 rounded border-slate-300 text-sky-500 focus:ring-sky-500 cursor-pointer"
-                  />
-                </div>
-
-                {/* Report Ready */}
-                <div className="flex items-start justify-between gap-3 pt-2 border-t border-slate-200/80">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-800 cursor-pointer">
-                      Diagnostic Report Ready
-                    </label>
-                    <p className="text-[11px] text-slate-500">
-                      Alert patient with a secure verification link to view and download their verified clinical report.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifyReportReady}
-                    onChange={(e) => setNotifyReportReady(e.target.checked)}
-                    className="h-4 w-4 mt-0.5 rounded border-slate-300 text-sky-500 focus:ring-sky-500 cursor-pointer"
-                  />
                 </div>
               </div>
-            </div>
 
-            {/* Save Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50 transition shadow-xs cursor-pointer"
-              >
-                {saving ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    Encrypting & Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Save WhatsApp Settings
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              {/* Transactional Patient Notifications */}
+              <div className="pt-2">
+                <div className="flex items-center gap-1.5 text-slate-900 mb-0.5">
+                  <Send className="h-3.5 w-3.5 text-sky-500" />
+                  <h3 className="text-xs font-bold">Transactional Patient Notifications</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">
+                  Automated clinical notifications sent to patients.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-700">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifyOrderConfirmation}
+                      onChange={(e) => setNotifyOrderConfirmation(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <span>Order Confirmation</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifyPaymentConfirmation}
+                      onChange={(e) => setNotifyPaymentConfirmation(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <span>Payment Confirmation</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifySampleCollected}
+                      onChange={(e) => setNotifySampleCollected(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <span>Sample Collection Status</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={notifyReportReady}
+                      onChange={(e) => setNotifyReportReady(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <span>Diagnostic Report Ready</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50 transition shadow-xs cursor-pointer"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4" />
+                      Save WhatsApp Settings
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        {/* Live Patient Preview & Architecture Info */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-            <h2 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Smartphone className="h-4 w-4 text-sky-500" />
-              Patient Experience Preview
-            </h2>
+        {/* Right Column: Patient Experience Preview */}
+        <div className="lg:col-span-5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+            <div className="flex items-center gap-2 mb-1 text-slate-900">
+              <User className="h-5 w-5 text-sky-500" />
+              <h2 className="text-base font-bold">Patient Experience Preview</h2>
+            </div>
             <p className="text-xs text-slate-500 mb-4">
-              When a patient sends an inbound greeting to your WhatsApp number, this automated welcome response is delivered immediately.
+              This is how your patient will see the message. The content and branding are configurable in future phases.
             </p>
 
-            {/* Clean Light-Themed Chat Container */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 shadow-inner">
-              {/* WhatsApp Chat Header */}
-              <div className="bg-slate-800 text-white p-2.5 rounded-t-lg flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-full bg-sky-500 text-white font-bold flex items-center justify-center text-xs">
-                  {settings?.displayPhoneNumber?.slice(-2) || "LB"}
+            {/* WhatsApp Chat Mockup Container */}
+            <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+              {/* WhatsApp Header */}
+              <div className="bg-[#0b5345] text-white px-4 py-3 flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-white text-[#0b5345] font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+                  <MessageSquare className="h-5 w-5 text-[#0b5345]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold truncate">
-                    {settings?.displayPhoneNumber || "Your Laboratory"}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-semibold truncate">
+                      {settings?.displayPhoneNumber || "Gyrex Labs"}
+                    </span>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 fill-emerald-400 text-[#0b5345]" />
                   </div>
-                  <div className="text-[10px] text-slate-300">Official Laboratory Account</div>
+                  <div className="text-[11px] text-emerald-100/80">Business Account</div>
                 </div>
               </div>
 
               {/* Chat Bubble Area */}
-              <div className="bg-slate-100 p-3 rounded-b-lg space-y-3 min-h-[260px] text-slate-800">
+              <div className="bg-[#efeae2] p-4 space-y-3 min-h-[460px] text-slate-800">
                 {/* Patient Inbound Message */}
                 <div className="flex justify-end">
-                  <div className="bg-sky-100 text-slate-900 text-xs p-2.5 rounded-lg rounded-tr-none shadow-xs max-w-[85%] border border-sky-200/60">
+                  <div className="bg-[#d9fdd3] text-slate-900 text-xs p-2.5 rounded-lg rounded-tr-none shadow-xs max-w-[85%] border border-[#c4f3bd]/60">
                     Hi, I would like to book blood tests.
-                    <div className="text-[9px] text-slate-400 text-right mt-1">10:30 AM</div>
+                    <div className="flex items-center justify-end gap-1 text-[10px] text-slate-500 text-right mt-1">
+                      <span>10:30 AM</span>
+                      <CheckCheck className="h-3.5 w-3.5 text-sky-600" />
+                    </div>
                   </div>
                 </div>
 
                 {/* Laboratory Automated Reply */}
                 <div className="flex justify-start">
-                  <div className="bg-white text-xs p-3 rounded-lg rounded-tl-none shadow-xs max-w-[95%] whitespace-pre-line leading-relaxed text-slate-900 border border-slate-200">
-                    {settings?.previewMessage}
-                    <div className="text-[9px] text-slate-400 text-right mt-2">10:30 AM</div>
+                  <div className="bg-white text-xs p-3.5 rounded-xl rounded-tl-none shadow-xs max-w-[95%] whitespace-pre-line leading-relaxed text-slate-900 border border-slate-200/70">
+                    {settings?.previewMessage ||
+                      `Hello Patient! 👋\nWelcome to your laboratory on Gyrex Labs.\n\nHow can we assist you with your diagnostic tests today?\n\n📋 Book a Test:\nhttps://labs.gyrex.in\n\n❤️ Health Checkup Packages:\nhttps://labs.gyrex.in/packages\n\n📑 Upload Prescription:\nhttps://labs.gyrex.in/prescription\n\n📊 My Orders & Reports:\nhttps://labs.gyrex.in/orders`}
+                    <div className="text-[10px] text-slate-400 text-right mt-2">10:30 AM</div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-4 p-3 rounded-lg bg-sky-50/60 border border-sky-100 text-xs text-sky-800 flex items-start gap-2">
-              <Info className="h-4 w-4 text-sky-600 shrink-0 mt-0.5" />
-              <span>
-                All links lead directly to your laboratory&apos;s digital storefront on Gyrex Labs. Orders and payments flow through your existing single source of truth.
-              </span>
-            </div>
-          </div>
-
-          {/* Architecture Guarantee Card */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-sky-500" />
-              Multi-Tenant Architecture
-            </h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Gyrex Labs utilizes strict tenant-isolated webhook routing. Webhooks are verified against your laboratory&apos;s specific phone number ID and encrypted credentials, guaranteeing zero cross-tenant contamination.
-            </p>
-            <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
-              <ShieldCheck className="h-3.5 w-3.5 text-sky-500" />
-              Tenant isolation verified by automated test suite
             </div>
           </div>
         </div>
