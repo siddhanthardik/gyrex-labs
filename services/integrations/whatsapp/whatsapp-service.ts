@@ -39,6 +39,18 @@ import {
 import { recordAuditLog } from "@/lib/db/audit";
 import { AuditAction } from "@prisma/client";
 import crypto from "crypto";
+import { WhatsAppTemplatePayload } from "./whatsapp-template-service";
+
+export interface PlatformWhatsAppCredentials {
+  phoneNumberId: string;
+  accessToken: string;
+  wabaId: string | null;
+}
+
+export interface WhatsAppSendOutcome extends WhatsAppSendResult {
+  isExplicitRejection?: boolean;
+  isAmbiguousNetworkError?: boolean;
+}
 
 export interface LabWhatsAppSettings {
   wabaId: string | null;
@@ -208,6 +220,73 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       const fallbackSecret = process.env.AUTH_SECRET || "gyrex-whatsapp-fallback-token";
       return crypto.createHash("sha256").update(`${fallbackSecret}:whatsapp_webhook`).digest("hex");
     }
+  }
+
+  /**
+   * Platform-wide centralized shared WhatsApp credentials key in PlatformSettings.
+   */
+  private readonly platformSharedSettingsKey = "platform_whatsapp_shared";
+
+  /**
+   * Resolves platform-level Meta WhatsApp credentials used for Gyrex shared outbound messaging.
+   * STRICT SECURITY: Secrets are never logged, printed, or exposed to laboratory settings.
+   * Priority:
+   * 1. Persisted encrypted credentials in PlatformSettings ('platform_whatsapp_shared').
+   * 2. Platform environment variables (WHATSAPP_SHARED_* or WHATSAPP_*).
+   * 3. Deterministic mock credentials if TEST_PAYMENT_MOCK === "true".
+   */
+  async getPlatformWhatsAppCredentials(): Promise<PlatformWhatsAppCredentials | null> {
+    try {
+      const record = await prisma.platformSettings.findUnique({
+        where: { key: this.platformSharedSettingsKey },
+      });
+      if (record?.value && typeof record.value === "object" && !Array.isArray(record.value)) {
+        const val = record.value as {
+          phoneNumberId?: string;
+          accessTokenEncrypted?: string;
+          wabaId?: string;
+        };
+        if (val.phoneNumberId && val.accessTokenEncrypted) {
+          try {
+            const decryptedToken = decryptSecret(val.accessTokenEncrypted);
+            return {
+              phoneNumberId: val.phoneNumberId.trim(),
+              accessToken: decryptedToken.trim(),
+              wabaId: val.wabaId?.trim() || null,
+            };
+          } catch (decryptErr) {
+            console.error("Failed to decrypt platform shared WhatsApp access token:", decryptErr);
+          }
+        }
+      }
+    } catch {
+      // Proceed to environment variable fallback
+    }
+
+    const envPhoneId =
+      process.env.WHATSAPP_SHARED_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const envToken =
+      process.env.WHATSAPP_SHARED_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
+    const envWabaId =
+      process.env.WHATSAPP_SHARED_WABA_ID || process.env.WHATSAPP_WABA_ID;
+
+    if (envPhoneId?.trim() && envToken?.trim()) {
+      return {
+        phoneNumberId: envPhoneId.trim(),
+        accessToken: envToken.trim(),
+        wabaId: envWabaId?.trim() || null,
+      };
+    }
+
+    if (process.env.TEST_PAYMENT_MOCK === "true") {
+      return {
+        phoneNumberId: "mock_platform_phone_id",
+        accessToken: "mock_platform_access_token",
+        wabaId: "mock_platform_waba_id",
+      };
+    }
+
+    return null;
   }
 
   /**
@@ -1103,6 +1182,209 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       phoneNumberId: settings.phoneNumberId,
       accessToken,
     });
+  }
+
+  /**
+   * Dispatches outbound WhatsApp template message using Gyrex's shared platform credentials.
+   */
+  async sendSharedTemplateMessage(params: {
+    recipientPhone: string;
+    template: WhatsAppTemplatePayload;
+    timeoutMs?: number;
+  }): Promise<WhatsAppSendOutcome> {
+    const { recipientPhone, template, timeoutMs } = params;
+
+    const credentials = await this.getPlatformWhatsAppCredentials();
+    if (!credentials || !credentials.phoneNumberId || !credentials.accessToken) {
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "failed",
+        reason: "MISSING_PLATFORM_CREDENTIALS",
+        isExplicitRejection: true,
+        timestamp: new Date(),
+      };
+    }
+
+    return this.sendTemplateMessageInternal({
+      recipientPhone,
+      template,
+      phoneNumberId: credentials.phoneNumberId,
+      accessToken: credentials.accessToken,
+      timeoutMs,
+    });
+  }
+
+  /**
+   * Dispatches outbound WhatsApp template message using a laboratory's custom WABA credentials.
+   */
+  async sendLabTemplateMessage(params: {
+    labId: string;
+    recipientPhone: string;
+    template: WhatsAppTemplatePayload;
+    timeoutMs?: number;
+  }): Promise<WhatsAppSendOutcome> {
+    const { labId, recipientPhone, template, timeoutMs } = params;
+
+    const settingRecord = await prisma.platformSettings.findUnique({
+      where: { key: this.getSettingsKey(labId) },
+    });
+
+    const settings = (settingRecord?.value as Partial<LabWhatsAppSettings>) || {};
+    if (!settings.phoneNumberId || !settings.accessTokenEncrypted || settings.isEnabled === false) {
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "disabled",
+        reason: "CUSTOM_WABA_UNCONFIGURED",
+        isExplicitRejection: true,
+        timestamp: new Date(),
+      };
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = decryptSecret(settings.accessTokenEncrypted);
+    } catch {
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "failed",
+        reason: "CREDENTIAL_DECRYPTION_FAILED",
+        isExplicitRejection: true,
+        timestamp: new Date(),
+      };
+    }
+
+    return this.sendTemplateMessageInternal({
+      recipientPhone,
+      template,
+      phoneNumberId: settings.phoneNumberId,
+      accessToken,
+      timeoutMs,
+    });
+  }
+
+  /**
+   * Internal template message dispatcher supporting custom lab credentials or mock fallback.
+   * Distinguishes between explicit provider rejections (HTTP 4xx) and ambiguous network timeouts.
+   */
+  async sendTemplateMessageInternal(params: {
+    recipientPhone: string;
+    template: WhatsAppTemplatePayload;
+    phoneNumberId: string;
+    accessToken: string;
+    timeoutMs?: number;
+  }): Promise<WhatsAppSendOutcome> {
+    const { recipientPhone, template, phoneNumberId, accessToken, timeoutMs } = params;
+    const cleanPhone = recipientPhone.replace(/\D/g, "");
+
+    if (!cleanPhone) {
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "failed",
+        reason: "INVALID_RECIPIENT_PHONE",
+        isExplicitRejection: true,
+        timestamp: new Date(),
+      };
+    }
+
+    if (!template?.name || !template.components) {
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "failed",
+        reason: "MISSING_TEMPLATE_CONFIG",
+        isExplicitRejection: true,
+        timestamp: new Date(),
+      };
+    }
+
+    // Deterministic mock for test / unconfigured environments
+    if (
+      process.env.TEST_PAYMENT_MOCK === "true" ||
+      accessToken.startsWith("mock_") ||
+      phoneNumberId.startsWith("mock_")
+    ) {
+      return {
+        messageId: `wamid.mock.${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        recipientPhone,
+        success: true,
+        status: "sent",
+        timestamp: new Date(),
+      };
+    }
+
+    try {
+      const url = `https://graph.facebook.com/${this.graphApiVersion}/${phoneNumberId}/messages`;
+      const controller = new AbortController();
+      const timeoutTimer = setTimeout(() => controller.abort(), timeoutMs || 10000);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: cleanPhone,
+          type: "template",
+          template: {
+            name: template.name,
+            language: template.language,
+            components: template.components,
+          },
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutTimer);
+
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => ({}));
+        const metaMsg = errorJson?.error?.message || response.statusText;
+        const reason = `META_ERROR_${response.status}: ${metaMsg}`;
+        const isExplicitRejection = response.status >= 400 && response.status < 500;
+
+        return {
+          messageId: "",
+          recipientPhone,
+          success: false,
+          status: "failed",
+          reason,
+          isExplicitRejection,
+          timestamp: new Date(),
+        };
+      }
+
+      const json = await response.json();
+      return {
+        messageId: json.messages?.[0]?.id || `wamid.${Date.now()}`,
+        recipientPhone,
+        success: true,
+        status: "sent",
+        timestamp: new Date(),
+      };
+    } catch (err: any) {
+      // Ambiguous network outcome (timeout / connection aborted)
+      return {
+        messageId: "",
+        recipientPhone,
+        success: false,
+        status: "failed",
+        reason: `NETWORK_ERROR: ${err.message}`,
+        isAmbiguousNetworkError: true,
+        timestamp: new Date(),
+      };
+    }
   }
 
   /**
