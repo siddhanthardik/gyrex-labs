@@ -23,9 +23,27 @@ import {
   Clock,
   Sparkles,
   ArrowUpRight,
+  Undo2,
+  Check,
+  Eye,
+  EyeOff,
+  Palette,
+  Image as ImageIcon,
+  Smartphone,
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IndiaLocationSelector } from "@/components/common/IndiaLocationSelector";
+import {
+  CLINICAL_COLOR_PRESETS,
+  evaluateStorefrontContrast,
+  ClinicalColorPreset,
+} from "@/lib/utils/contrast";
+import {
+  StorefrontLivePreview,
+  PreviewTestData,
+  PreviewPackageData,
+} from "@/components/lab/storefront-live-preview";
 
 type SettingsSection =
   | "profile"
@@ -86,6 +104,24 @@ function LabSettingsContent() {
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [stagedBannerFilename, setStagedBannerFilename] = useState<string | null>(null);
+  const [initialFormData, setInitialFormData] = useState<any>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const [catalogueStats, setCatalogueStats] = useState<{
+    activeTestsCount: number;
+    popularTests: PreviewTestData[];
+    activePackagesCount: number;
+    popularPackages: PreviewPackageData[];
+  }>({
+    activeTestsCount: 0,
+    popularTests: [],
+    activePackagesCount: 0,
+    popularPackages: [],
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -99,11 +135,13 @@ function LabSettingsContent() {
     heroHeadline: "",
     heroSubheadline: "",
     logoUrl: null as string | null,
+    bannerUrl: null as string | null,
     homeCollectionAvailable: true,
     homeCollectionFee: 100,
     freeHomeCollectionThreshold: 1000,
     deliveryPromiseNotice: "Reports delivered within 24 hours",
-    primaryColor: "#0284c7",
+    primaryColor: "#0369a1",
+    accentColor: "#0ea5e9",
     licenseNumber: "",
     isNablAccredited: false,
     nablAccreditationNumber: "",
@@ -174,7 +212,7 @@ function LabSettingsContent() {
             ];
           }
 
-          setFormData({
+          const loadedData = {
             name: d.lab.name || "",
             phone: d.lab.phone || "",
             emergencyPhone: d.lab.whatsapp || d.lab.phone || "",
@@ -190,17 +228,62 @@ function LabSettingsContent() {
             heroHeadline: d.settings?.heroHeadline || "Book Diagnostic Tests Online",
             heroSubheadline: d.settings?.heroSubheadline || "Accurate reports, professional care.",
             logoUrl: d.settings?.logoUrl || null,
+            bannerUrl: d.settings?.bannerUrl || null,
             homeCollectionAvailable: d.settings?.homeCollectionAvailable ?? true,
             homeCollectionFee: d.settings?.homeCollectionFee ?? 100,
             freeHomeCollectionThreshold: d.settings?.freeHomeCollectionThreshold ?? 1000,
             deliveryPromiseNotice: d.settings?.deliveryPromiseNotice || "Reports delivered within 24 hours",
-            primaryColor: d.settings?.primaryColor || "#0284c7",
+            primaryColor: d.settings?.primaryColor || "#0369a1",
+            accentColor: d.settings?.accentColor || "#0ea5e9",
             about,
             operatingHoursSchedule: schedule,
             services,
             customServiceInput: "",
             team,
+          };
+
+          setFormData(loadedData);
+          setInitialFormData(loadedData);
+        }
+
+        // Fetch real catalogue and packages statistics
+        try {
+          const [catRes, pkgRes] = await Promise.all([
+            fetch("/api/lab/catalogue"),
+            fetch("/api/lab/packages"),
+          ]);
+          let activeTests: PreviewTestData[] = [];
+          let testCount = 0;
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            const tests = catData.tests || [];
+            testCount = tests.length;
+            activeTests = tests.slice(0, 3).map((t: any) => ({
+              name: t.name || t.testMaster?.name || "Diagnostic Test",
+              price: t.sellingPrice || t.price || 0,
+              sampleType: t.sampleType || t.testMaster?.sampleType,
+            }));
+          }
+          let activePkgs: PreviewPackageData[] = [];
+          let pkgCount = 0;
+          if (pkgRes.ok) {
+            const pkgData = await pkgRes.json();
+            const pkgs = pkgData.packages || [];
+            pkgCount = pkgs.length;
+            activePkgs = pkgs.slice(0, 2).map((p: any) => ({
+              name: p.name || "Health Package",
+              price: p.price || 0,
+              testCount: p.packageTests?.length || p.tests?.length,
+            }));
+          }
+          setCatalogueStats({
+            activeTestsCount: testCount,
+            popularTests: activeTests,
+            activePackagesCount: pkgCount,
+            popularPackages: activePkgs,
           });
+        } catch {
+          // Non-blocking for settings display
         }
       } catch (err) {
         console.error("Failed to load settings:", err);
@@ -283,6 +366,88 @@ function LabSettingsContent() {
     }
   };
 
+  const handleBannerStage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({
+        type: "error",
+        message: "Banner file exceeds the 5MB size limit.",
+      });
+      return;
+    }
+
+    setBannerUploading(true);
+    setNotification(null);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await fetch("/api/lab/profile/banner?stage=true", {
+        method: "POST",
+        body: data,
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to stage banner.");
+      }
+      setFormData((prev) => ({ ...prev, bannerUrl: json.stagedBannerUrl }));
+      setStagedBannerFilename(json.filename || null);
+      setNotification({
+        type: "success",
+        message: "Facility banner staged for preview. Click 'Save Storefront' to commit to live storefront.",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to stage banner.",
+      });
+    } finally {
+      setBannerUploading(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
+    }
+  };
+
+  const handleBannerRemove = async () => {
+    if (stagedBannerFilename) {
+      try {
+        await fetch("/api/lab/profile/banner?stage=true", { method: "DELETE" });
+      } catch {}
+      setStagedBannerFilename(null);
+    }
+    setFormData((prev) => ({ ...prev, bannerUrl: null }));
+    setNotification({
+      type: "success",
+      message: "Facility banner removed. Live preview is now using text-led clinical hero.",
+    });
+  };
+
+  const handleDiscardChanges = async () => {
+    if (stagedBannerFilename) {
+      try {
+        await fetch("/api/lab/profile/banner?stage=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Failed to cleanup staged banner on discard", e);
+      }
+    }
+    if (initialFormData) {
+      setFormData(initialFormData);
+    }
+    setStagedBannerFilename(null);
+    setNotification({
+      type: "success",
+      message: "Unsaved changes discarded. Restored saved storefront settings.",
+    });
+  };
+
+  const handlePresetSelect = (preset: ClinicalColorPreset) => {
+    setFormData((prev) => ({
+      ...prev,
+      primaryColor: preset.primaryColor,
+      accentColor: preset.accentColor,
+    }));
+  };
+
   const handleAddCustomService = () => {
     const s = formData.customServiceInput.trim();
     if (!s) return;
@@ -331,6 +496,13 @@ function LabSettingsContent() {
     }));
   };
 
+  const isDirty =
+    initialFormData !== null &&
+    (JSON.stringify(formData) !== JSON.stringify(initialFormData) ||
+      stagedBannerFilename !== null);
+
+  const contrastEval = evaluateStorefrontContrast(formData.primaryColor || "#0369a1");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -354,6 +526,8 @@ function LabSettingsContent() {
 
     const payload = {
       ...formData,
+      stagedBannerFilename: stagedBannerFilename || undefined,
+      removeBanner: formData.bannerUrl === null,
       metaDescription: formData.about.trim(),
       workingHours,
       nablAccreditationNumber: formData.isNablAccredited
@@ -372,6 +546,17 @@ function LabSettingsContent() {
         const err = await res.json();
         throw new Error(err.error || "Failed to update store settings.");
       }
+
+      const updated = await res.json();
+      const updatedBannerUrl = updated.settings?.bannerUrl ?? formData.bannerUrl;
+
+      const nextSavedState = {
+        ...formData,
+        bannerUrl: updatedBannerUrl,
+      };
+      setFormData(nextSavedState);
+      setInitialFormData(nextSavedState);
+      setStagedBannerFilename(null);
 
       setNotification({
         type: "success",
@@ -749,122 +934,476 @@ function LabSettingsContent() {
               </div>
             )}
 
-            {/* Section: Storefront Presentation */}
+            {/* Section: Storefront Presentation & Branding Customiser */}
             {activeSection === "storefront" && (
-              <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs">
-                <div className="border-b border-slate-100 pb-4">
-                  <h2 className="text-base font-semibold text-slate-900">Storefront Presentation</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Customize your digital storefront banners, headlines, and turnaround promises.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">Hero Headline</label>
-                    <input
-                      type="text"
-                      value={formData.heroHeadline}
-                      onChange={(e) => setFormData({ ...formData, heroHeadline: e.target.value })}
-                      placeholder="e.g. Trusted Diagnostic Care at Your Doorstep"
-                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">Hero Subheadline</label>
-                    <input
-                      type="text"
-                      value={formData.heroSubheadline}
-                      onChange={(e) => setFormData({ ...formData, heroSubheadline: e.target.value })}
-                      placeholder="e.g. NABL Accredited accuracy with complimentary home collection."
-                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">
-                      Report Turnaround Promise Notice
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.deliveryPromiseNotice}
-                      onChange={(e) =>
-                        setFormData({ ...formData, deliveryPromiseNotice: e.target.value })
-                      }
-                      placeholder="e.g. Same day digital reports delivered via email & WhatsApp"
-                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Home Sample Collection Service */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
-                  <div className="flex items-center justify-between">
+              <div className="space-y-6">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs">
+                  <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">
-                        Home Sample Collection
-                      </h3>
+                      <h2 className="text-base font-semibold text-slate-900">
+                        Storefront Presentation & Branding Customiser
+                      </h2>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Enable phlebotomist home visits for tests and health packages.
+                        Customize your digital storefront palette, hero copy, facility banner, and turnaround promises.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.homeCollectionAvailable}
-                        onChange={(e) =>
-                          setFormData({ ...formData, homeCollectionAvailable: e.target.checked })
-                        }
-                        className="sr-only peer"
-                      />
-                      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
-                    </label>
+
+                    {isDirty && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        <span>Unsaved Changes in Preview</span>
+                      </span>
+                    )}
                   </div>
 
-                  {formData.homeCollectionAvailable && (
-                    <div className="pt-2 border-t border-slate-200/60 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* ── 1. Brand Palette & Clinical Color Presets ── */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <Palette className="h-4 w-4 text-sky-600" />
+                          <span>Clinical Brand Palette</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Choose a clinically validated color preset or specify custom hex codes.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 6 Clinical Presets Swatches */}
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                      {CLINICAL_COLOR_PRESETS.map((preset) => {
+                        const isSelected =
+                          formData.primaryColor?.toLowerCase() === preset.primaryColor.toLowerCase();
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handlePresetSelect(preset)}
+                            className={`flex flex-col items-start rounded-xl border p-3 text-left transition cursor-pointer ${
+                              isSelected
+                                ? "border-sky-600 bg-sky-50/40 ring-2 ring-sky-500/20 shadow-xs"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
+                            }`}
+                          >
+                            <div className="flex w-full items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="h-4 w-4 rounded-full shadow-xs shrink-0 border border-black/10"
+                                  style={{ backgroundColor: preset.primaryColor }}
+                                />
+                                <span
+                                  className="h-3 w-3 rounded-full shrink-0 border border-black/10"
+                                  style={{ backgroundColor: preset.accentColor }}
+                                />
+                              </div>
+                              {isSelected ? (
+                                <Check className="h-3.5 w-3.5 text-sky-600" />
+                              ) : (
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {preset.contrastWithWhite}:1
+                                </span>
+                              )}
+                            </div>
+                            <span className="mt-2 text-xs font-bold text-slate-900">
+                              {preset.name}
+                            </span>
+                            <span className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                              {preset.description}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Color Pickers */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2 border-t border-slate-100">
                       <div>
                         <label className="block text-xs font-medium text-slate-700">
-                          Base Home Collection Fee (₹)
+                          Primary Brand Color
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={formData.homeCollectionFee}
-                          onChange={(e) =>
-                            setFormData({ ...formData, homeCollectionFee: Number(e.target.value) })
-                          }
-                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                        />
+                        <div className="mt-1 flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={formData.primaryColor || "#0369a1"}
+                            onChange={(e) =>
+                              setFormData({ ...formData, primaryColor: e.target.value })
+                            }
+                            className="h-9 w-10 cursor-pointer rounded-lg border border-slate-300 bg-white p-1"
+                          />
+                          <input
+                            type="text"
+                            value={formData.primaryColor || "#0369a1"}
+                            onChange={(e) =>
+                              setFormData({ ...formData, primaryColor: e.target.value })
+                            }
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none uppercase"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-xs font-medium text-slate-700">
-                          Free Home Collection Threshold (₹)
+                          Accent / Secondary Color
                         </label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={formData.accentColor || "#0ea5e9"}
+                            onChange={(e) =>
+                              setFormData({ ...formData, accentColor: e.target.value })
+                            }
+                            className="h-9 w-10 cursor-pointer rounded-lg border border-slate-300 bg-white p-1"
+                          />
+                          <input
+                            type="text"
+                            value={formData.accentColor || "#0ea5e9"}
+                            onChange={(e) =>
+                              setFormData({ ...formData, accentColor: e.target.value })
+                            }
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none uppercase"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* WCAG AA Accessibility Contrast Evaluation Alert */}
+                    <div
+                      className={`rounded-xl border p-3.5 text-xs transition ${
+                        contrastEval.isCompliant
+                          ? "border-emerald-200 bg-emerald-50/60 text-emerald-800"
+                          : "border-amber-200 bg-amber-50/80 text-amber-800"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-semibold">
+                          {contrastEval.isCompliant ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                          )}
+                          <span>
+                            WCAG 2.1 Contrast: {contrastEval.whiteOnPrimary.ratio}:1 vs White
+                            (#FFFFFF)
+                          </span>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            contrastEval.isCompliant
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {contrastEval.isCompliant ? "AA Compliant (≥ 4.5:1)" : "Review Legibility"}
+                        </span>
+                      </div>
+                      {contrastEval.alertMessage && (
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-amber-700">
+                          {contrastEval.alertMessage}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── 2. Hero Content Copy & Character Limits ── */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-medium text-slate-700">
+                          Hero Headline (Main Greeting)
+                        </label>
+                        <span
+                          className={`text-[11px] font-mono ${
+                            formData.heroHeadline.length > 70
+                              ? "text-rose-600 font-bold"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {formData.heroHeadline.length}/70
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={90}
+                        value={formData.heroHeadline}
+                        onChange={(e) =>
+                          setFormData({ ...formData, heroHeadline: e.target.value })
+                        }
+                        placeholder="e.g. Book Diagnostic Tests Online"
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-medium text-slate-700">
+                          Hero Subheadline (Clinical Value Proposition)
+                        </label>
+                        <span
+                          className={`text-[11px] font-mono ${
+                            formData.heroSubheadline.length > 140
+                              ? "text-rose-600 font-bold"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {formData.heroSubheadline.length}/140
+                        </span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        maxLength={180}
+                        value={formData.heroSubheadline}
+                        onChange={(e) =>
+                          setFormData({ ...formData, heroSubheadline: e.target.value })
+                        }
+                        placeholder="e.g. Accurate reports, timely home sample collection, and professional care."
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700">
+                        Report Turnaround Promise Notice
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.deliveryPromiseNotice}
+                        onChange={(e) =>
+                          setFormData({ ...formData, deliveryPromiseNotice: e.target.value })
+                        }
+                        placeholder="e.g. Reports delivered within 24 hours"
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── 3. Facility Banner Management (Reversible Staging) ── */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                          <ImageIcon className="h-4 w-4 text-sky-600" />
+                          <span>Facility Banner Image</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Upload an authentic photograph of your laboratory, equipment, or building entrance.
+                        </p>
+                      </div>
+                    </div>
+
+                    <input
+                      ref={bannerInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handleBannerStage}
+                      className="hidden"
+                    />
+
+                    {formData.bannerUrl ? (
+                      <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-900 p-4 text-white shadow-xs">
+                        <img
+                          src={formData.bannerUrl}
+                          alt="Staged banner"
+                          className="absolute inset-0 h-full w-full object-cover opacity-60"
+                        />
+                        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">
+                                Facility Banner Active
+                              </span>
+                              {stagedBannerFilename && (
+                                <span className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                                  Staged (Unsaved)
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-200 mt-0.5">
+                              Overlaid with a clinical dark gradient in preview and live storefront to protect text readability.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => bannerInputRef.current?.click()}
+                              disabled={bannerUploading}
+                              className="rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-xs px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer"
+                            >
+                              {bannerUploading ? "Uploading..." : "Replace Banner"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleBannerRemove}
+                              disabled={bannerUploading}
+                              className="rounded-lg bg-rose-500/80 hover:bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                          <span className="text-xs font-semibold text-slate-800">
+                            Text-Led Clinical Hero Fallback Active
+                          </span>
+                          <p className="text-[11px] text-slate-500 mt-0.5 max-w-md">
+                            When no banner is uploaded, your storefront displays an accessible clinical gradient styled with your primary brand color.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => bannerInputRef.current?.click()}
+                          disabled={bannerUploading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-xs disabled:opacity-60 cursor-pointer shrink-0"
+                        >
+                          <Upload className="h-3.5 w-3.5 text-sky-600" />
+                          <span>{bannerUploading ? "Uploading..." : "Upload Facility Banner"}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-slate-400">
+                      PNG, JPG, or WebP up to 5MB. Staged banners remain local to preview until you click &quot;Save Storefront&quot;.
+                    </p>
+                  </div>
+
+                  {/* ── 4. Home Sample Collection Service ── */}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-4 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          Home Sample Collection
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Enable phlebotomist home visits for tests and health packages.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
                         <input
-                          type="number"
-                          min="0"
-                          value={formData.freeHomeCollectionThreshold}
+                          type="checkbox"
+                          checked={formData.homeCollectionAvailable}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              freeHomeCollectionThreshold: Number(e.target.value),
+                              homeCollectionAvailable: e.target.checked,
                             })
                           }
-                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          className="sr-only peer"
                         />
-                      </div>
+                        <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
+                      </label>
                     </div>
-                  )}
+
+                    {formData.homeCollectionAvailable && (
+                      <div className="pt-2 border-t border-slate-200/60 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700">
+                            Base Home Collection Fee (₹)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={formData.homeCollectionFee}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                homeCollectionFee: Number(e.target.value),
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700">
+                            Free Home Collection Threshold (₹)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={formData.freeHomeCollectionThreshold}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                freeHomeCollectionThreshold: Number(e.target.value),
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Action Buttons & Dirty-State Management ── */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                    <div>
+                      {isDirty ? (
+                        <span className="text-xs text-amber-700 font-medium flex items-center gap-1.5">
+                          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                          <span>Unsaved changes previewed above. Commit or discard below.</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500">
+                          All storefront branding settings are saved and up to date.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                      {isDirty && (
+                        <button
+                          type="button"
+                          onClick={handleDiscardChanges}
+                          disabled={saving}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                        >
+                          <Undo2 className="h-3.5 w-3.5 text-slate-500" />
+                          <span>Discard Changes</span>
+                        </button>
+                      )}
+
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        icon={Save}
+                        isLoading={saving}
+                      >
+                        {saving ? "Saving Storefront..." : "Save Storefront Settings"}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" variant="primary" size="md" icon={Save} isLoading={saving}>
-                    {saving ? "Saving..." : "Save Storefront"}
-                  </Button>
-                </div>
+                {/* ── 5. Integrated Live Storefront Preview Dock ── */}
+                <StorefrontLivePreview
+                  labName={formData.name || lab?.name || "Diagnostic Center"}
+                  labSlug={lab?.slug || "your-lab"}
+                  city={formData.city || lab?.city || "City"}
+                  state={formData.state || lab?.state || "State"}
+                  phone={formData.phone || lab?.phone || ""}
+                  isVerified={lab?.isVerified}
+                  nablNumber={
+                    formData.isNablAccredited ? formData.nablAccreditationNumber : null
+                  }
+                  logoUrl={formData.logoUrl}
+                  bannerUrl={formData.bannerUrl}
+                  primaryColor={formData.primaryColor || "#0369a1"}
+                  accentColor={formData.accentColor || "#0ea5e9"}
+                  heroHeadline={formData.heroHeadline}
+                  heroSubheadline={formData.heroSubheadline}
+                  deliveryPromiseNotice={formData.deliveryPromiseNotice}
+                  homeCollectionAvailable={formData.homeCollectionAvailable}
+                  homeCollectionFee={formData.homeCollectionFee}
+                  activeTestsCount={catalogueStats.activeTestsCount}
+                  popularTests={catalogueStats.popularTests}
+                  activePackagesCount={catalogueStats.activePackagesCount}
+                  popularPackages={catalogueStats.popularPackages}
+                />
               </div>
             )}
 

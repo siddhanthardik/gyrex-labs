@@ -40,9 +40,20 @@ export default async function PatientStoreLayout({
     );
   }
 
+  const primaryColor = store.settings.primaryColor || "#0284c7";
+  const accentColor = store.settings.accentColor || "#0ea5e9";
+
   return (
     <CartProvider labSlug={labSlug}>
-      <div className="min-h-screen flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <div
+        className="min-h-screen flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
+        style={
+          {
+            "--brand-primary": primaryColor,
+            "--brand-accent": accentColor,
+          } as React.CSSProperties
+        }
+      >
         <StorefrontHeader
           labName={store.lab.name}
           labSlug={store.lab.slug}
@@ -51,6 +62,8 @@ export default async function PatientStoreLayout({
           phone={store.lab.phone}
           isVerified={store.lab.isVerified}
           nablNumber={store.lab.nablAccreditationNumber}
+          logoUrl={store.settings.logoUrl}
+          primaryColor={primaryColor}
         />
 
         <main className="flex-1 pb-24">{children}</main>

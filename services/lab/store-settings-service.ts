@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/db/prisma";
 import { recordAuditLog } from "@/lib/db/audit";
 import { LabStatus, AuditAction } from "@prisma/client";
+import { sanitizeBannerUrl } from "@/services/labs/storefront";
+import {
+  promoteStagedLabBanner,
+  deleteLabBannerFile,
+} from "@/services/lab/banner-storage-service";
+import fs from "fs/promises";
 
 export interface UpdateStoreSettingsInput {
   name?: string;
@@ -14,8 +20,12 @@ export interface UpdateStoreSettingsInput {
   postalCode?: string;
   heroHeadline?: string;
   heroSubheadline?: string;
-  logoUrl?: string;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  stagedBannerFilename?: string;
+  removeBanner?: boolean;
   primaryColor?: string;
+  accentColor?: string;
   homeCollectionAvailable?: boolean;
   homeCollectionFee?: number;
   freeHomeCollectionThreshold?: number;
@@ -25,6 +35,11 @@ export interface UpdateStoreSettingsInput {
   licenseNumber?: string | null;
   metaTitle?: string;
   metaDescription?: string;
+}
+
+export function isValidHexColor(color: string | undefined): boolean {
+  if (!color) return true;
+  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color.trim());
 }
 
 export interface PublishReadinessChecklist {
@@ -99,7 +114,7 @@ export async function getLabStoreSettings(labId: string) {
       heroHeadline: settings.heroHeadline,
       heroSubheadline: settings.heroSubheadline,
       logoUrl: settings.logoUrl,
-      bannerUrl: settings.bannerUrl,
+      bannerUrl: sanitizeBannerUrl(settings.bannerUrl),
       primaryColor: settings.primaryColor,
       accentColor: settings.accentColor,
       homeCollectionAvailable: settings.homeCollectionAvailable,
@@ -125,88 +140,149 @@ export async function updateLabStoreSettings(
   input: UpdateStoreSettingsInput,
   actorUserId?: string
 ) {
-  const lab = await prisma.lab.findUnique({ where: { id: labId } });
+  const lab = await prisma.lab.findUnique({
+    where: { id: labId },
+    include: { storeSettings: true },
+  });
   if (!lab) {
     throw new Error("Laboratory not found.");
   }
 
-  // Update Lab basic information
-  const updatedLab = await prisma.lab.update({
-    where: { id: labId },
-    data: {
-      name: input.name !== undefined ? input.name.trim() : undefined,
-      phone: input.phone !== undefined ? input.phone.trim() : undefined,
-      emergencyPhone:
-        input.emergencyPhone !== undefined ? input.emergencyPhone.trim() : undefined,
-      email: input.email !== undefined ? input.email.trim().toLowerCase() : undefined,
-      addressLine1:
-        input.addressLine1 !== undefined ? input.addressLine1.trim() : undefined,
-      addressLine2:
-        input.addressLine2 !== undefined ? input.addressLine2?.trim() || null : undefined,
-      city: input.city !== undefined ? input.city.trim() : undefined,
-      state: input.state !== undefined ? input.state.trim() : undefined,
-      postalCode:
-        input.postalCode !== undefined ? input.postalCode.trim() : undefined,
-      licenseNumber:
-        input.licenseNumber !== undefined
-          ? input.licenseNumber
-            ? input.licenseNumber.trim()
-            : null
-          : undefined,
-      nablAccreditationNumber:
-        input.nablAccreditationNumber !== undefined
-          ? input.nablAccreditationNumber && input.nablAccreditationNumber.trim().length > 0
-            ? input.nablAccreditationNumber.trim().toUpperCase()
-            : null
-          : undefined,
-    },
-  });
+  // Validate hex colors
+  if (input.primaryColor && !isValidHexColor(input.primaryColor)) {
+    throw new Error("Invalid primary color hex code. Must be #RGB or #RRGGBB.");
+  }
+  if (input.accentColor && !isValidHexColor(input.accentColor)) {
+    throw new Error("Invalid accent color hex code. Must be #RGB or #RRGGBB.");
+  }
 
-  // Update Store Settings
-  const updatedSettings = await prisma.labStoreSettings.upsert({
-    where: { labId },
-    update: {
-      heroHeadline:
-        input.heroHeadline !== undefined ? input.heroHeadline.trim() : undefined,
-      heroSubheadline:
-        input.heroSubheadline !== undefined ? input.heroSubheadline.trim() : undefined,
-      logoUrl:
-        input.logoUrl !== undefined
-          ? input.logoUrl
-            ? input.logoUrl.trim()
-            : null
-          : undefined,
-      primaryColor:
-        input.primaryColor !== undefined ? input.primaryColor.trim() : undefined,
-      homeCollectionAvailable:
-        input.homeCollectionAvailable !== undefined
-          ? input.homeCollectionAvailable
-          : undefined,
-      homeCollectionFee:
-        input.homeCollectionFee !== undefined ? input.homeCollectionFee : undefined,
-      freeHomeCollectionThreshold:
-        input.freeHomeCollectionThreshold !== undefined
-          ? input.freeHomeCollectionThreshold
-          : undefined,
-      deliveryPromiseNotice:
-        input.deliveryPromiseNotice !== undefined
-          ? input.deliveryPromiseNotice.trim()
-          : undefined,
-      workingHours: input.workingHours !== undefined ? input.workingHours : undefined,
-      metaTitle: input.metaTitle !== undefined ? input.metaTitle.trim() : undefined,
-      metaDescription:
-        input.metaDescription !== undefined ? input.metaDescription.trim() : undefined,
-    },
-    create: {
-      labId,
-      heroHeadline: input.heroHeadline?.trim() || "Book Diagnostic Tests Online",
-      heroSubheadline: input.heroSubheadline?.trim() || "Accurate reports, professional care.",
-      logoUrl: input.logoUrl?.trim() || null,
-      primaryColor: input.primaryColor?.trim() || "#0284c7",
-      homeCollectionAvailable: input.homeCollectionAvailable ?? true,
-      homeCollectionFee: input.homeCollectionFee ?? 100,
-    },
-  });
+  // Failure-safe banner resolution
+  const previousBannerUrl = lab.storeSettings?.bannerUrl ?? null;
+  let targetBannerUrl: string | null | undefined = undefined;
+  let promotedPermanentPath: string | null = null;
+  let stagedFileToCleanup: string | null = null;
+
+  // Staged banner promotion
+  const stagedCandidate = input.stagedBannerFilename || (input.bannerUrl?.includes("staged-") ? input.bannerUrl : null);
+  if (stagedCandidate) {
+    const promo = await promoteStagedLabBanner(labId, stagedCandidate);
+    if (!promo.success || !promo.permanentBannerUrl) {
+      throw new Error(promo.error || "Failed to promote staged banner file.");
+    }
+    targetBannerUrl = promo.permanentBannerUrl;
+    promotedPermanentPath = promo.permanentPath || null;
+    stagedFileToCleanup = promo.stagedPath || null;
+  } else if (input.removeBanner === true || input.bannerUrl === null) {
+    targetBannerUrl = null;
+  } else if (input.bannerUrl !== undefined) {
+    targetBannerUrl = sanitizeBannerUrl(input.bannerUrl);
+  }
+
+  let updatedLab;
+  let updatedSettings;
+
+  try {
+    // Update Lab basic information
+    updatedLab = await prisma.lab.update({
+      where: { id: labId },
+      data: {
+        name: input.name !== undefined ? input.name.trim() : undefined,
+        phone: input.phone !== undefined ? input.phone.trim() : undefined,
+        emergencyPhone:
+          input.emergencyPhone !== undefined ? input.emergencyPhone.trim() : undefined,
+        email: input.email !== undefined ? input.email.trim().toLowerCase() : undefined,
+        addressLine1:
+          input.addressLine1 !== undefined ? input.addressLine1.trim() : undefined,
+        addressLine2:
+          input.addressLine2 !== undefined ? input.addressLine2?.trim() || null : undefined,
+        city: input.city !== undefined ? input.city.trim() : undefined,
+        state: input.state !== undefined ? input.state.trim() : undefined,
+        postalCode:
+          input.postalCode !== undefined ? input.postalCode.trim() : undefined,
+        licenseNumber:
+          input.licenseNumber !== undefined
+            ? input.licenseNumber
+              ? input.licenseNumber.trim()
+              : null
+            : undefined,
+        nablAccreditationNumber:
+          input.nablAccreditationNumber !== undefined
+            ? input.nablAccreditationNumber && input.nablAccreditationNumber.trim().length > 0
+              ? input.nablAccreditationNumber.trim().toUpperCase()
+              : null
+            : undefined,
+      },
+    });
+
+    // Update Store Settings
+    updatedSettings = await prisma.labStoreSettings.upsert({
+      where: { labId },
+      update: {
+        heroHeadline:
+          input.heroHeadline !== undefined ? input.heroHeadline.trim() : undefined,
+        heroSubheadline:
+          input.heroSubheadline !== undefined ? input.heroSubheadline.trim() : undefined,
+        logoUrl:
+          input.logoUrl !== undefined
+            ? input.logoUrl
+              ? input.logoUrl.trim()
+              : null
+            : undefined,
+        bannerUrl: targetBannerUrl !== undefined ? targetBannerUrl : undefined,
+        primaryColor:
+          input.primaryColor !== undefined ? input.primaryColor.trim() : undefined,
+        accentColor:
+          input.accentColor !== undefined ? input.accentColor.trim() : undefined,
+        homeCollectionAvailable:
+          input.homeCollectionAvailable !== undefined
+            ? input.homeCollectionAvailable
+            : undefined,
+        homeCollectionFee:
+          input.homeCollectionFee !== undefined ? input.homeCollectionFee : undefined,
+        freeHomeCollectionThreshold:
+          input.freeHomeCollectionThreshold !== undefined
+            ? input.freeHomeCollectionThreshold
+            : undefined,
+        deliveryPromiseNotice:
+          input.deliveryPromiseNotice !== undefined
+            ? input.deliveryPromiseNotice.trim()
+            : undefined,
+        workingHours: input.workingHours !== undefined ? input.workingHours : undefined,
+        metaTitle: input.metaTitle !== undefined ? input.metaTitle.trim() : undefined,
+        metaDescription:
+          input.metaDescription !== undefined ? input.metaDescription.trim() : undefined,
+      },
+      create: {
+        labId,
+        heroHeadline: input.heroHeadline?.trim() || "Book Diagnostic Tests Online",
+        heroSubheadline: input.heroSubheadline?.trim() || "Accurate reports, professional care.",
+        logoUrl: input.logoUrl?.trim() || null,
+        bannerUrl: targetBannerUrl !== undefined ? targetBannerUrl : null,
+        primaryColor: input.primaryColor?.trim() || "#0369a1",
+        accentColor: input.accentColor?.trim() || "#0ea5e9",
+        homeCollectionAvailable: input.homeCollectionAvailable ?? true,
+        homeCollectionFee: input.homeCollectionFee ?? 100,
+      },
+    });
+  } catch (dbError: any) {
+    // Failure Recovery: If DB persistence fails, rollback the newly promoted file!
+    if (promotedPermanentPath) {
+      await fs.unlink(promotedPermanentPath).catch(() => {});
+    }
+    throw dbError;
+  }
+
+  // Post-Commit Cleanup: Now that database is updated safely, clean up staging and old files
+  if (stagedFileToCleanup) {
+    await fs.unlink(stagedFileToCleanup).catch(() => {});
+  }
+  if (
+    targetBannerUrl !== undefined &&
+    previousBannerUrl &&
+    previousBannerUrl !== targetBannerUrl
+  ) {
+    await deleteLabBannerFile(previousBannerUrl);
+  }
 
   await recordAuditLog({
     actorUserId: actorUserId ?? null,

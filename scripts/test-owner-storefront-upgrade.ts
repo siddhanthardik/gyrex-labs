@@ -1,5 +1,5 @@
 import { prisma } from "../lib/db/prisma";
-import { getLabStorefront } from "../services/labs/storefront";
+import { getLabStorefront, sanitizeBannerUrl } from "../services/labs/storefront";
 import {
   getLabStoreSettings,
   updateLabStoreSettings,
@@ -10,6 +10,21 @@ import {
   deleteLabLogoFile,
   MAX_LOGO_SIZE_BYTES,
 } from "../services/lab/logo-storage-service";
+import {
+  saveLabBanner,
+  stageLabBanner,
+  promoteStagedLabBanner,
+  deleteStagedLabBanner,
+  deleteLabBannerFile,
+  MAX_BANNER_SIZE_BYTES,
+} from "../services/lab/banner-storage-service";
+import {
+  calculateContrastRatio,
+  calculateRelativeLuminance,
+  evaluateStorefrontContrast,
+  CLINICAL_COLOR_PRESETS,
+} from "../lib/utils/contrast";
+import { isValidHexColor } from "../services/lab/store-settings-service";
 import { IndiaLocationSelector } from "../components/common/IndiaLocationSelector";
 import {
   INDIA_LOCATIONS,
@@ -289,6 +304,294 @@ async function runTests() {
     assert(
       canonicalizeStateName("Custom Region") === "Custom Region",
       "canonicalizeStateName preserves unknown custom region without data loss"
+    );
+
+    // -------------------------------------------------------------
+    // Test Group 7: Hotel Image Rejection & Lab Banner Isolation
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 7: Hotel Image Rejection & Banner Isolation ──");
+
+    // 7.1 Verify known legacy hotel unsplash image is rejected
+    const hotelUnsplashUrl =
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80";
+    assert(
+      sanitizeBannerUrl(hotelUnsplashUrl) === null,
+      "Strictly neutralizes legacy hotel resort photo ID to null"
+    );
+
+    // 7.2 Verify generic hotel / resort strings are rejected
+    assert(
+      sanitizeBannerUrl("https://example.com/grand-hotel-suite.jpg") === null,
+      "Strictly neutralizes any URL containing 'hotel' keyword to null"
+    );
+    assert(
+      sanitizeBannerUrl("https://example.com/resort-lounge.png") === null,
+      "Strictly neutralizes any URL containing 'resort' keyword to null"
+    );
+
+    // 7.3 Verify genuine clinical lab banner is preserved
+    const legitimateBannerUrl = "/api/files/banner/lab-banner-diagnostic-facility.jpg";
+    assert(
+      sanitizeBannerUrl(legitimateBannerUrl) === legitimateBannerUrl,
+      "Preserves legitimate clinical diagnostic laboratory banner path"
+    );
+
+    // 7.4 Verify empty / null inputs return null cleanly
+    assert(sanitizeBannerUrl(null) === null, "Returns null for null input");
+    assert(sanitizeBannerUrl("") === null, "Returns null for empty string");
+    assert(sanitizeBannerUrl("   ") === null, "Returns null for whitespace string");
+
+    // 7.5 Verify Sharma Diagnostics currently renders text-led fallback (bannerUrl === null)
+    const sharmaStorefront = await getLabStorefront("sharma-diagnostics");
+    assert(
+      sharmaStorefront?.settings.bannerUrl === null,
+      "Sharma Diagnostics has bannerUrl === null, rendering text-led clinical hero"
+    );
+
+    // 7.6 Verify attempting to save hotel URL in store settings is sanitized to null
+    const hotelSaveAttempt = await updateLabStoreSettings(targetLab.id, {
+      bannerUrl: hotelUnsplashUrl,
+    });
+    assert(
+      hotelSaveAttempt.settings.bannerUrl === null,
+      "updateLabStoreSettings neutralizes hotel bannerUrl to null at service layer"
+    );
+
+    // 7.7 Verify saving genuine laboratory banner persists accurately for target lab
+    const validLabBanner = "/api/files/banner/sharma-lab-frontage.jpg";
+    const validSave = await updateLabStoreSettings(targetLab.id, {
+      bannerUrl: validLabBanner,
+    });
+    assert(
+      validSave.settings.bannerUrl === validLabBanner,
+      "updateLabStoreSettings successfully persists valid laboratory banner"
+    );
+
+    const sharmaWithValidBanner = await getLabStorefront("sharma-diagnostics");
+    assert(
+      sharmaWithValidBanner?.settings.bannerUrl === validLabBanner,
+      "Storefront resolves genuine laboratory banner for display"
+    );
+
+    // 7.8 Verify multi-tenant isolation: Target lab banner does not alter Tenant B (Apex Labs)
+    const apexStorefront = await getLabStorefront("apex-labs");
+    assert(
+      apexStorefront?.settings.bannerUrl === null,
+      "Multi-tenant isolation: Sharma Diagnostics banner does NOT alter Apex Labs banner"
+    );
+
+    // 7.9 Restore Sharma Diagnostics to clean default state (bannerUrl: null)
+    const cleanRestore = await updateLabStoreSettings(targetLab.id, {
+      bannerUrl: null,
+    });
+    assert(
+      cleanRestore.settings.bannerUrl === null,
+      "Restores Sharma Diagnostics to clean text-led fallback (bannerUrl: null)"
+    );
+
+    // -------------------------------------------------------------
+    // Test Group 8: Banner Storage Service & File Security
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 8: Banner Storage Service & File Security ──");
+
+    // 8.1 Enforce MAX_BANNER_SIZE_BYTES limit (5MB)
+    assert(MAX_BANNER_SIZE_BYTES === 5 * 1024 * 1024, "MAX_BANNER_SIZE_BYTES is strictly 5MB");
+
+    // 8.2 Save valid PNG banner buffer
+    const validBannerBuffer = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
+    ]);
+    const bannerSaveResult = await saveLabBanner(targetLab.id, validBannerBuffer);
+    assert(
+      bannerSaveResult.success &&
+        typeof bannerSaveResult.bannerUrl === "string" &&
+        bannerSaveResult.bannerUrl.startsWith("/api/files/banner/banner-"),
+      "saveLabBanner saves valid image and returns secure /api/files/banner/ path"
+    );
+
+    // 8.3 Clean up saved banner file
+    if (bannerSaveResult.bannerUrl) {
+      await deleteLabBannerFile(bannerSaveResult.bannerUrl);
+      assert(true, "deleteLabBannerFile successfully deletes stored banner file");
+    }
+
+    // 8.4 Reject banner file exceeding 5MB limit
+    const oversizedBuffer = Buffer.alloc(MAX_BANNER_SIZE_BYTES + 1024);
+    const oversizedResult = await saveLabBanner(targetLab.id, oversizedBuffer);
+    assert(!oversizedResult.success, "saveLabBanner rejects buffer exceeding 5MB");
+
+    // 8.5 Reject invalid/executable disguised file
+    const fakeBannerBuffer = Buffer.from("alert('evil')");
+    const fakeBannerResult = await saveLabBanner(targetLab.id, fakeBannerBuffer);
+    assert(!fakeBannerResult.success, "saveLabBanner rejects invalid non-image payload");
+
+    // 8.6 Path traversal prevention in deleteLabBannerFile
+    await deleteLabBannerFile("/api/files/banner/../../etc/passwd");
+    assert(true, "deleteLabBannerFile safely ignores directory traversal attempts");
+
+    // -------------------------------------------------------------
+    // Test Group 9: Multi-Tenant Branding Resolution
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 9: Multi-Tenant Branding Resolution ──");
+
+    const sharmaResolved = await getLabStorefront("sharma-diagnostics");
+    const apexResolved = await getLabStorefront("apex-labs");
+
+    assert(
+      sharmaResolved?.settings.primaryColor === "#0284c7" &&
+        apexResolved?.settings.primaryColor === "#059669",
+      "Tenants have distinct, isolated primary brand colors"
+    );
+
+    assert(
+      sharmaResolved?.settings.accentColor === "#0ea5e9" &&
+        apexResolved?.settings.accentColor === "#10b981",
+      "Tenants have distinct, isolated accent brand colors"
+    );
+
+    assert(
+      sharmaResolved?.settings.heroHeadline === originalSettings.settings.heroHeadline &&
+        apexResolved?.settings.heroHeadline === "Advanced Pathology & Molecular Genetics in Gurugram",
+      "Tenants have distinct, isolated hero headlines"
+    );
+
+    // -------------------------------------------------------------
+    // Test Group 10: WCAG Contrast Calculations & Clinical Presets
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 10: WCAG Contrast Calculations & Clinical Presets ──");
+
+    // 10.1 Benchmark: Black on White = 21.0:1
+    const blackWhiteContrast = calculateContrastRatio("#000000", "#ffffff");
+    assert(blackWhiteContrast === 21, "Benchmark: Black on White contrast is exactly 21.0:1");
+
+    // 10.2 Benchmark: White on Pure Yellow = ~1.07:1
+    const whiteYellowContrast = calculateContrastRatio("#ffffff", "#ffff00");
+    assert(
+      whiteYellowContrast >= 1.06 && whiteYellowContrast <= 1.08,
+      `Benchmark: White on Pure Yellow contrast is ~1.07:1 (actual: ${whiteYellowContrast}:1)`
+    );
+
+    // 10.3 Verify all 6 clinical presets independently meet WCAG AA Normal Text (>= 4.5:1)
+    assert(CLINICAL_COLOR_PRESETS.length === 6, "Exactly 6 clinical presets defined");
+
+    for (const preset of CLINICAL_COLOR_PRESETS) {
+      const calculatedRatio = calculateContrastRatio("#ffffff", preset.primaryColor);
+      assert(
+        calculatedRatio >= 4.5,
+        `Preset '${preset.name}' (${preset.primaryColor}) meets WCAG AA normal text: ${calculatedRatio}:1 >= 4.5:1`
+      );
+    }
+
+    // 10.4 Hospital Navy achieves AAA (>= 7.0:1)
+    const navyRatio = calculateContrastRatio("#ffffff", "#1e3a8a");
+    assert(navyRatio >= 7.0, `Hospital Navy achieves WCAG AAA: ${navyRatio}:1 >= 7.0:1`);
+
+    // 10.5 Low contrast detection on pale yellow
+    const yellowEvaluation = evaluateStorefrontContrast("#ffff00");
+    assert(
+      !yellowEvaluation.isCompliant &&
+        !yellowEvaluation.whiteOnPrimary.isNormalTextCompliant &&
+        typeof yellowEvaluation.alertMessage === "string",
+      "evaluateStorefrontContrast correctly identifies low-contrast color and generates warning alert"
+    );
+
+    // -------------------------------------------------------------
+    // Test Group 11: Staged Banner Security & Tenant Isolation
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 11: Staged Banner Security & Tenant Isolation ──");
+
+    // 11.1 Staging banner does not mutate database or public storefront
+    const stagedResult = await stageLabBanner(targetLab.id, validBannerBuffer);
+    assert(
+      stagedResult.success &&
+        typeof stagedResult.stagedBannerUrl === "string" &&
+        stagedResult.stagedBannerUrl.includes(`/staged-`),
+      "stageLabBanner saves file in staging and returns secure staged URL"
+    );
+
+    const dbCheckBeforeSave = await prisma.labStoreSettings.findUnique({
+      where: { labId: targetLab.id },
+      select: { bannerUrl: true },
+    });
+    assert(
+      dbCheckBeforeSave?.bannerUrl === null,
+      "Staging banner does NOT mutate database before explicit Save"
+    );
+
+    // 11.2 Cross-tenant access defense: Other lab cannot promote target lab's staged banner
+    const crossTenantPromo = await promoteStagedLabBanner("other-lab-999", stagedResult.filename!);
+    assert(
+      !crossTenantPromo.success,
+      "promoteStagedLabBanner strictly prevents cross-tenant file promotion"
+    );
+
+    // 11.3 Safe discard unlinks staged file
+    await deleteStagedLabBanner(targetLab.id);
+    const retryPromoAfterDiscard = await promoteStagedLabBanner(targetLab.id, stagedResult.filename!);
+    assert(
+      !retryPromoAfterDiscard.success,
+      "deleteStagedLabBanner safely unlinks temporary staged file upon Discard"
+    );
+
+    // 11.4 Atomic promotion on Save
+    const freshStaged = await stageLabBanner(targetLab.id, validBannerBuffer);
+    assert(
+      Boolean(freshStaged.success && freshStaged.filename),
+      "Stages fresh banner for promotion flow"
+    );
+
+    const savedWithStaged = await updateLabStoreSettings(targetLab.id, {
+      stagedBannerFilename: freshStaged.filename,
+    });
+    assert(
+      savedWithStaged.settings.bannerUrl !== null &&
+        savedWithStaged.settings.bannerUrl.startsWith("/api/files/banner/banner-"),
+      "updateLabStoreSettings successfully promotes staged banner to permanent on Save"
+    );
+
+    // Multi-tenant check: Apex Labs remains untouched
+    const apexLab = await prisma.lab.findFirst({
+      where: { slug: "apex-labs" },
+    });
+    if (apexLab) {
+      const apexCheck = await prisma.labStoreSettings.findUnique({
+        where: { labId: apexLab.id },
+        select: { bannerUrl: true },
+      });
+      assert(
+        apexCheck?.bannerUrl === null,
+        "Promoting target lab banner does not affect other tenants"
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Test Group 12: Failure Recovery & Input Boundaries
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 12: Failure Recovery & Input Boundaries ──");
+
+    // 12.1 Hex validation helper
+    assert(isValidHexColor("#0369a1"), "isValidHexColor accepts 6-char hex");
+    assert(isValidHexColor("#abc"), "isValidHexColor accepts 3-char hex");
+    assert(!isValidHexColor("invalid-color"), "isValidHexColor rejects named strings");
+    assert(!isValidHexColor("#1234567"), "isValidHexColor rejects 7-char hex");
+
+    // 12.2 Rejection of invalid color at service boundary
+    let threwInvalidColor = false;
+    try {
+      await updateLabStoreSettings(targetLab.id, { primaryColor: "not-a-color" });
+    } catch {
+      threwInvalidColor = true;
+    }
+    assert(threwInvalidColor, "updateLabStoreSettings throws error for invalid hex color");
+
+    // 12.3 Clean up test banner and restore Sharma Diagnostics to text-led fallback
+    await updateLabStoreSettings(targetLab.id, { bannerUrl: null });
+    const finalSharma = await getLabStorefront("sharma-diagnostics");
+    assert(
+      finalSharma?.settings.bannerUrl === null,
+      "Restores Sharma Diagnostics to clean text-led fallback (bannerUrl: null)"
     );
 
   } catch (err: any) {

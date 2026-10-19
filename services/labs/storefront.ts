@@ -90,6 +90,27 @@ export interface LabStorefrontData {
 }
 
 /**
+ * Validates and sanitizes banner image URLs.
+ * Strictly filters out legacy hotel or unrelated hospitality imagery.
+ */
+export function sanitizeBannerUrl(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // Strict check: reject known legacy hotel/resort imagery
+  if (
+    trimmed.includes("photo-1582719478250-c89cae4dc85b") ||
+    trimmed.toLowerCase().includes("hotel") ||
+    trimmed.toLowerCase().includes("resort")
+  ) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+/**
  * Fetches complete public storefront information for a given laboratory slug.
  * Strictly guarantees tenant isolation.
  */
@@ -293,7 +314,7 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
       primaryColor: lab.storeSettings?.primaryColor || "#0284c7",
       accentColor: lab.storeSettings?.accentColor || "#0ea5e9",
       logoUrl: lab.storeSettings?.logoUrl || null,
-      bannerUrl: lab.storeSettings?.bannerUrl || null,
+      bannerUrl: sanitizeBannerUrl(lab.storeSettings?.bannerUrl),
       heroHeadline: lab.storeSettings?.heroHeadline || "Book Diagnostic Tests & Health Packages Online",
       heroSubheadline:
         lab.storeSettings?.heroSubheadline ||

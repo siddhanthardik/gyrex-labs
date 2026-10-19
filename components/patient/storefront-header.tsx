@@ -5,6 +5,8 @@ import { useCart } from "./cart-context";
 import { ShoppingBag, ShieldCheck, MapPin, Phone, FileText, ArrowLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+import { useState } from "react";
+
 interface HeaderProps {
   labName: string;
   labSlug: string;
@@ -13,6 +15,8 @@ interface HeaderProps {
   phone: string;
   isVerified?: boolean;
   nablNumber?: string | null;
+  logoUrl?: string | null;
+  primaryColor?: string;
 }
 
 export function StorefrontHeader({
@@ -23,9 +27,12 @@ export function StorefrontHeader({
   phone,
   isVerified = true,
   nablNumber,
+  logoUrl,
+  primaryColor,
 }: HeaderProps) {
   const { itemCount, isHydrated } = useCart();
   const pathname = usePathname();
+  const [imageError, setImageError] = useState(false);
 
   // Show back button when not on the root storefront page
   const isHome = pathname === `/${labSlug}`;
@@ -47,9 +54,23 @@ export function StorefrontHeader({
 
           <Link href={`/${labSlug}`} className="flex min-w-0 items-center gap-2.5">
             {/* Lab logo avatar */}
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-bold text-white shadow-sm">
-              {labName.charAt(0).toUpperCase()}
-            </div>
+            {logoUrl && !imageError ? (
+              <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-0.5 shadow-xs">
+                <img
+                  src={logoUrl}
+                  alt={labName}
+                  className="h-full w-full object-contain"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            ) : (
+              <div
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-xs"
+                style={{ backgroundColor: primaryColor || "#0284c7" }}
+              >
+                {labName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-1">
                 <span className="truncate text-sm font-bold text-slate-900">

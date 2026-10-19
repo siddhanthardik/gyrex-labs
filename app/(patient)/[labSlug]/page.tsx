@@ -66,10 +66,34 @@ export default async function StorefrontPage({
     <div className="patient-container py-4">
       {/* ── Hero / Lab Banner ───────────────────────────────────────── */}
       <section className="mb-5">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-sky-700 to-blue-800 px-5 py-6 text-white">
-          {/* Decorative blobs */}
-          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/5" />
-          <div className="pointer-events-none absolute -bottom-10 -left-6 h-40 w-40 rounded-full bg-white/5" />
+        <div
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-sky-700 to-blue-800 px-5 py-6 text-white shadow-sm"
+          style={
+            store.settings.primaryColor && !store.settings.bannerUrl
+              ? {
+                  backgroundImage: `linear-gradient(135deg, ${store.settings.primaryColor} 0%, #0369a1 50%, #1e3a8a 100%)`,
+                }
+              : undefined
+          }
+        >
+          {store.settings.bannerUrl ? (
+            <>
+              {/* Optional verified laboratory banner image */}
+              <img
+                src={store.settings.bannerUrl}
+                alt={`${store.lab.name} laboratory banner`}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+              />
+              {/* Clinical gradient overlay ensuring WCAG AA text contrast */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950/85 via-sky-950/75 to-blue-950/85" />
+            </>
+          ) : (
+            <>
+              {/* Text-led clean clinical fallback with decorative ambient blobs */}
+              <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/5" />
+              <div className="pointer-events-none absolute -bottom-10 -left-6 h-40 w-40 rounded-full bg-white/5" />
+            </>
+          )}
 
           <div className="relative">
             {/* Lab identity */}
