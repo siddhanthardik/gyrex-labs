@@ -1,10 +1,62 @@
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import { getLabStorefront } from "@/services/labs/storefront";
 import { CartProvider } from "@/components/patient/cart-context";
 import { StorefrontHeader } from "@/components/patient/storefront-header";
 import { FloatingCartBar } from "@/components/patient/floating-cart-bar";
 import { LabStatus } from "@prisma/client";
 import { AlertTriangle, Clock, ShieldCheck } from "lucide-react";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ labSlug: string }>;
+}): Promise<Metadata> {
+  const { labSlug } = await params;
+  const store = await getLabStorefront(labSlug);
+
+  if (!store) {
+    return {
+      title: "Diagnostic Laboratory | Gyrex Labs",
+      description: "Book laboratory tests and health packages online.",
+    };
+  }
+
+  const labName = store.lab.name;
+  const city = store.lab.city;
+  const description =
+    store.settings.metaDescription ||
+    `Book diagnostic tests and preventive health packages online from ${labName} in ${city}. Accurate digital reports, home sample collection, and professional care.`;
+
+  const ogImages = store.settings.bannerUrl
+    ? [{ url: store.settings.bannerUrl }]
+    : store.settings.logoUrl
+    ? [{ url: store.settings.logoUrl }]
+    : [];
+
+  return {
+    title: `${labName} — Book Diagnostic Tests & Health Packages Online | Gyrex Labs`,
+    description,
+    openGraph: {
+      title: `${labName} — Official Diagnostic Storefront`,
+      description,
+      url: `https://labs.gyrex.in/${labSlug}`,
+      siteName: "Gyrex Labs",
+      images: ogImages,
+      type: "website",
+    },
+    twitter: {
+      card: store.settings.bannerUrl ? "summary_large_image" : "summary",
+      title: `${labName} — Diagnostic Storefront`,
+      description,
+      images: ogImages.map((i) => i.url),
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 export default async function PatientStoreLayout({
   children,
@@ -42,6 +94,7 @@ export default async function PatientStoreLayout({
 
   const primaryColor = store.settings.primaryColor || "#0284c7";
   const accentColor = store.settings.accentColor || "#0ea5e9";
+  const whatsappNumber = store.lab.emergencyPhone || store.lab.phone || null;
 
   return (
     <CartProvider labSlug={labSlug}>
@@ -60,6 +113,7 @@ export default async function PatientStoreLayout({
           city={store.lab.city}
           state={store.lab.state}
           phone={store.lab.phone}
+          whatsappPhone={whatsappNumber}
           isVerified={store.lab.isVerified}
           nablNumber={store.lab.nablAccreditationNumber}
           logoUrl={store.settings.logoUrl}

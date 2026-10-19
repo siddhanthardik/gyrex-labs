@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "./cart-context";
-import { ShoppingBag, ShieldCheck, MapPin, Phone, FileText, ArrowLeft } from "lucide-react";
+import { ShoppingBag, ShieldCheck, MapPin, Phone, FileText, ArrowLeft, MessageSquare } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useState } from "react";
@@ -13,6 +13,7 @@ interface HeaderProps {
   city: string;
   state: string;
   phone: string;
+  whatsappPhone?: string | null;
   isVerified?: boolean;
   nablNumber?: string | null;
   logoUrl?: string | null;
@@ -25,6 +26,7 @@ export function StorefrontHeader({
   city,
   state,
   phone,
+  whatsappPhone,
   isVerified = true,
   nablNumber,
   logoUrl,
@@ -90,8 +92,23 @@ export function StorefrontHeader({
           </Link>
         </div>
 
-        {/* Right: phone (sm+) + reports + cart */}
+        {/* Right: whatsapp + phone (sm+) + reports + cart */}
         <div className="flex flex-shrink-0 items-center gap-2">
+          {whatsappPhone && (
+            <a
+              href={`https://wa.me/${whatsappPhone.replace(/[^0-9]/g, "").replace(/^0+/, "")}?text=${encodeURIComponent(
+                `Hello ${labName}, I would like to inquire about booking diagnostic tests.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              aria-label={`Chat with ${labName} on WhatsApp`}
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+          )}
+
           <a
             href={`tel:${phone}`}
             className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium text-slate-600 transition hover:text-sky-600 sm:flex"

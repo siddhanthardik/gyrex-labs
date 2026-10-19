@@ -31,7 +31,11 @@ export interface UpdateStoreSettingsInput {
   freeHomeCollectionThreshold?: number;
   workingHours?: any;
   deliveryPromiseNotice?: string;
+  isNablAccredited?: boolean;
   nablAccreditationNumber?: string | null;
+  nablValidFrom?: string | null;
+  nablValidUntil?: string | null;
+  nablCertificateUrl?: string | null;
   licenseNumber?: string | null;
   metaTitle?: string;
   metaDescription?: string;
@@ -90,26 +94,36 @@ export async function getLabStoreSettings(labId: string) {
     });
   }
 
-  return {
-    lab: {
-      id: lab.id,
-      name: lab.name,
-      slug: lab.slug,
-      code: lab.code,
-      phone: lab.phone,
-      whatsapp: lab.emergencyPhone || lab.phone,
-      email: lab.email,
-      addressLine1: lab.addressLine1,
-      addressLine2: lab.addressLine2,
-      city: lab.city,
-      state: lab.state,
-      postalCode: lab.postalCode,
-      licenseNumber: lab.licenseNumber,
-      nablAccreditationNumber: lab.nablAccreditationNumber,
-      status: lab.status,
-      isVerified: lab.isVerified,
-      verifiedAt: lab.verifiedAt,
-    },
+    const rawWorkingHours = (settings.workingHours as Record<string, any>) || {};
+    const nablMeta = rawWorkingHours.nabl || {};
+
+    return {
+      lab: {
+        id: lab.id,
+        name: lab.name,
+        slug: lab.slug,
+        code: lab.code,
+        phone: lab.phone,
+        whatsapp: lab.emergencyPhone || lab.phone,
+        email: lab.email,
+        addressLine1: lab.addressLine1,
+        addressLine2: lab.addressLine2,
+        city: lab.city,
+        state: lab.state,
+        postalCode: lab.postalCode,
+        licenseNumber: lab.licenseNumber,
+        nablAccreditationNumber: lab.nablAccreditationNumber,
+        isNablAccredited:
+          nablMeta.isAccredited !== undefined
+            ? Boolean(nablMeta.isAccredited)
+            : Boolean(lab.nablAccreditationNumber),
+        nablValidFrom: nablMeta.validFrom || null,
+        nablValidUntil: nablMeta.validUntil || null,
+        nablCertificateUrl: nablMeta.certificateUrl || null,
+        status: lab.status,
+        isVerified: lab.isVerified,
+        verifiedAt: lab.verifiedAt,
+      },
     settings: {
       heroHeadline: settings.heroHeadline,
       heroSubheadline: settings.heroSubheadline,
@@ -156,6 +170,41 @@ export async function updateLabStoreSettings(
     throw new Error("Invalid accent color hex code. Must be #RGB or #RRGGBB.");
   }
 
+  // Validate NABL accreditation if specified
+  if (input.isNablAccredited === true) {
+    if (!input.nablAccreditationNumber || !input.nablAccreditationNumber.trim()) {
+      throw new Error("NABL Accreditation Number is required when NABL accreditation is enabled.");
+    }
+    if (!input.nablValidFrom || !input.nablValidFrom.trim()) {
+      throw new Error("Validity start date is required when NABL accreditation is enabled.");
+    }
+    if (!input.nablValidUntil || !input.nablValidUntil.trim()) {
+      throw new Error("Validity end date is required when NABL accreditation is enabled.");
+    }
+
+    const fromDate = new Date(input.nablValidFrom.trim());
+    const untilDate = new Date(input.nablValidUntil.trim());
+    if (isNaN(fromDate.getTime()) || isNaN(untilDate.getTime())) {
+      throw new Error("Invalid NABL validity date format.");
+    }
+    if (untilDate < fromDate) {
+      throw new Error("Accreditation valid until date cannot be earlier than valid from date.");
+    }
+  }
+
+  // Resolve target NABL number for Lab model
+  let targetNablNumber: string | null | undefined = undefined;
+  if (input.isNablAccredited === false) {
+    targetNablNumber = null;
+  } else if (input.isNablAccredited === true) {
+    targetNablNumber = input.nablAccreditationNumber?.trim().toUpperCase() || null;
+  } else if (input.nablAccreditationNumber !== undefined) {
+    targetNablNumber =
+      input.nablAccreditationNumber && input.nablAccreditationNumber.trim().length > 0
+        ? input.nablAccreditationNumber.trim().toUpperCase()
+        : null;
+  }
+
   // Failure-safe banner resolution
   const previousBannerUrl = lab.storeSettings?.bannerUrl ?? null;
   let targetBannerUrl: string | null | undefined = undefined;
@@ -176,6 +225,46 @@ export async function updateLabStoreSettings(
     targetBannerUrl = null;
   } else if (input.bannerUrl !== undefined) {
     targetBannerUrl = sanitizeBannerUrl(input.bannerUrl);
+  }
+
+  // Resolve workingHours metadata (preserving existing About/Services/Team/NABL)
+  const currentWorkingHours = (lab.storeSettings?.workingHours as Record<string, any>) || {};
+  let targetWorkingHours =
+    input.workingHours !== undefined
+      ? { ...currentWorkingHours, ...input.workingHours }
+      : { ...currentWorkingHours };
+
+  if (
+    input.isNablAccredited !== undefined ||
+    input.nablValidFrom !== undefined ||
+    input.nablValidUntil !== undefined ||
+    input.nablCertificateUrl !== undefined ||
+    targetNablNumber !== undefined
+  ) {
+    const existingNabl = currentWorkingHours.nabl || {};
+    const isAccredited =
+      input.isNablAccredited !== undefined
+        ? input.isNablAccredited
+        : existingNabl.isAccredited !== undefined
+        ? Boolean(existingNabl.isAccredited)
+        : Boolean(targetNablNumber ?? lab.nablAccreditationNumber);
+
+    targetWorkingHours.nabl = {
+      isAccredited,
+      accreditationNumber: isAccredited
+        ? (targetNablNumber !== undefined ? targetNablNumber : lab.nablAccreditationNumber)
+        : null,
+      validFrom:
+        input.nablValidFrom !== undefined ? input.nablValidFrom : (existingNabl.validFrom || null),
+      validUntil:
+        input.nablValidUntil !== undefined ? input.nablValidUntil : (existingNabl.validUntil || null),
+      certificateUrl:
+        input.nablCertificateUrl !== undefined
+          ? input.nablCertificateUrl
+          : (existingNabl.certificateUrl || null),
+    };
+  } else if (!targetWorkingHours.nabl && currentWorkingHours.nabl) {
+    targetWorkingHours.nabl = currentWorkingHours.nabl;
   }
 
   let updatedLab;
@@ -206,11 +295,7 @@ export async function updateLabStoreSettings(
               : null
             : undefined,
         nablAccreditationNumber:
-          input.nablAccreditationNumber !== undefined
-            ? input.nablAccreditationNumber && input.nablAccreditationNumber.trim().length > 0
-              ? input.nablAccreditationNumber.trim().toUpperCase()
-              : null
-            : undefined,
+          targetNablNumber !== undefined ? targetNablNumber : undefined,
       },
     });
 
@@ -247,7 +332,7 @@ export async function updateLabStoreSettings(
           input.deliveryPromiseNotice !== undefined
             ? input.deliveryPromiseNotice.trim()
             : undefined,
-        workingHours: input.workingHours !== undefined ? input.workingHours : undefined,
+        workingHours: targetWorkingHours,
         metaTitle: input.metaTitle !== undefined ? input.metaTitle.trim() : undefined,
         metaDescription:
           input.metaDescription !== undefined ? input.metaDescription.trim() : undefined,

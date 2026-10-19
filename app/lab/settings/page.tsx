@@ -31,6 +31,7 @@ import {
   Image as ImageIcon,
   Smartphone,
   Monitor,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IndiaLocationSelector } from "@/components/common/IndiaLocationSelector";
@@ -59,6 +60,89 @@ interface TeamMember {
   name: string;
   role: string;
   qualifications: string;
+  photoUrl?: string | null;
+}
+
+interface ApiResponse<T = any> {
+  ok: boolean;
+  status: number;
+  data?: T;
+  error?: string;
+}
+
+/**
+ * Robust wrapper around fetch to safely handle JSON and non-JSON (HTML 401/403/500/502) error responses
+ * without throwing "SyntaxError: Unexpected token < in JSON at position 0".
+ */
+async function safeApiRequest<T = any>(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<ApiResponse<T>> {
+  try {
+    const res = await fetch(input, init);
+    const contentType = res.headers.get("content-type") || "";
+    let data: any = null;
+    let error: string | null = null;
+
+    if (contentType.includes("application/json")) {
+      try {
+        data = await res.json();
+      } catch {
+        error = "Received invalid JSON payload from server.";
+      }
+    } else {
+      const text = await res.text();
+      if (!res.ok) {
+        if (res.status === 401) {
+          error = "Your session has expired. Please log in again to continue.";
+        } else if (res.status === 403) {
+          error = "You do not have permission to perform this action.";
+        } else if (res.status === 502 || res.status === 504) {
+          error = "Gateway timeout / service temporarily unavailable. Please retry in a few moments.";
+        } else if (res.status >= 500) {
+          error = `Server error (${res.status}). Please try again later.`;
+        } else {
+          error = `Request failed (${res.status}): ${text.slice(0, 100)}`;
+        }
+      }
+    }
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        error: data?.error || error || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return { ok: true, status: res.status, data };
+  } catch (err: any) {
+    return {
+      ok: false,
+      status: 0,
+      error: err.message || "Network error. Please check your connection.",
+    };
+  }
+}
+
+/**
+ * Computes whether NABL accreditation is currently valid based on active toggle,
+ * valid number, and whether today's date falls within [validFrom, validUntil].
+ */
+export function computeIsNablValid(
+  isAccredited: boolean,
+  accreditationNumber: string | null | undefined,
+  validFrom: string | null | undefined,
+  validUntil: string | null | undefined
+): boolean {
+  if (!isAccredited || !accreditationNumber?.trim()) return false;
+  if (!validFrom || !validUntil) return false;
+  const now = new Date();
+  const from = new Date(validFrom);
+  const until = new Date(validUntil);
+  if (isNaN(from.getTime()) || isNaN(until.getTime())) return false;
+  until.setHours(23, 59, 59, 999);
+  return now >= from && now <= until;
 }
 
 const DEFAULT_SERVICES = [
@@ -95,6 +179,7 @@ function LabSettingsContent() {
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [lab, setLab] = useState<any>(null);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
@@ -107,6 +192,10 @@ function LabSettingsContent() {
   const [bannerUploading, setBannerUploading] = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [stagedBannerFilename, setStagedBannerFilename] = useState<string | null>(null);
+
+  const [certificateUploading, setCertificateUploading] = useState(false);
+  const certInputRef = useRef<HTMLInputElement>(null);
+
   const [initialFormData, setInitialFormData] = useState<any>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -145,6 +234,9 @@ function LabSettingsContent() {
     licenseNumber: "",
     isNablAccredited: false,
     nablAccreditationNumber: "",
+    nablValidFrom: "",
+    nablValidUntil: "",
+    nablCertificateUrl: null as string | null,
     about: "",
     operatingHoursSchedule: "Monday - Saturday: 7:00 AM - 8:00 PM | Sunday: 7:00 AM - 2:00 PM",
     services: DEFAULT_SERVICES as string[],
@@ -162,15 +254,21 @@ function LabSettingsContent() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const res = await fetch("/api/lab/settings");
-        if (res.ok) {
-          const d = await res.json();
+        const res = await safeApiRequest("/api/lab/settings");
+        if (res.ok && res.data) {
+          const d = res.data;
           setLab(d.lab);
-          const hasNabl = Boolean(
-            d.lab.nablAccreditationNumber && d.lab.nablAccreditationNumber.trim().length > 0
-          );
-
           const rawWorkingHours = (d.settings?.workingHours as Record<string, any>) || {};
+          const nablMeta = rawWorkingHours.nabl || {};
+
+          const hasNabl =
+            d.lab.isNablAccredited !== undefined
+              ? Boolean(d.lab.isNablAccredited)
+              : nablMeta.isAccredited !== undefined
+              ? Boolean(nablMeta.isAccredited)
+              : Boolean(
+                  d.lab.nablAccreditationNumber && d.lab.nablAccreditationNumber.trim().length > 0
+                );
 
           // Resolve About
           const about =
@@ -201,6 +299,7 @@ function LabSettingsContent() {
               name: String(m.name || "").trim(),
               role: String(m.role || "").trim(),
               qualifications: String(m.qualifications || "").trim(),
+              photoUrl: m.photoUrl ? String(m.photoUrl).trim() : null,
             }));
           } else {
             team = [
@@ -208,6 +307,7 @@ function LabSettingsContent() {
                 name: "Dr. Medical Director",
                 role: "Chief Pathologist & Laboratory Director",
                 qualifications: "MBBS, MD (Pathology)",
+                photoUrl: null,
               },
             ];
           }
@@ -224,7 +324,10 @@ function LabSettingsContent() {
             postalCode: d.lab.postalCode || "",
             licenseNumber: d.lab.licenseNumber || "",
             isNablAccredited: hasNabl,
-            nablAccreditationNumber: d.lab.nablAccreditationNumber || "",
+            nablAccreditationNumber: d.lab.nablAccreditationNumber || nablMeta.accreditationNumber || "",
+            nablValidFrom: d.lab.nablValidFrom || nablMeta.validFrom || "",
+            nablValidUntil: d.lab.nablValidUntil || nablMeta.validUntil || "",
+            nablCertificateUrl: d.lab.nablCertificateUrl || nablMeta.certificateUrl || null,
             heroHeadline: d.settings?.heroHeadline || "Book Diagnostic Tests Online",
             heroSubheadline: d.settings?.heroSubheadline || "Accurate reports, professional care.",
             logoUrl: d.settings?.logoUrl || null,
@@ -244,18 +347,23 @@ function LabSettingsContent() {
 
           setFormData(loadedData);
           setInitialFormData(loadedData);
+        } else if (!res.ok) {
+          setNotification({
+            type: "error",
+            message: res.error || "Failed to load laboratory settings.",
+          });
         }
 
         // Fetch real catalogue and packages statistics
         try {
           const [catRes, pkgRes] = await Promise.all([
-            fetch("/api/lab/catalogue"),
-            fetch("/api/lab/packages"),
+            safeApiRequest("/api/lab/catalogue"),
+            safeApiRequest("/api/lab/packages"),
           ]);
           let activeTests: PreviewTestData[] = [];
           let testCount = 0;
-          if (catRes.ok) {
-            const catData = await catRes.json();
+          if (catRes.ok && catRes.data) {
+            const catData = catRes.data;
             const tests = catData.tests || [];
             testCount = tests.length;
             activeTests = tests.slice(0, 3).map((t: any) => ({
@@ -266,8 +374,8 @@ function LabSettingsContent() {
           }
           let activePkgs: PreviewPackageData[] = [];
           let pkgCount = 0;
-          if (pkgRes.ok) {
-            const pkgData = await pkgRes.json();
+          if (pkgRes.ok && pkgRes.data) {
+            const pkgData = pkgRes.data;
             const pkgs = pkgData.packages || [];
             pkgCount = pkgs.length;
             activePkgs = pkgs.slice(0, 2).map((p: any) => ({
@@ -285,8 +393,12 @@ function LabSettingsContent() {
         } catch {
           // Non-blocking for settings display
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load settings:", err);
+        setNotification({
+          type: "error",
+          message: err.message || "Failed to load laboratory settings.",
+        });
       } finally {
         setLoading(false);
       }
@@ -316,15 +428,14 @@ function LabSettingsContent() {
     try {
       const data = new FormData();
       data.append("file", file);
-      const res = await fetch("/api/lab/profile/logo", {
+      const res = await safeApiRequest<{ logoUrl: string }>("/api/lab/profile/logo", {
         method: "POST",
         body: data,
       });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to upload logo.");
+      if (!res.ok || !res.data?.logoUrl) {
+        throw new Error(res.error || "Failed to upload logo.");
       }
-      setFormData((prev) => ({ ...prev, logoUrl: json.logoUrl }));
+      setFormData((prev) => ({ ...prev, logoUrl: res.data!.logoUrl }));
       setNotification({
         type: "success",
         message: "Laboratory logo uploaded successfully.",
@@ -344,12 +455,11 @@ function LabSettingsContent() {
     setLogoUploading(true);
     setNotification(null);
     try {
-      const res = await fetch("/api/lab/profile/logo", {
+      const res = await safeApiRequest("/api/lab/profile/logo", {
         method: "DELETE",
       });
-      const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || "Failed to delete logo.");
+        throw new Error(res.error || "Failed to delete logo.");
       }
       setFormData((prev) => ({ ...prev, logoUrl: null }));
       setNotification({
@@ -383,19 +493,21 @@ function LabSettingsContent() {
     try {
       const data = new FormData();
       data.append("file", file);
-      const res = await fetch("/api/lab/profile/banner?stage=true", {
-        method: "POST",
-        body: data,
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Failed to stage banner.");
+      const res = await safeApiRequest<{ stagedBannerUrl: string; filename: string }>(
+        "/api/lab/profile/banner?stage=true",
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+      if (!res.ok || !res.data?.stagedBannerUrl) {
+        throw new Error(res.error || "Failed to stage banner.");
       }
-      setFormData((prev) => ({ ...prev, bannerUrl: json.stagedBannerUrl }));
-      setStagedBannerFilename(json.filename || null);
+      setFormData((prev) => ({ ...prev, bannerUrl: res.data!.stagedBannerUrl }));
+      setStagedBannerFilename(res.data.filename || null);
       setNotification({
         type: "success",
-        message: "Facility banner staged for preview. Click 'Save Storefront' to commit to live storefront.",
+        message: "Facility banner staged for preview. Click 'Save Storefront Settings' to commit to live storefront.",
       });
     } catch (err: any) {
       setNotification({
@@ -411,7 +523,7 @@ function LabSettingsContent() {
   const handleBannerRemove = async () => {
     if (stagedBannerFilename) {
       try {
-        await fetch("/api/lab/profile/banner?stage=true", { method: "DELETE" });
+        await safeApiRequest("/api/lab/profile/banner?stage=true", { method: "DELETE" });
       } catch {}
       setStagedBannerFilename(null);
     }
@@ -422,10 +534,130 @@ function LabSettingsContent() {
     });
   };
 
+  const handleCertificateUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setNotification({
+        type: "error",
+        message: "Certificate file exceeds 10MB size limit.",
+      });
+      return;
+    }
+
+    setCertificateUploading(true);
+    setNotification(null);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await safeApiRequest<{ certificateUrl: string }>(
+        "/api/lab/profile/nabl-certificate",
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+      if (!res.ok || !res.data?.certificateUrl) {
+        throw new Error(res.error || "Failed to upload certificate.");
+      }
+      setFormData((prev) => ({ ...prev, nablCertificateUrl: res.data!.certificateUrl }));
+      setNotification({
+        type: "success",
+        message: "NABL accreditation certificate uploaded successfully.",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to upload certificate.",
+      });
+    } finally {
+      setCertificateUploading(false);
+      if (certInputRef.current) certInputRef.current.value = "";
+    }
+  };
+
+  const handleCertificateRemove = async () => {
+    setCertificateUploading(true);
+    setNotification(null);
+    try {
+      const res = await safeApiRequest("/api/lab/profile/nabl-certificate", {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error(res.error || "Failed to delete certificate.");
+      }
+      setFormData((prev) => ({ ...prev, nablCertificateUrl: null }));
+      setNotification({
+        type: "success",
+        message: "NABL certificate removed.",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to remove certificate.",
+      });
+    } finally {
+      setCertificateUploading(false);
+    }
+  };
+
+  const handleTeamPhotoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({
+        type: "error",
+        message: "Team member photo exceeds 5MB limit.",
+      });
+      return;
+    }
+
+    setNotification(null);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await safeApiRequest<{ photoUrl: string }>("/api/lab/profile/team-photo", {
+        method: "POST",
+        body: data,
+      });
+      if (!res.ok || !res.data?.photoUrl) {
+        throw new Error(res.error || "Failed to upload team photo.");
+      }
+      handleUpdateTeamMember(index, "photoUrl", res.data.photoUrl);
+      setNotification({
+        type: "success",
+        message: "Team expert photo uploaded successfully.",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Failed to upload team photo.",
+      });
+    }
+  };
+
+  const handleTeamPhotoRemove = async (index: number) => {
+    const photoUrl = formData.team[index]?.photoUrl;
+    if (photoUrl) {
+      try {
+        await safeApiRequest(`/api/lab/profile/team-photo?photoUrl=${encodeURIComponent(photoUrl)}`, {
+          method: "DELETE",
+        });
+      } catch {}
+    }
+    handleUpdateTeamMember(index, "photoUrl", null as any);
+    setNotification({
+      type: "success",
+      message: "Team expert photo removed.",
+    });
+  };
+
   const handleDiscardChanges = async () => {
     if (stagedBannerFilename) {
       try {
-        await fetch("/api/lab/profile/banner?stage=true", { method: "DELETE" });
+        await safeApiRequest("/api/lab/profile/banner?stage=true", { method: "DELETE" });
       } catch (e) {
         console.error("Failed to cleanup staged banner on discard", e);
       }
@@ -434,6 +666,7 @@ function LabSettingsContent() {
       setFormData(initialFormData);
     }
     setStagedBannerFilename(null);
+    setSaveStatus("idle");
     setNotification({
       type: "success",
       message: "Unsaved changes discarded. Restored saved storefront settings.",
@@ -477,11 +710,11 @@ function LabSettingsContent() {
   const handleAddTeamMember = () => {
     setFormData((prev) => ({
       ...prev,
-      team: [...prev.team, { name: "", role: "", qualifications: "" }],
+      team: [...prev.team, { name: "", role: "", qualifications: "", photoUrl: null }],
     }));
   };
 
-  const handleUpdateTeamMember = (index: number, field: keyof TeamMember, val: string) => {
+  const handleUpdateTeamMember = (index: number, field: keyof TeamMember, val: string | null) => {
     setFormData((prev) => {
       const nextTeam = [...prev.team];
       nextTeam[index] = { ...nextTeam[index], [field]: val };
@@ -509,9 +742,21 @@ function LabSettingsContent() {
     if (formData.isNablAccredited && !formData.nablAccreditationNumber.trim()) {
       setNotification({
         type: "error",
-        message: "NABL Accreditation Number is required when NABL Accredited is ON.",
+        message: "NABL Accreditation Number is required when NABL Accreditation is enabled.",
       });
       return;
+    }
+
+    if (formData.isNablAccredited && formData.nablValidFrom && formData.nablValidUntil) {
+      const fromDate = new Date(formData.nablValidFrom);
+      const untilDate = new Date(formData.nablValidUntil);
+      if (!isNaN(fromDate.getTime()) && !isNaN(untilDate.getTime()) && untilDate < fromDate) {
+        setNotification({
+          type: "error",
+          message: "NABL Accreditation Valid Until date must be on or after the Valid From date.",
+        });
+        return;
+      }
     }
 
     setSaving(true);
@@ -521,7 +766,14 @@ function LabSettingsContent() {
       about: formData.about.trim(),
       schedule: formData.operatingHoursSchedule.trim(),
       services: formData.services.filter((s) => s.trim().length > 0),
-      team: formData.team.filter((m) => m.name.trim().length > 0 && m.role.trim().length > 0),
+      team: formData.team
+        .filter((m) => m.name.trim().length > 0 && m.role.trim().length > 0)
+        .map((m) => ({
+          name: m.name.trim(),
+          role: m.role.trim(),
+          qualifications: m.qualifications.trim(),
+          photoUrl: m.photoUrl || null,
+        })),
     };
 
     const payload = {
@@ -530,24 +782,27 @@ function LabSettingsContent() {
       removeBanner: formData.bannerUrl === null,
       metaDescription: formData.about.trim(),
       workingHours,
+      isNablAccredited: formData.isNablAccredited,
       nablAccreditationNumber: formData.isNablAccredited
         ? formData.nablAccreditationNumber.trim().toUpperCase()
         : null,
+      nablValidFrom: formData.isNablAccredited ? formData.nablValidFrom || null : null,
+      nablValidUntil: formData.isNablAccredited ? formData.nablValidUntil || null : null,
+      nablCertificateUrl: formData.isNablAccredited ? formData.nablCertificateUrl || null : null,
     };
 
     try {
-      const res = await fetch("/api/lab/settings", {
+      const res = await safeApiRequest("/api/lab/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to update store settings.");
+      if (!res.ok || !res.data) {
+        throw new Error(res.error || "Failed to update store settings.");
       }
 
-      const updated = await res.json();
+      const updated = res.data;
       const updatedBannerUrl = updated.settings?.bannerUrl ?? formData.bannerUrl;
 
       const nextSavedState = {
@@ -557,12 +812,14 @@ function LabSettingsContent() {
       setFormData(nextSavedState);
       setInitialFormData(nextSavedState);
       setStagedBannerFilename(null);
+      setSaveStatus("saved");
 
       setNotification({
         type: "success",
         message: "Storefront and laboratory settings saved successfully.",
       });
     } catch (err: any) {
+      setSaveStatus("error");
       setNotification({
         type: "error",
         message: err.message || "Failed to update settings.",
@@ -682,17 +939,6 @@ function LabSettingsContent() {
               <div className="flex items-center gap-2">
                 <CreditCard className="h-3.5 w-3.5 text-sky-600" />
                 <span>Payment Settlement</span>
-              </div>
-              <ArrowUpRight className="h-3 w-3 text-slate-400" />
-            </Link>
-
-            <Link
-              href="/lab/staff"
-              className="flex items-center justify-between rounded-lg bg-white p-2 text-xs font-medium text-slate-700 border border-slate-200/80 hover:border-slate-300 hover:bg-slate-50 transition"
-            >
-              <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 text-violet-600" />
-                <span>Staff & Roles</span>
               </div>
               <ArrowUpRight className="h-3 w-3 text-slate-400" />
             </Link>
@@ -880,7 +1126,7 @@ function LabSettingsContent() {
                         NABL Quality Accreditation
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Indicates compliance with ISO 15189 standards for diagnostic testing.
+                        Compliance with ISO 15189 standards for diagnostic testing facilities.
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -889,11 +1135,10 @@ function LabSettingsContent() {
                         checked={formData.isNablAccredited}
                         onChange={(e) => {
                           const checked = e.target.checked;
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             isNablAccredited: checked,
-                            nablAccreditationNumber: checked ? formData.nablAccreditationNumber : "",
-                          });
+                          }));
                         }}
                         className="sr-only peer"
                       />
@@ -902,26 +1147,183 @@ function LabSettingsContent() {
                   </div>
 
                   {formData.isNablAccredited && (
-                    <div className="pt-2 border-t border-slate-200/60">
-                      <label className="block text-xs font-medium text-slate-700">
-                        NABL Accreditation Number *
-                      </label>
-                      <input
-                        type="text"
-                        required={formData.isNablAccredited}
-                        value={formData.nablAccreditationNumber}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            nablAccreditationNumber: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. MC-4412"
-                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 uppercase font-mono placeholder:normal-case placeholder:font-sans focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                      />
-                      <p className="text-[11px] text-slate-500 mt-1">
-                        Displayed as an accredited trust badge on your public storefront and reports.
-                      </p>
+                    <div className="pt-3 border-t border-slate-200/60 space-y-4">
+                      {/* Legacy unverified warning banner */}
+                      {Boolean(formData.nablAccreditationNumber?.trim()) &&
+                        (!formData.nablValidFrom || !formData.nablValidUntil) && (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-amber-900">
+                                Accreditation Dates Required for Public Trust Badge
+                              </p>
+                              <p className="mt-0.5 leading-relaxed text-amber-700">
+                                In accordance with clinical compliance guidelines, the NABL trust badge is withheld from your public storefront until active validity dates (&quot;Valid From&quot; and &quot;Valid Until&quot;) are entered and saved.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                      {/* NABL Validity Status indicator */}
+                      {formData.nablValidFrom && formData.nablValidUntil && (
+                        <div
+                          className={`rounded-lg border p-3 text-xs flex items-center justify-between ${
+                            computeIsNablValid(
+                              formData.isNablAccredited,
+                              formData.nablAccreditationNumber,
+                              formData.nablValidFrom,
+                              formData.nablValidUntil
+                            )
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "border-rose-200 bg-rose-50 text-rose-800"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck
+                              className={`h-4 w-4 ${
+                                computeIsNablValid(
+                                  formData.isNablAccredited,
+                                  formData.nablAccreditationNumber,
+                                  formData.nablValidFrom,
+                                  formData.nablValidUntil
+                                )
+                                  ? "text-emerald-600"
+                                  : "text-rose-600"
+                              }`}
+                            />
+                            <span className="font-semibold">
+                              {computeIsNablValid(
+                                formData.isNablAccredited,
+                                formData.nablAccreditationNumber,
+                                formData.nablValidFrom,
+                                formData.nablValidUntil
+                              )
+                                ? "Accreditation is currently active (Trust badge displayed on storefront)"
+                                : "Accreditation date window is inactive or expired (Trust badge withheld from storefront)"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700">
+                            Accreditation Number *
+                          </label>
+                          <input
+                            type="text"
+                            required={formData.isNablAccredited}
+                            value={formData.nablAccreditationNumber}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                nablAccreditationNumber: e.target.value,
+                              })
+                            }
+                            placeholder="e.g. MC-4589"
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 uppercase font-mono placeholder:normal-case placeholder:font-sans focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700">
+                            Valid From
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.nablValidFrom}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                nablValidFrom: e.target.value,
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700">
+                            Valid Until
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.nablValidUntil}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                nablValidUntil: e.target.value,
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Certificate Upload & Private Access */}
+                      <div className="pt-2 border-t border-slate-200/60">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
+                          NABL Accreditation Certificate
+                        </label>
+                        <p className="text-[11px] text-slate-500 mb-3">
+                          Upload certificate copy (PDF, PNG, JPG up to 10MB). Stored securely with private lab owner access.
+                        </p>
+
+                        <input
+                          ref={certInputRef}
+                          type="file"
+                          accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
+                          onChange={handleCertificateUpload}
+                          className="hidden"
+                        />
+
+                        {formData.nablCertificateUrl ? (
+                          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white rounded-lg border border-slate-200">
+                            <div className="flex items-center gap-2 text-xs font-medium text-slate-800">
+                              <FileText className="h-4 w-4 text-sky-600" />
+                              <span>Certificate Attached</span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                ({formData.nablCertificateUrl.split("/").pop()})
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={formData.nablCertificateUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                              >
+                                <ExternalLink className="h-3 w-3 text-slate-400" />
+                                <span>View Certificate</span>
+                              </a>
+                              <button
+                                type="button"
+                                onClick={handleCertificateRemove}
+                                disabled={certificateUploading}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-rose-200 bg-rose-50 text-xs font-medium text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => certInputRef.current?.click()}
+                            disabled={certificateUploading}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-xs disabled:opacity-60 cursor-pointer"
+                          >
+                            <Upload className="h-3.5 w-3.5 text-sky-600" />
+                            <span>
+                              {certificateUploading
+                                ? "Uploading Certificate..."
+                                : "Upload Certificate (PDF / Image)"}
+                            </span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1340,17 +1742,39 @@ function LabSettingsContent() {
 
                   {/* ── Action Buttons & Dirty-State Management ── */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                    <div>
-                      {isDirty ? (
-                        <span className="text-xs text-amber-700 font-medium flex items-center gap-1.5">
-                          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                          <span>Unsaved changes previewed above. Commit or discard below.</span>
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-500">
-                          All storefront branding settings are saved and up to date.
-                        </span>
-                      )}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-700">Storefront Status:</span>
+                        {saving ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-xs font-semibold text-sky-700">
+                            <span className="h-2 w-2 rounded-full bg-sky-500 animate-spin" />
+                            <span>Saving...</span>
+                          </span>
+                        ) : saveStatus === "error" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span>Save failed</span>
+                          </span>
+                        ) : isDirty ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Unsaved changes</span>
+                          </span>
+                        ) : saveStatus === "saved" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Saved</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                            <Check className="h-3.5 w-3.5 text-slate-400" />
+                            <span>Live storefront matches settings</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Changes are shown in the preview below, but are not live on your public storefront until you click &quot;Save Storefront Settings&quot;.
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
@@ -1399,6 +1823,17 @@ function LabSettingsContent() {
                   deliveryPromiseNotice={formData.deliveryPromiseNotice}
                   homeCollectionAvailable={formData.homeCollectionAvailable}
                   homeCollectionFee={formData.homeCollectionFee}
+                  freeHomeCollectionThreshold={formData.freeHomeCollectionThreshold}
+                  isNablCurrentlyValid={computeIsNablValid(
+                    formData.isNablAccredited,
+                    formData.nablAccreditationNumber,
+                    formData.nablValidFrom,
+                    formData.nablValidUntil
+                  )}
+                  about={formData.about}
+                  schedule={formData.operatingHoursSchedule}
+                  services={formData.services}
+                  team={formData.team}
                   activeTestsCount={catalogueStats.activeTestsCount}
                   popularTests={catalogueStats.popularTests}
                   activePackagesCount={catalogueStats.activePackagesCount}
@@ -1618,42 +2053,96 @@ function LabSettingsContent() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-700">Full Name *</label>
+                        <div className="flex flex-col sm:flex-row gap-4 items-start pt-1">
+                          {/* Photo avatar / upload */}
+                          <div className="flex flex-row sm:flex-col items-center gap-2.5 shrink-0">
+                            <div className="h-16 w-16 rounded-full border border-slate-200 bg-white flex items-center justify-center overflow-hidden shadow-2xs relative">
+                              {member.photoUrl ? (
+                                <img
+                                  src={member.photoUrl}
+                                  alt={member.name || "Team member"}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-center text-slate-400">
+                                  <Users className="h-6 w-6 mx-auto stroke-[1.5]" />
+                                </div>
+                              )}
+                            </div>
+
                             <input
-                              type="text"
-                              required
-                              value={member.name}
-                              onChange={(e) => handleUpdateTeamMember(index, "name", e.target.value)}
-                              placeholder="e.g. Dr. Ramesh Sharma"
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                              id={`team-photo-input-${index}`}
+                              type="file"
+                              accept="image/png,image/jpeg,image/jpg,image/webp"
+                              onChange={(e) => handleTeamPhotoUpload(index, e)}
+                              className="hidden"
                             />
+
+                            <div className="flex flex-col gap-1 items-start sm:items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const el = document.getElementById(
+                                    `team-photo-input-${index}`
+                                  ) as HTMLInputElement | null;
+                                  el?.click();
+                                }}
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer"
+                              >
+                                <Upload className="h-3 w-3 text-sky-600" />
+                                <span>{member.photoUrl ? "Change Photo" : "Upload Photo"}</span>
+                              </button>
+
+                              {member.photoUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleTeamPhotoRemove(index)}
+                                  className="text-[10px] text-rose-600 hover:underline cursor-pointer"
+                                >
+                                  Remove photo
+                                </button>
+                              )}
+                            </div>
                           </div>
 
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-700">Role / Designation *</label>
-                            <input
-                              type="text"
-                              required
-                              value={member.role}
-                              onChange={(e) => handleUpdateTeamMember(index, "role", e.target.value)}
-                              placeholder="e.g. Chief Pathologist"
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                            />
-                          </div>
+                          {/* Member details inputs */}
+                          <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-medium text-slate-700">Full Name *</label>
+                              <input
+                                type="text"
+                                required
+                                value={member.name}
+                                onChange={(e) => handleUpdateTeamMember(index, "name", e.target.value)}
+                                placeholder="e.g. Dr. Ramesh Sharma"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                              />
+                            </div>
 
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-700">Qualifications</label>
-                            <input
-                              type="text"
-                              value={member.qualifications}
-                              onChange={(e) =>
-                                handleUpdateTeamMember(index, "qualifications", e.target.value)
-                              }
-                              placeholder="e.g. MBBS, MD (Pathology)"
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                            />
+                            <div>
+                              <label className="block text-[11px] font-medium text-slate-700">Role / Designation *</label>
+                              <input
+                                type="text"
+                                required
+                                value={member.role}
+                                onChange={(e) => handleUpdateTeamMember(index, "role", e.target.value)}
+                                placeholder="e.g. Chief Pathologist"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-medium text-slate-700">Qualifications</label>
+                              <input
+                                type="text"
+                                value={member.qualifications}
+                                onChange={(e) =>
+                                  handleUpdateTeamMember(index, "qualifications", e.target.value)
+                                }
+                                placeholder="e.g. MBBS, MD (Pathology)"
+                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

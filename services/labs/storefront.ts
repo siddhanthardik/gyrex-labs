@@ -27,6 +27,7 @@ export interface LabStorefrontData {
     bannerUrl: string | null;
     heroHeadline: string;
     heroSubheadline: string;
+    metaDescription?: string | null;
     homeCollectionAvailable: boolean;
     homeCollectionFee: number;
     freeHomeCollectionThreshold: number | null;
@@ -39,7 +40,16 @@ export interface LabStorefrontData {
       name: string;
       role: string;
       qualifications?: string;
+      photoUrl?: string | null;
     }>;
+    nabl: {
+      isAccredited: boolean;
+      accreditationNumber: string | null;
+      validFrom: string | null;
+      validUntil: string | null;
+      isCurrentlyValid: boolean;
+      certificateUrl?: string | null;
+    };
   };
   paymentSettings: {
     cashOnCollectionEnabled: boolean;
@@ -266,13 +276,19 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
     schedule = "Monday - Saturday: 7:00 AM - 8:00 PM | Sunday: 7:00 AM - 2:00 PM";
   }
 
-  let team: Array<{ name: string; role: string; qualifications?: string }> = [];
+  let team: Array<{
+    name: string;
+    role: string;
+    qualifications?: string;
+    photoUrl?: string | null;
+  }> = [];
   if (Array.isArray(rawWorkingHours.team) && rawWorkingHours.team.length > 0) {
     team = rawWorkingHours.team
       .map((m: any) => ({
         name: String(m.name || "").trim(),
         role: String(m.role || "").trim(),
         qualifications: m.qualifications ? String(m.qualifications).trim() : undefined,
+        photoUrl: m.photoUrl ? String(m.photoUrl).trim() : null,
       }))
       .filter((m: any) => m.name && m.role);
   }
@@ -282,14 +298,50 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
         name: "Dr. Medical Director",
         role: "Chief Pathologist & Laboratory Director",
         qualifications: "MBBS, MD (Pathology)",
+        photoUrl: null,
       },
       {
         name: "Senior Clinical Technologist",
         role: "Quality Assurance & Phlebotomy Head",
         qualifications: "M.Sc. Medical Lab Technology (MLT)",
+        photoUrl: null,
       },
     ];
   }
+
+  // Resolve NABL Accreditation & Strict Date Validity
+  const nablRaw = (rawWorkingHours.nabl as Record<string, any>) || {};
+  const isAccredited = Boolean(
+    nablRaw.isAccredited ??
+      (lab.nablAccreditationNumber && lab.nablAccreditationNumber.trim().length > 0)
+  );
+  const accreditationNumber = isAccredited
+    ? lab.nablAccreditationNumber || nablRaw.accreditationNumber || null
+    : null;
+  const validFrom = nablRaw.validFrom ? String(nablRaw.validFrom).trim() : null;
+  const validUntil = nablRaw.validUntil ? String(nablRaw.validUntil).trim() : null;
+
+  let isCurrentlyValid = false;
+  if (isAccredited && accreditationNumber && validFrom && validUntil) {
+    const fromTime = new Date(validFrom).getTime();
+    const untilDate = new Date(validUntil);
+    untilDate.setHours(23, 59, 59, 999);
+    const untilTime = untilDate.getTime();
+    const nowTime = Date.now();
+
+    if (!isNaN(fromTime) && !isNaN(untilTime) && nowTime >= fromTime && nowTime <= untilTime) {
+      isCurrentlyValid = true;
+    }
+  }
+
+  const nabl = {
+    isAccredited,
+    accreditationNumber,
+    validFrom,
+    validUntil,
+    isCurrentlyValid,
+    certificateUrl: nablRaw.certificateUrl || null,
+  };
 
   return {
     lab: {
@@ -319,6 +371,7 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
       heroSubheadline:
         lab.storeSettings?.heroSubheadline ||
         "Accurate clinical reports, timely home sample collection, and professional care.",
+      metaDescription: lab.storeSettings?.metaDescription || null,
       homeCollectionAvailable: lab.storeSettings?.homeCollectionAvailable ?? true,
       homeCollectionFee: lab.storeSettings?.homeCollectionFee ? Number(lab.storeSettings.homeCollectionFee) : 100,
       freeHomeCollectionThreshold: lab.storeSettings?.freeHomeCollectionThreshold
@@ -330,6 +383,7 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
       services,
       schedule,
       team,
+      nabl,
     },
     paymentSettings: {
       cashOnCollectionEnabled: lab.paymentSettings?.cashOnCollectionEnabled ?? true,

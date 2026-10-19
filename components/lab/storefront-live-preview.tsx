@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ChevronRight,
   Info,
+  Users,
 } from "lucide-react";
 
 export interface PreviewTestData {
@@ -47,6 +48,12 @@ export interface StorefrontLivePreviewProps {
   deliveryPromiseNotice?: string;
   homeCollectionAvailable?: boolean;
   homeCollectionFee?: number;
+  freeHomeCollectionThreshold?: number | null;
+  isNablCurrentlyValid?: boolean;
+  about?: string;
+  schedule?: string;
+  services?: string[];
+  team?: Array<{ name: string; role: string; qualifications?: string; photoUrl?: string | null }>;
   activeTestsCount?: number;
   popularTests?: PreviewTestData[];
   activePackagesCount?: number;
@@ -62,6 +69,7 @@ export function StorefrontLivePreview({
   phone,
   isVerified = true,
   nablNumber,
+  isNablCurrentlyValid,
   logoUrl,
   bannerUrl,
   primaryColor,
@@ -71,6 +79,11 @@ export function StorefrontLivePreview({
   deliveryPromiseNotice = "Reports delivered within 24 hours",
   homeCollectionAvailable = true,
   homeCollectionFee = 100,
+  freeHomeCollectionThreshold = 1000,
+  about,
+  schedule,
+  services = [],
+  team = [],
   activeTestsCount = 0,
   popularTests = [],
   activePackagesCount = 0,
@@ -247,30 +260,19 @@ export function StorefrontLivePreview({
                 <div className="relative">
                   {/* Top lab header row inside hero */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      {logoUrl && !logoError && (
-                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white p-1 shadow-sm">
-                          <img
-                            src={logoUrl}
-                            alt={displayLabName}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <h1 className="text-lg font-extrabold leading-tight text-white">
-                          {displayLabName}
-                        </h1>
-                        <p className="mt-0.5 text-xs text-sky-100">
-                          {displayCity}, {displayState}
-                        </p>
-                      </div>
+                    <div>
+                      <h1 className="text-lg font-extrabold leading-tight text-white">
+                        {displayLabName}
+                      </h1>
+                      <p className="mt-0.5 text-xs text-sky-100">
+                        {displayCity}, {displayState}
+                      </p>
                     </div>
 
-                    {/* NABL Badge: Only rendered if verified & number exists */}
-                    {nablNumber && (
+                    {/* NABL Badge: Only rendered if currently valid */}
+                    {isNablCurrentlyValid && nablNumber && (
                       <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-white/15 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur-xs">
-                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
                         <span>NABL {nablNumber}</span>
                       </div>
                     )}
@@ -286,14 +288,8 @@ export function StorefrontLivePreview({
                     </p>
                   </div>
 
-                  {/* Trust Badges */}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {homeCollectionAvailable && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-xs">
-                        <Home className="h-2.5 w-2.5" />
-                        <span>Home Collection (₹{homeCollectionFee})</span>
-                      </span>
-                    )}
+                  {/* Trust Badges (1-2 clean badges max) */}
+                  <div className="mt-3.5 flex flex-wrap gap-1.5">
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-xs">
                       <Clock className="h-2.5 w-2.5" />
                       <span>{deliveryPromiseNotice}</span>
@@ -336,6 +332,31 @@ export function StorefrontLivePreview({
                   );
                 })}
               </section>
+
+              {/* Dedicated Home Collection Preview Card */}
+              {homeCollectionAvailable && (
+                <section className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50/80 via-blue-50/40 to-slate-50 p-3 shadow-2xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white">
+                      <Home className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">Doorstep Home Sample Collection</span>
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[9px] font-semibold text-emerald-800">
+                          Active
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[10px] text-slate-600 leading-relaxed">
+                        Certified technicians collect samples at home. Standard fee: <strong className="text-slate-900">₹{homeCollectionFee}</strong>
+                        {freeHomeCollectionThreshold ? (
+                          <> (<span className="text-emerald-700 font-semibold">FREE</span> above ₹{freeHomeCollectionThreshold})</>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* Real Packages Preview or Neutral Notice */}
               <section className="space-y-2">
@@ -436,6 +457,62 @@ export function StorefrontLivePreview({
                   </div>
                 )}
               </section>
+
+              {/* Formatted About Preview */}
+              {about && (
+                <section className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                    <Building2 className="h-3.5 w-3.5 text-sky-600" />
+                    <span>About {displayLabName}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {about
+                      .split(/\n+/)
+                      .map((p) => p.trim())
+                      .filter(Boolean)
+                      .map((paragraph, idx) => (
+                        <p key={idx} className="text-[11px] text-slate-600 leading-relaxed">
+                          {paragraph}
+                        </p>
+                      ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Clinical Team Preview with Photos */}
+              {team.length > 0 && (
+                <section className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-900">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-sky-600" />
+                      <span>Clinical Team</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-normal">{team.length} specialists</span>
+                  </div>
+                  <div className="space-y-2">
+                    {team.map((member, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-2">
+                        {member.photoUrl ? (
+                          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white">
+                            <img src={member.photoUrl} alt={member.name} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-semibold text-slate-900">{member.name}</div>
+                          <div className="truncate text-[10px] text-sky-700">{member.role}</div>
+                          {member.qualifications && (
+                            <div className="truncate text-[9px] text-slate-400">{member.qualifications}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </main>
 
             {/* Footer */}
