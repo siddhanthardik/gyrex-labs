@@ -311,7 +311,12 @@ export class MetaWhatsAppService implements WhatsAppProvider {
 
     const configured = Boolean(rawData.phoneNumberId && rawData.accessTokenEncrypted);
     const isEnabled = rawData.isEnabled ?? configured;
-    const status = rawData.status || (configured ? "CONNECTED" : "DISCONNECTED");
+    const status: "CONNECTED" | "DISCONNECTED" | "ERROR" =
+      rawData.status === "CONNECTED" && rawData.lastVerifiedAt
+        ? "CONNECTED"
+        : rawData.status === "ERROR"
+        ? "ERROR"
+        : "DISCONNECTED";
 
     // Standard platform-level centralized webhook token & URL
     const platformVerifyToken = await this.getOrGeneratePlatformVerifyToken();
@@ -422,7 +427,25 @@ export class MetaWhatsAppService implements WhatsAppProvider {
         : existingData.notifyReportReady ?? true;
 
     const isConfigured = Boolean(phoneNumberId && accessTokenEncrypted);
-    const status: "CONNECTED" | "DISCONNECTED" | "ERROR" = isConfigured ? "CONNECTED" : "DISCONNECTED";
+    const credentialsChanged =
+      phoneNumberId !== existingData.phoneNumberId ||
+      Boolean(input.accessToken && input.accessToken.trim());
+
+    let status: "CONNECTED" | "DISCONNECTED" | "ERROR";
+    let lastVerifiedAt: string | null;
+
+    if (!isConfigured) {
+      status = "DISCONNECTED";
+      lastVerifiedAt = null;
+    } else if (credentialsChanged) {
+      // New or updated credentials must be verified with Meta Graph API before claiming CONNECTED
+      status = "DISCONNECTED";
+      lastVerifiedAt = null;
+    } else {
+      // Preserved existing credentials keep their verified status
+      status = existingData.status || "DISCONNECTED";
+      lastVerifiedAt = existingData.lastVerifiedAt || null;
+    }
 
     const updatedData: LabWhatsAppSettings = {
       wabaId,
@@ -433,7 +456,7 @@ export class MetaWhatsAppService implements WhatsAppProvider {
       webhookVerifyToken,
       status,
       isEnabled,
-      lastVerifiedAt: isConfigured ? new Date().toISOString() : existingData.lastVerifiedAt || null,
+      lastVerifiedAt,
       errorMessage: null,
       welcomeMessageCustom,
       notifyOrderConfirmation,

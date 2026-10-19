@@ -30,6 +30,9 @@ interface SubscriptionPlanItem {
   maxStaffAccounts: number;
   customBrandingEnabled: boolean;
   geminiPrescriptionAiEnabled: boolean;
+  canUseSharedWhatsApp?: boolean;
+  monthlySharedWhatsAppQuota?: number;
+  canConfigureCustomWaba?: boolean;
   isActive: boolean;
   displayOrder: number;
   subscriberCount: number;
@@ -59,6 +62,9 @@ export default function SuperadminSubscriptionPlansPage() {
     maxStaffAccounts: 5,
     customBrandingEnabled: true,
     geminiPrescriptionAiEnabled: true,
+    canUseSharedWhatsApp: false,
+    monthlySharedWhatsAppQuota: 0,
+    canConfigureCustomWaba: false,
     isActive: true,
     displayOrder: 0,
   });
@@ -95,6 +101,9 @@ export default function SuperadminSubscriptionPlansPage() {
       maxStaffAccounts: 5,
       customBrandingEnabled: true,
       geminiPrescriptionAiEnabled: true,
+      canUseSharedWhatsApp: false,
+      monthlySharedWhatsAppQuota: 0,
+      canConfigureCustomWaba: false,
       isActive: true,
       displayOrder: plans.length,
     });
@@ -115,6 +124,9 @@ export default function SuperadminSubscriptionPlansPage() {
       maxStaffAccounts: p.maxStaffAccounts,
       customBrandingEnabled: p.customBrandingEnabled,
       geminiPrescriptionAiEnabled: p.geminiPrescriptionAiEnabled,
+      canUseSharedWhatsApp: p.canUseSharedWhatsApp ?? false,
+      monthlySharedWhatsAppQuota: p.monthlySharedWhatsAppQuota ?? 0,
+      canConfigureCustomWaba: p.canConfigureCustomWaba ?? false,
       isActive: p.isActive,
       displayOrder: p.displayOrder,
     });
@@ -164,9 +176,15 @@ export default function SuperadminSubscriptionPlansPage() {
       setNotification({ type: "error", message: "Plan Name and Code are required." });
       return;
     }
-    if (formData.priceMonthly < 0 || formData.priceYearly < 0) {
-      setNotification({ type: "error", message: "Prices must be non-negative." });
-      return;
+    if (formData.canUseSharedWhatsApp) {
+      const quota = Number(formData.monthlySharedWhatsAppQuota);
+      if (!Number.isInteger(quota) || quota < 0) {
+        setNotification({
+          type: "error",
+          message: "Monthly shared WhatsApp quota must be a non-negative integer.",
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -186,6 +204,9 @@ export default function SuperadminSubscriptionPlansPage() {
       maxStaffAccounts: Number(formData.maxStaffAccounts) || 5,
       customBrandingEnabled: formData.customBrandingEnabled,
       geminiPrescriptionAiEnabled: formData.geminiPrescriptionAiEnabled,
+      canUseSharedWhatsApp: formData.canUseSharedWhatsApp,
+      monthlySharedWhatsAppQuota: Number(formData.monthlySharedWhatsAppQuota) || 0,
+      canConfigureCustomWaba: formData.canConfigureCustomWaba,
       isActive: formData.isActive,
       displayOrder: Number(formData.displayOrder) || 0,
     };
@@ -338,6 +359,21 @@ export default function SuperadminSubscriptionPlansPage() {
                       <div className="space-y-0.5">
                         <p>{p.maxOrdersPerMonth ? `${p.maxOrdersPerMonth} orders/mo` : "Unlimited orders"}</p>
                         <p className="text-slate-400">{p.maxStaffAccounts} staff seats</p>
+                        <div className="pt-0.5">
+                          {p.canUseSharedWhatsApp ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Shared WA: {p.monthlySharedWhatsAppQuota || 0}/mo
+                            </span>
+                          ) : p.canConfigureCustomWaba ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200">
+                              Custom WABA
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500">
+                              No WhatsApp
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -567,6 +603,75 @@ export default function SuperadminSubscriptionPlansPage() {
                       Active (Visible to Lab Owners for Subscription)
                     </span>
                   </label>
+                </div>
+
+                {/* WhatsApp Capabilities Section */}
+                <div className="sm:col-span-2 space-y-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-900">WhatsApp Messaging Capabilities</h4>
+                    <span className="text-[11px] text-slate-400">Phase 1 & 4 Entitlements</span>
+                  </div>
+
+                  <div className="space-y-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.canUseSharedWhatsApp}
+                        onChange={(e) =>
+                          setFormData({ ...formData, canUseSharedWhatsApp: e.target.checked })
+                        }
+                        className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                      />
+                      <span className="text-xs font-semibold text-slate-800">
+                        Enable Gyrex Shared WhatsApp Outbound (Growth Plan)
+                      </span>
+                    </label>
+
+                    {formData.canUseSharedWhatsApp && (
+                      <div className="pl-6 pt-1 space-y-1">
+                        <label className="block text-xs font-medium text-slate-700">
+                          Monthly Shared WhatsApp Message Quota *
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          required={formData.canUseSharedWhatsApp}
+                          value={formData.monthlySharedWhatsAppQuota}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              monthlySharedWhatsAppQuota: Math.max(0, parseInt(e.target.value, 10) || 0),
+                            })
+                          }
+                          placeholder="250"
+                          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                        />
+                        <p className="text-[11px] text-slate-500">
+                          Hard cap of monthly messages included for this tier per billing period (e.g. 250).
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-200/60">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.canConfigureCustomWaba}
+                          onChange={(e) =>
+                            setFormData({ ...formData, canConfigureCustomWaba: e.target.checked })
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+                        />
+                        <span className="text-xs font-semibold text-slate-800">
+                          Enable Custom Laboratory Meta WABA (Professional / Enterprise)
+                        </span>
+                      </label>
+                      <p className="text-[11px] text-slate-500 pl-6 mt-0.5">
+                        Permits the laboratory to configure its own Meta Cloud API credentials and dedicated phone number.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
