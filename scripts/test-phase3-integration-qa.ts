@@ -65,6 +65,7 @@ async function runPhase3QA() {
   const originalWorkingHours = pilotLab.storeSettings?.workingHours as Record<string, any> | null;
   const originalNablNumber = pilotLab.nablAccreditationNumber;
   const createdTestOrderIds: string[] = [];
+  let tempServiceAreaId: string | null = null;
 
   try {
     // ── Test Group 1: SEO Metadata & OpenGraph Social Sharing ──
@@ -257,6 +258,22 @@ async function runPhase3QA() {
     // ── Test Group 8: End-to-End Patient Booking Creation ──
     console.log("\n── Test Group 8: End-to-End Patient Booking Order Creation ──");
     if (sampleTest) {
+      const pinToCover = pilotLab.postalCode || "110001";
+      const existingArea = await prisma.labServiceArea.findFirst({
+        where: { labId: pilotLab.id, pincode: pinToCover },
+      });
+      if (!existingArea) {
+        const createdArea = await prisma.labServiceArea.create({
+          data: {
+            labId: pilotLab.id,
+            pincode: pinToCover,
+            localityName: "QA Janakpuri Service Zone",
+            isActive: true,
+          },
+        });
+        tempServiceAreaId = createdArea.id;
+      }
+
       const orderRes = await createPatientOrder({
         labId: pilotLab.id,
         patient: {
@@ -341,6 +358,11 @@ async function runPhase3QA() {
       }
     }
 
+    if (tempServiceAreaId) {
+      await prisma.labServiceArea.deleteMany({ where: { id: tempServiceAreaId } });
+      console.log("  ✓ Cleaned up temporary QA service area.");
+    }
+
     // Restore pilot settings
     if (pilotLab) {
       await prisma.lab.update({
@@ -366,7 +388,12 @@ async function runPhase3QA() {
   }
 }
 
-runPhase3QA().catch((err) => {
-  console.error("Phase 3 QA fatal execution error:", err);
-  process.exit(1);
-});
+runPhase3QA()
+  .catch((err) => {
+    console.error("Phase 3 QA fatal execution error:", err);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });

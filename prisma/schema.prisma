@@ -59,6 +59,11 @@ enum CollectionType {
   LAB_VISIT
 }
 
+enum BranchAssignmentMode {
+  AUTOMATIC
+  PATIENT_CHOICE
+}
+
 enum PrescriptionStatus {
   PENDING_EXTRACTION
   EXTRACTED
@@ -296,6 +301,8 @@ model Lab {
   auditLogs               AuditLog[]
   whatsAppQuotaPeriods    LabWhatsAppQuotaPeriod[]
   whatsAppReservations    LabWhatsAppReservation[]
+  branches                LabBranch[]
+  serviceAreas            LabServiceArea[]
 
   @@index([slug])
   @@index([status])
@@ -573,6 +580,8 @@ model Order {
   cancelledAt        DateTime?
   confirmedAt        DateTime?
   completedAt        DateTime?
+  idempotencyKey     String?          @unique
+  idempotencyHash    String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
@@ -619,6 +628,8 @@ model Collection {
   id                     String         @id @default(cuid())
   orderId                String         @unique
   labId                  String
+  branchId               String?
+  branchSnapshot         Json?
   collectionType         CollectionType
   scheduledDate          DateTime
   scheduledSlot          String         // e.g. "07:00 AM - 08:00 AM"
@@ -639,9 +650,11 @@ model Collection {
 
   order                  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   lab                    Lab            @relation(fields: [labId], references: [id], onDelete: Restrict)
+  branch                 LabBranch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([labId])
+  @@index([branchId])
   @@index([labId, scheduledDate])
 }
 
@@ -907,6 +920,7 @@ model LabStoreSettings {
   homeCollectionAvailable      Boolean   @default(true)
   homeCollectionFee            Decimal   @default(100.00) @db.Decimal(10, 2)
   freeHomeCollectionThreshold   Decimal?  @db.Decimal(10, 2)
+  branchAssignmentMode         BranchAssignmentMode @default(AUTOMATIC)
   workingHours                 Json?
   deliveryPromiseNotice        String?   @default("Reports delivered within 24 hours")
   metaTitle                    String?
@@ -1019,4 +1033,61 @@ model AuditLog {
   @@index([actorUserId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ============================================================
+// 12. ENTERPRISE MULTI-LOCATION & SERVICE AREA MODELS
+// ============================================================
+
+model LabBranch {
+  id                          String          @id @default(cuid())
+  labId                       String
+  name                        String
+  code                        String
+  phone                       String
+  email                       String?
+  addressLine1                String
+  addressLine2                String?
+  locality                    String?
+  city                        String
+  state                       String
+  postalCode                  String
+  latitude                    Float?
+  longitude                   Float?
+  operatingHours              String?
+  homeCollectionAvailable     Boolean         @default(true)
+  homeCollectionFee           Decimal?        @db.Decimal(10, 2)
+  freeHomeCollectionThreshold Decimal?        @db.Decimal(10, 2)
+  maxDailyCapacity            Int?            @default(50)
+  priority                    Int             @default(0)
+  isActive                    Boolean         @default(true)
+  createdAt                   DateTime        @default(now())
+  updatedAt                   DateTime        @updatedAt
+
+  lab                         Lab             @relation(fields: [labId], references: [id], onDelete: Cascade)
+  serviceAreas                LabServiceArea[]
+  collections                 Collection[]
+
+  @@unique([labId, code])
+  @@index([labId, isActive])
+  @@index([postalCode])
+}
+
+model LabServiceArea {
+  id            String       @id @default(cuid())
+  labId         String
+  branchId      String?
+  pincode       String
+  localityName  String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  lab           Lab          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  branch        LabBranch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, branchId, pincode])
+  @@index([pincode])
+  @@index([labId, pincode, isActive])
+  @@index([branchId, pincode, isActive])
 }
