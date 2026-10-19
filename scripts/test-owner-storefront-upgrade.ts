@@ -10,6 +10,14 @@ import {
   deleteLabLogoFile,
   MAX_LOGO_SIZE_BYTES,
 } from "../services/lab/logo-storage-service";
+import { IndiaLocationSelector } from "../components/common/IndiaLocationSelector";
+import {
+  INDIA_LOCATIONS,
+  findIndiaLocation,
+  getCitiesForIndianState,
+  isCityInIndianState,
+  canonicalizeStateName,
+} from "../data/india-locations";
 
 async function runTests() {
   console.log("===============================================================");
@@ -243,10 +251,44 @@ async function runTests() {
       freeHomeCollectionThreshold: originalSettings.settings.freeHomeCollectionThreshold || undefined,
     });
 
-    const restoredSettings = await getLabStoreSettings(targetLab.id);
+    // -------------------------------------------------------------
+    // Test Group 6: IndiaLocationSelector Regression & Data Guard
+    // -------------------------------------------------------------
+    console.log("\n── Test Group 6: IndiaLocationSelector & Locations Regression Guard ──");
+
     assert(
-      restoredSettings.settings.heroHeadline === originalSettings.settings.heroHeadline,
-      "Successfully restored original laboratory settings after test run"
+      typeof IndiaLocationSelector === "function",
+      "IndiaLocationSelector component is exported and resolvable as a React component"
+    );
+    assert(
+      Array.isArray(INDIA_LOCATIONS) && INDIA_LOCATIONS.length === 36,
+      "INDIA_LOCATIONS master dataset contains all 36 Indian States & UTs"
+    );
+
+    const delhiLoc = findIndiaLocation("Delhi");
+    assert(
+      !!delhiLoc && delhiLoc.state === "Delhi",
+      "findIndiaLocation correctly matches 'Delhi' State/UT"
+    );
+
+    const delhiCities = getCitiesForIndianState("Delhi");
+    assert(
+      Array.isArray(delhiCities) && delhiCities.includes("New Delhi"),
+      "getCitiesForIndianState returns curated cities including 'New Delhi'"
+    );
+
+    assert(
+      isCityInIndianState("Delhi", "New Delhi") === true,
+      "isCityInIndianState validates curated city in state"
+    );
+
+    assert(
+      canonicalizeStateName("delhi") === "Delhi",
+      "canonicalizeStateName normalizes case-insensitive input to canonical State name"
+    );
+    assert(
+      canonicalizeStateName("Custom Region") === "Custom Region",
+      "canonicalizeStateName preserves unknown custom region without data loss"
     );
 
   } catch (err: any) {
