@@ -186,7 +186,9 @@ export function LabSidebar({
                   const isActive =
                     item.href === "/lab/dashboard"
                       ? pathname === "/lab/dashboard" || pathname === "/lab"
-                      : pathname.startsWith(item.href);
+                      : item.href === "/lab/catalogue"
+                      ? pathname === "/lab/catalogue"
+                      : pathname === item.href || pathname.startsWith(item.href + "/");
 
                   return (
                     <Link

@@ -16,6 +16,13 @@ import {
   ShieldCheck,
   Star,
   ChevronRight,
+  MessageSquare,
+  Award,
+  Stethoscope,
+  Activity,
+  CheckCircle2,
+  Building2,
+  Users,
 } from "lucide-react";
 
 export async function generateMetadata({
@@ -67,13 +74,24 @@ export default async function StorefrontPage({
           <div className="relative">
             {/* Lab identity */}
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h1 className="text-xl font-extrabold leading-tight">
-                  {store.lab.name}
-                </h1>
-                <p className="mt-0.5 text-sm text-sky-100">
-                  {store.lab.city}, {store.lab.state}
-                </p>
+              <div className="flex items-center gap-3">
+                {store.settings.logoUrl && (
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white p-1 shadow-sm">
+                    <img
+                      src={store.settings.logoUrl}
+                      alt={store.lab.name}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-xl font-extrabold leading-tight">
+                    {store.lab.name}
+                  </h1>
+                  <p className="mt-0.5 text-sm text-sky-100">
+                    {store.lab.city}, {store.lab.state}
+                  </p>
+                </div>
               </div>
               {store.lab.nablAccreditationNumber && (
                 <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-white/15 px-2 py-1 text-[11px] font-semibold">
@@ -282,10 +300,131 @@ export default async function StorefrontPage({
         </section>
       )}
 
+      {/* ── Services Section ─────────────────────────────────────────── */}
+      {store.settings.services.length > 0 && (
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="mb-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Stethoscope className="h-4 w-4 text-sky-600" />
+              <h2 className="text-sm font-bold text-slate-900">Our Diagnostic Services</h2>
+            </div>
+            <span className="text-[11px] font-medium text-slate-500">
+              {store.settings.services.length} services available
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {store.settings.services.map((service, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 transition hover:bg-slate-50"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-900">{service}</h3>
+                  <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">
+                    Standardized clinical sample processing adhering to rigorous quality protocols.
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── About the Laboratory Section ──────────────────────────────── */}
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <div className="mb-3 flex items-center gap-1.5">
+          <Building2 className="h-4 w-4 text-sky-600" />
+          <h2 className="text-sm font-bold text-slate-900">About {store.lab.name}</h2>
+        </div>
+
+        <p className="text-xs text-slate-600 leading-relaxed">
+          {store.settings.about}
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 pt-3 border-t border-slate-100">
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
+              <Clock className="h-3.5 w-3.5 text-sky-600" />
+              <span>Operating Hours</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-600 leading-snug">
+              {store.settings.schedule}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Quality Standards</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-600 leading-snug">
+              {store.lab.nablAccreditationNumber
+                ? `NABL Accredited (${store.lab.nablAccreditationNumber})`
+                : "Standardized clinical protocols & verified calibration"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
+              <Activity className="h-3.5 w-3.5 text-sky-600" />
+              <span>Report Delivery</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-600 leading-snug">
+              {store.settings.deliveryPromiseNotice || "Digital reports delivered in 12-24 hours"}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Clinical & Laboratory Experts (Team) ──────────────────────── */}
+      {store.settings.team.length > 0 && (
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="mb-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-sky-600" />
+              <h2 className="text-sm font-bold text-slate-900">Clinical & Laboratory Experts</h2>
+            </div>
+            <span className="text-[11px] font-medium text-slate-500">
+              Medical Leadership
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {store.settings.team.map((member, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 transition hover:bg-slate-50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-sky-100 text-sm font-bold text-sky-700 shadow-2xs">
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-xs font-bold text-slate-900">
+                    {member.name}
+                  </h3>
+                  <p className="truncate text-[11px] font-medium text-sky-700">
+                    {member.role}
+                  </p>
+                  {member.qualifications && (
+                    <p className="truncate text-[10px] text-slate-500 mt-0.5">
+                      {member.qualifications}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Contact Section ──────────────────────────────────────────── */}
       <section className="mb-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-3 text-sm font-bold text-slate-900">
-          Contact Laboratory
+          Contact & Visit Laboratory
         </h2>
         <div className="flex flex-col gap-3">
           <a
@@ -295,29 +434,33 @@ export default async function StorefrontPage({
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100">
               <Phone className="h-4 w-4 text-sky-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] text-slate-500">Phone</p>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-slate-900 truncate">
                 {store.lab.phone}
               </p>
             </div>
           </a>
-          {store.lab.emergencyPhone && (
+
+          {(store.lab.emergencyPhone || store.lab.phone) && (
             <a
-              href={`tel:${store.lab.emergencyPhone}`}
-              className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:bg-slate-100 no-tap-highlight"
+              href={`https://wa.me/${(store.lab.emergencyPhone || store.lab.phone).replace(/[^0-9]/g, "").replace(/^0+/, "")}?text=${encodeURIComponent(`Hello ${store.lab.name}, I would like to inquire about booking diagnostic tests.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-3 transition hover:bg-emerald-50 no-tap-highlight"
             >
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-red-100">
-                <Phone className="h-4 w-4 text-red-600" />
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                <MessageSquare className="h-4 w-4 text-emerald-600" />
               </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Emergency</p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {store.lab.emergencyPhone}
+              <div className="min-w-0">
+                <p className="text-[11px] text-emerald-700 font-medium">WhatsApp Patient Support</p>
+                <p className="text-sm font-semibold text-slate-900 truncate">
+                  Chat on WhatsApp
                 </p>
               </div>
             </a>
           )}
+
           <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-200">
               <ClipboardList className="h-4 w-4 text-slate-600" />
@@ -325,8 +468,8 @@ export default async function StorefrontPage({
             <div>
               <p className="text-[11px] text-slate-500">Address</p>
               <p className="text-sm text-slate-700">
-                {store.lab.addressLine1}, {store.lab.city}, {store.lab.state}{" "}
-                {store.lab.postalCode}
+                {store.lab.addressLine1}
+                {store.lab.addressLine2 ? `, ${store.lab.addressLine2}` : ""}, {store.lab.city}, {store.lab.state} - {store.lab.postalCode}
               </p>
             </div>
           </div>

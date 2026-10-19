@@ -170,7 +170,12 @@ export async function updateLabStoreSettings(
         input.heroHeadline !== undefined ? input.heroHeadline.trim() : undefined,
       heroSubheadline:
         input.heroSubheadline !== undefined ? input.heroSubheadline.trim() : undefined,
-      logoUrl: input.logoUrl !== undefined ? input.logoUrl.trim() : undefined,
+      logoUrl:
+        input.logoUrl !== undefined
+          ? input.logoUrl
+            ? input.logoUrl.trim()
+            : null
+          : undefined,
       primaryColor:
         input.primaryColor !== undefined ? input.primaryColor.trim() : undefined,
       homeCollectionAvailable:

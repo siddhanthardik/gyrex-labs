@@ -32,6 +32,14 @@ export interface LabStorefrontData {
     freeHomeCollectionThreshold: number | null;
     deliveryPromiseNotice: string | null;
     workingHours: Record<string, unknown> | null;
+    about: string;
+    services: string[];
+    schedule: string;
+    team: Array<{
+      name: string;
+      role: string;
+      qualifications?: string;
+    }>;
   };
   paymentSettings: {
     cashOnCollectionEnabled: boolean;
@@ -200,6 +208,68 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
     };
   });
 
+  // Resolve structured storefront metadata safely from workingHours & settings
+  const rawWorkingHours = (lab.storeSettings?.workingHours as Record<string, any>) || {};
+
+  const about =
+    (typeof rawWorkingHours.about === "string" && rawWorkingHours.about.trim().length > 0
+      ? rawWorkingHours.about.trim()
+      : null) ||
+    lab.storeSettings?.metaDescription ||
+    `${lab.name} is a trusted clinical pathology and diagnostic testing center dedicated to providing high-accuracy laboratory investigations, preventive health checkups, and rapid digital report delivery.`;
+
+  let services: string[] = [];
+  if (Array.isArray(rawWorkingHours.services) && rawWorkingHours.services.length > 0) {
+    services = rawWorkingHours.services.map((s: any) => String(s).trim()).filter(Boolean);
+  }
+  if (services.length === 0) {
+    services = [
+      "Clinical Pathology & Hematology",
+      "Biochemistry & Metabolic Panels",
+      "Preventive Full Body Checkups",
+      ...(labHomeServiceAvailable ? ["Home Sample Collection at Doorstep"] : []),
+      "Secure Digital Reports via WhatsApp & Email",
+    ];
+  }
+
+  let schedule = "";
+  if (typeof rawWorkingHours.schedule === "string" && rawWorkingHours.schedule.trim().length > 0) {
+    schedule = rawWorkingHours.schedule.trim();
+  } else if (rawWorkingHours.schedule && typeof rawWorkingHours.schedule === "object") {
+    const s = rawWorkingHours.schedule;
+    schedule = s.weekdays ? `Mon - Sat: ${s.weekdays}${s.sunday ? ` | Sun: ${s.sunday}` : ""}` : "";
+  } else if (rawWorkingHours.monday && typeof rawWorkingHours.monday === "object") {
+    schedule = "Mon - Sat: 07:00 AM - 08:00 PM | Sun: 07:00 AM - 02:00 PM";
+  }
+  if (!schedule) {
+    schedule = "Monday - Saturday: 7:00 AM - 8:00 PM | Sunday: 7:00 AM - 2:00 PM";
+  }
+
+  let team: Array<{ name: string; role: string; qualifications?: string }> = [];
+  if (Array.isArray(rawWorkingHours.team) && rawWorkingHours.team.length > 0) {
+    team = rawWorkingHours.team
+      .map((m: any) => ({
+        name: String(m.name || "").trim(),
+        role: String(m.role || "").trim(),
+        qualifications: m.qualifications ? String(m.qualifications).trim() : undefined,
+      }))
+      .filter((m: any) => m.name && m.role);
+  }
+  if (team.length === 0) {
+    team = [
+      {
+        name: "Dr. Medical Director",
+        role: "Chief Pathologist & Laboratory Director",
+        qualifications: "MBBS, MD (Pathology)",
+      },
+      {
+        name: "Senior Clinical Technologist",
+        role: "Quality Assurance & Phlebotomy Head",
+        qualifications: "M.Sc. Medical Lab Technology (MLT)",
+      },
+    ];
+  }
+
   return {
     lab: {
       id: lab.id,
@@ -235,6 +305,10 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
         : null,
       deliveryPromiseNotice: lab.storeSettings?.deliveryPromiseNotice || "Digital reports delivered in 12-24 hours",
       workingHours: (lab.storeSettings?.workingHours as Record<string, unknown>) || null,
+      about,
+      services,
+      schedule,
+      team,
     },
     paymentSettings: {
       cashOnCollectionEnabled: lab.paymentSettings?.cashOnCollectionEnabled ?? true,
