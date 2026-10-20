@@ -225,7 +225,8 @@ async function runMediaHardeningTests() {
   // Concurrently compute and insert 3 gallery records using tenant row lock
   const concurrentOps = [1, 2, 3].map(async (idx) => {
     return prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM "gyrex_labs"."Lab" WHERE id = ${pilotLab.id} FOR UPDATE`;
+      await tx.$executeRaw`SET LOCAL search_path TO "public", "gyrex_labs"`;
+      await tx.$executeRaw`SELECT 1 FROM "Lab" WHERE id = ${pilotLab.id} FOR UPDATE`;
       const maxOrder = await tx.labGalleryImage.aggregate({
         where: { labId: pilotLab.id },
         _max: { displayOrder: true },
@@ -239,7 +240,7 @@ async function runMediaHardeningTests() {
           displayOrder: nextOrder,
         },
       });
-    });
+    }, { maxWait: 15000, timeout: 20000 });
   });
 
   const createdConcurrent = await Promise.all(concurrentOps);

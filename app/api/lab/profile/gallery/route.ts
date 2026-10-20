@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
     try {
       newImage = await prisma.$transaction(async (tx) => {
         // Concurrency-safe: lock lab row to serialize displayOrder calculations for this tenant
-        await tx.$executeRaw`SELECT 1 FROM "gyrex_labs"."Lab" WHERE id = ${labId} FOR UPDATE`;
+        // Sets search_path to resolve "Lab" in public (production) while remaining schema-safe
+        await tx.$executeRaw`SET LOCAL search_path TO "public", "gyrex_labs"`;
+        await tx.$executeRaw`SELECT 1 FROM "Lab" WHERE id = ${labId} FOR UPDATE`;
 
         const maxOrderRecord = await tx.labGalleryImage.aggregate({
           where: { labId },
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
             displayOrder: nextOrder,
           },
         });
-      });
+      }, { maxWait: 10000, timeout: 15000 });
     } catch (dbErr: any) {
       // Clean up orphaned file on disk if DB transaction failed
       await deleteGalleryImageFile(imageUrl);
