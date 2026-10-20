@@ -51,11 +51,10 @@ export default async function StorefrontPage({
     return null; // Layout handles inactive state
   }
 
-  const popularPackages = store.packages
-    .filter((p) => p.isPopular)
-    .slice(0, 3);
-  const displayPackages =
-    popularPackages.length > 0 ? popularPackages : store.packages.slice(0, 3);
+  // Prioritize popular packages first, then fill with remaining active packages up to 6
+  const popularPackages = store.packages.filter((p) => p.isPopular);
+  const remainingPackages = store.packages.filter((p) => !p.isPopular);
+  const displayPackages = [...popularPackages, ...remainingPackages].slice(0, 6);
   const popularTests = store.popularTests.slice(0, 8);
 
   return (
@@ -155,6 +154,7 @@ export default async function StorefrontPage({
                   tests={pkg.tests}
                   estimatedTatHours={pkg.estimatedTatHours}
                   homeCollectionAvailable={pkg.homeCollectionAvailable}
+                  isPopular={pkg.isPopular}
                   imageUrl={pkg.imageUrl}
                 />
               ))}

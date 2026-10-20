@@ -57,6 +57,8 @@ export default async function PackagesPage({
               tests={pkg.tests}
               estimatedTatHours={pkg.estimatedTatHours}
               homeCollectionAvailable={pkg.homeCollectionAvailable}
+              isPopular={pkg.isPopular}
+              imageUrl={pkg.imageUrl}
             />
           ))}
         </div>

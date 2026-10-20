@@ -43,6 +43,7 @@ export function PackageCard({
 }: PackageCardProps) {
   const { items, addItem, removeItem, isHydrated } = useCart();
   const [showTests, setShowTests] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const isInCart = isHydrated && items.some((i) => i.id === id);
 
   const savings =
@@ -73,17 +74,25 @@ export function PackageCard({
           : "border-slate-200 bg-white shadow-sm hover:border-slate-300"
       }`}
     >
-      {/* 16:9 Responsive Package Image Banner */}
-      {imageUrl && (
-        <div className="relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+      {/* 16:9 Responsive Package Image Banner with Graceful Clinical Fallback */}
+      <div className="relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+        {imageUrl && !imageError ? (
           <img
             src={imageUrl}
             alt={name}
             className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
             loading="lazy"
+            onError={() => setImageError(true)}
           />
-        </div>
-      )}
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-slate-50 via-sky-50/50 to-slate-100 text-slate-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 shadow-2xs border border-slate-200/60 text-sky-600">
+              <FlaskConical className="h-5 w-5" />
+            </div>
+            <span className="text-[11px] font-medium text-slate-500">Diagnostic Health Package</span>
+          </div>
+        )}
+      </div>
 
       {/* Popular badge */}
       {isPopular && (

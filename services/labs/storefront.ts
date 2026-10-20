@@ -161,6 +161,7 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
             orderBy: { displayOrder: "asc" },
           },
         },
+        orderBy: [{ isPopular: "desc" }, { createdAt: "desc" }],
       },
       galleryImages: {
         orderBy: { displayOrder: "asc" },

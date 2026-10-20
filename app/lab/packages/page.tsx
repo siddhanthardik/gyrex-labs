@@ -33,6 +33,7 @@ interface PackageItem {
   isActive: boolean;
   isHomeCollectionAvailable: boolean;
   estimatedTatHours: number | null;
+  imageUrl?: string | null;
   tests: Array<{ labTestId: string; testName: string; price: number }>;
 }
 
@@ -147,25 +148,42 @@ export default function LabPackagesPage() {
               <tbody className="divide-y divide-slate-200">
                 {packages.map((pkg) => (
                   <tr key={pkg.id} className="transition hover:bg-slate-50/60">
-                    {/* Package Name & Description */}
-                    <td className="py-3.5 px-4 max-w-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">{pkg.name}</span>
-                        {pkg.code && (
-                          <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
-                            {pkg.code}
-                          </span>
-                        )}
-                      </div>
-                      {pkg.description && (
-                        <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{pkg.description}</p>
-                      )}
-                      {pkg.estimatedTatHours && (
-                        <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
-                          <Clock className="h-3 w-3" />
-                          <span>{pkg.estimatedTatHours}h TAT</span>
+                    {/* Package Name & Description with Thumbnail */}
+                    <td className="py-3.5 px-4 max-w-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                          {pkg.imageUrl ? (
+                            <img
+                              src={pkg.imageUrl}
+                              alt={pkg.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">
+                              <PackageIcon className="h-5 w-5" />
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 truncate">{pkg.name}</span>
+                            {pkg.code && (
+                              <span className="shrink-0 font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                {pkg.code}
+                              </span>
+                            )}
+                          </div>
+                          {pkg.description && (
+                            <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{pkg.description}</p>
+                          )}
+                          {pkg.estimatedTatHours && (
+                            <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
+                              <Clock className="h-3 w-3" />
+                              <span>{pkg.estimatedTatHours}h TAT</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
 
                     {/* Tests count & snippet */}
