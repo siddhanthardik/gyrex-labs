@@ -92,10 +92,17 @@ export interface LabStorefrontData {
     isPopular: boolean;
     homeCollectionAvailable: boolean;
     isHomeCollectionAvailable: boolean;
+    imageUrl: string | null;
     tests: Array<{
       id: string;
       name: string;
     }>;
+  }>;
+  galleryImages: Array<{
+    id: string;
+    imageUrl: string;
+    caption: string | null;
+    displayOrder: number;
   }>;
 }
 
@@ -154,6 +161,9 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
             orderBy: { displayOrder: "asc" },
           },
         },
+      },
+      galleryImages: {
+        orderBy: { displayOrder: "asc" },
       },
     },
   });
@@ -232,6 +242,7 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
       isPopular: pkg.isPopular,
       homeCollectionAvailable: isAvailable,
       isHomeCollectionAvailable: isAvailable,
+      imageUrl: pkg.imageUrl || null,
       tests: pkg.packageTests.map((pt) => ({
         id: pt.labTest.id,
         name: pt.labTest.masterTest.name,
@@ -292,22 +303,6 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
       }))
       .filter((m: any) => m.name && m.role);
   }
-  if (team.length === 0) {
-    team = [
-      {
-        name: "Dr. Medical Director",
-        role: "Chief Pathologist & Laboratory Director",
-        qualifications: "MBBS, MD (Pathology)",
-        photoUrl: null,
-      },
-      {
-        name: "Senior Clinical Technologist",
-        role: "Quality Assurance & Phlebotomy Head",
-        qualifications: "M.Sc. Medical Lab Technology (MLT)",
-        photoUrl: null,
-      },
-    ];
-  }
 
   // Resolve NABL Accreditation & Strict Date Validity
   const nablRaw = (rawWorkingHours.nabl as Record<string, any>) || {};
@@ -322,7 +317,8 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
   const validUntil = nablRaw.validUntil ? String(nablRaw.validUntil).trim() : null;
 
   let isCurrentlyValid = false;
-  if (isAccredited && accreditationNumber && validFrom && validUntil) {
+  // Accreditation trust invariant: Badges must ONLY display when laboratory is explicitly verified by Superadmin
+  if (lab.isVerified && isAccredited && accreditationNumber && validFrom && validUntil) {
     const fromTime = new Date(validFrom).getTime();
     const untilDate = new Date(validUntil);
     untilDate.setHours(23, 59, 59, 999);
@@ -393,5 +389,11 @@ export async function getLabStorefront(slug: string): Promise<LabStorefrontData 
     categories,
     popularTests,
     packages,
+    galleryImages: lab.galleryImages.map((img) => ({
+      id: img.id,
+      imageUrl: img.imageUrl,
+      caption: img.caption,
+      displayOrder: img.displayOrder,
+    })),
   };
 }

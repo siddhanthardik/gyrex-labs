@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { deletePackageImageFile } from "./package-storage-service";
 
 export interface CreatePackageInput {
   name: string;
@@ -11,11 +12,13 @@ export interface CreatePackageInput {
   fastingRequired?: boolean;
   preparationInstructions?: string;
   estimatedTatHours?: number;
+  imageUrl?: string | null;
   testIds: string[]; // LabTest IDs
 }
 
 export interface UpdatePackageInput extends Partial<CreatePackageInput> {
   isActive?: boolean;
+  imageUrl?: string | null;
 }
 
 function generateSlug(text: string): string {
@@ -171,6 +174,7 @@ export async function getLabPackages(
       fastingRequired: pkg.fastingRequired,
       preparationInstructions: pkg.preparationInstructions,
       sampleTypes: pkg.sampleTypes,
+      imageUrl: pkg.imageUrl,
       createdAt: pkg.createdAt,
       updatedAt: pkg.updatedAt,
       tests: pkg.packageTests.map((pt) => ({
@@ -239,6 +243,7 @@ export async function getLabPackageById(labId: string, packageId: string) {
     fastingRequired: pkg.fastingRequired,
     preparationInstructions: pkg.preparationInstructions,
     sampleTypes: pkg.sampleTypes,
+    imageUrl: pkg.imageUrl,
     createdAt: pkg.createdAt,
     updatedAt: pkg.updatedAt,
     tests: pkg.packageTests.map((pt) => ({
@@ -355,6 +360,7 @@ export async function createLabPackage(
           preparationInstructions: input.preparationInstructions?.trim() || null,
           sampleTypes,
           estimatedTatHours,
+          imageUrl: input.imageUrl?.trim() || null,
           isActive: true,
         },
       });
@@ -504,6 +510,8 @@ export async function updateLabPackage(
           sampleTypes: sampleTypes !== undefined ? sampleTypes : undefined,
           estimatedTatHours:
             input.estimatedTatHours !== undefined ? input.estimatedTatHours : undefined,
+          imageUrl:
+            input.imageUrl !== undefined ? (input.imageUrl ? input.imageUrl.trim() : null) : undefined,
         },
       });
 
@@ -525,6 +533,20 @@ export async function updateLabPackage(
     },
     { maxWait: 15000, timeout: 20000 }
   );
+
+  // Cleanup old package image safely only after transaction commits, and only if not shared
+  if (
+    existing.imageUrl &&
+    input.imageUrl !== undefined &&
+    input.imageUrl !== existing.imageUrl
+  ) {
+    const stillInUse = await prisma.package.findFirst({
+      where: { imageUrl: existing.imageUrl, id: { not: packageId } },
+    });
+    if (!stillInUse) {
+      await deletePackageImageFile(existing.imageUrl);
+    }
+  }
 
   return updatedPackage;
 }

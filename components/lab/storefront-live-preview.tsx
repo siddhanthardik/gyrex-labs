@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Info,
   Users,
+  Camera,
 } from "lucide-react";
 
 export interface PreviewTestData {
@@ -29,6 +30,7 @@ export interface PreviewPackageData {
   name: string;
   price: number;
   testCount?: number;
+  imageUrl?: string | null;
 }
 
 export interface StorefrontLivePreviewProps {
@@ -54,6 +56,7 @@ export interface StorefrontLivePreviewProps {
   schedule?: string;
   services?: string[];
   team?: Array<{ name: string; role: string; qualifications?: string; photoUrl?: string | null }>;
+  galleryImages?: Array<{ id: string; imageUrl: string; caption?: string | null; displayOrder?: number }>;
   activeTestsCount?: number;
   popularTests?: PreviewTestData[];
   activePackagesCount?: number;
@@ -84,6 +87,7 @@ export function StorefrontLivePreview({
   schedule,
   services = [],
   team = [],
+  galleryImages = [],
   activeTestsCount = 0,
   popularTests = [],
   activePackagesCount = 0,
@@ -230,13 +234,13 @@ export function StorefrontLivePreview({
 
             {/* Main Content Area */}
             <main className="p-4 space-y-5">
-              {/* Dynamic Hero Section */}
+              {/* Dynamic Hero Section - Max 450px style, clean editorial contrast */}
               <section
-                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-sky-700 to-blue-800 p-5 text-white shadow-sm"
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-sky-700 to-blue-800 p-5 text-white shadow-sm min-h-[160px] max-h-[300px] flex flex-col justify-end"
                 style={
                   !bannerUrl
                     ? {
-                        backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, #0369a1 50%, #1e3a8a 100%)`,
+                        backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, #0369a1 50%, #0f172a 100%)`,
                       }
                     : undefined
                 }
@@ -248,7 +252,7 @@ export function StorefrontLivePreview({
                       alt={`${displayLabName} facility banner`}
                       className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950/85 via-sky-950/75 to-blue-950/85" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/45 to-transparent" />
                   </>
                 ) : (
                   <>
@@ -258,82 +262,35 @@ export function StorefrontLivePreview({
                 )}
 
                 <div className="relative">
-                  {/* Top lab header row inside hero */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h1 className="text-lg font-extrabold leading-tight text-white">
-                        {displayLabName}
-                      </h1>
-                      <p className="mt-0.5 text-xs text-sky-100">
-                        {displayCity}, {displayState}
-                      </p>
+                  {/* Verified NABL Badge */}
+                  {isNablCurrentlyValid && nablNumber && isVerified && (
+                    <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 backdrop-blur-xs">
+                      <ShieldCheck className="h-3 w-3 text-emerald-300" />
+                      <span>NABL Accredited ({nablNumber})</span>
                     </div>
+                  )}
 
-                    {/* NABL Badge: Only rendered if currently valid */}
-                    {isNablCurrentlyValid && nablNumber && (
-                      <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-white/15 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur-xs">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
-                        <span>NABL {nablNumber}</span>
-                      </div>
-                    )}
-                  </div>
+                  <h1 className="text-base sm:text-lg font-black leading-tight text-white">
+                    {displayLabName}
+                  </h1>
 
-                  {/* Headline & Subheadline */}
-                  <div className="mt-3">
-                    <h2 className="text-base font-bold text-white leading-snug">
-                      {displayHeadline}
-                    </h2>
-                    <p className="mt-1 text-xs text-sky-100 leading-relaxed max-w-sm">
+                  {displaySubheadline && (
+                    <p className="mt-1 text-xs text-slate-200 line-clamp-2 max-w-sm">
                       {displaySubheadline}
                     </p>
-                  </div>
-
-                  {/* Trust Badges (1-2 clean badges max) */}
-                  <div className="mt-3.5 flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-xs">
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>{deliveryPromiseNotice}</span>
-                    </span>
-                    {activeTestsCount > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-xs">
-                        <Droplets className="h-2.5 w-2.5" />
-                        <span>{activeTestsCount}+ Tests</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Search Bar */}
-                  <div className="mt-4 flex w-full items-center gap-2.5 rounded-xl bg-white/95 px-3.5 py-2.5 text-xs text-slate-500 shadow-md">
-                    <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: primaryColor }} />
-                    <span>Search diagnostic tests, packages...</span>
-                  </div>
+                  )}
                 </div>
               </section>
 
-              {/* Quick Action Grid */}
-              <section className="grid grid-cols-4 gap-2 text-center">
-                {[
-                  { label: "Search Tests", icon: Search, bg: "bg-sky-50 text-sky-600" },
-                  { label: "Prescription", icon: FileText, bg: "bg-emerald-50 text-emerald-600" },
-                  { label: "Packages", icon: Package, bg: "bg-violet-50 text-violet-600" },
-                  { label: "My Reports", icon: ClipboardList, bg: "bg-amber-50 text-amber-600" },
-                ].map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-100 bg-white py-2.5 shadow-2xs"
-                    >
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${item.bg}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-slate-700">{item.label}</span>
-                    </div>
-                  );
-                })}
+              {/* Standalone Search Bar Outside Hero */}
+              <section aria-label="Search Bar">
+                <div className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-500 shadow-2xs">
+                  <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: primaryColor }} />
+                  <span>Search diagnostic tests, packages...</span>
+                </div>
               </section>
 
-              {/* Dedicated Home Collection Preview Card */}
+              {/* Dedicated Home Collection Preview Card (No Fee or Free Claims) */}
               {homeCollectionAvailable && (
                 <section className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50/80 via-blue-50/40 to-slate-50 p-3 shadow-2xs">
                   <div className="flex items-start gap-2.5">
@@ -344,14 +301,11 @@ export function StorefrontLivePreview({
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-slate-900">Doorstep Home Sample Collection</span>
                         <span className="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[9px] font-semibold text-emerald-800">
-                          Active
+                          Active in {displayCity}
                         </span>
                       </div>
                       <p className="mt-0.5 text-[10px] text-slate-600 leading-relaxed">
-                        Certified technicians collect samples at home. Standard fee: <strong className="text-slate-900">₹{homeCollectionFee}</strong>
-                        {freeHomeCollectionThreshold ? (
-                          <> (<span className="text-emerald-700 font-semibold">FREE</span> above ₹{freeHomeCollectionThreshold})</>
-                        ) : null}
+                        Certified phlebotomists collect diagnostic samples safely and hygienically at home with sterile protocols and temperature-controlled sample transport.
                       </p>
                     </div>
                   </div>
@@ -374,24 +328,35 @@ export function StorefrontLivePreview({
                     {popularPackages.slice(0, 2).map((pkg, idx) => (
                       <div
                         key={idx}
-                        className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs flex items-center justify-between"
+                        className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col"
                       >
-                        <div>
-                          <div className="text-xs font-bold text-slate-900">{pkg.name}</div>
-                          <div className="text-[10px] text-slate-500">
-                            {pkg.testCount ? `${pkg.testCount} Tests Included` : "Full Profile"}
+                        {pkg.imageUrl && (
+                          <div className="relative aspect-video w-full bg-slate-100 border-b border-slate-100">
+                            <img
+                              src={pkg.imageUrl}
+                              alt={pkg.name}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
-                          <div className="mt-1 text-xs font-extrabold text-slate-900">
-                            ₹{pkg.price}
+                        )}
+                        <div className="p-3 flex items-center justify-between">
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 line-clamp-1">{pkg.name}</div>
+                            <div className="text-[10px] text-slate-500">
+                              {pkg.testCount ? `${pkg.testCount} Tests Included` : "Full Profile"}
+                            </div>
+                            <div className="mt-1 text-xs font-extrabold text-slate-900">
+                              ₹{pkg.price}
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs shrink-0"
+                            style={{ backgroundColor: primaryColor }}
+                          >
+                            Book
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs"
-                          style={{ backgroundColor: primaryColor }}
-                        >
-                          Book
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -479,6 +444,40 @@ export function StorefrontLivePreview({
                 </section>
               )}
 
+              {/* Facility Gallery Preview */}
+              {galleryImages && galleryImages.length > 0 && (
+                <section className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-900">
+                    <div className="flex items-center gap-1.5">
+                      <Camera className="h-3.5 w-3.5 text-sky-600" />
+                      <span>Facility Gallery</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      {galleryImages.length} {galleryImages.length === 1 ? "photo" : "photos"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {galleryImages.slice(0, 6).map((img, idx) => (
+                      <div
+                        key={img.id || idx}
+                        className="relative aspect-4/3 overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
+                      >
+                        <img
+                          src={img.imageUrl}
+                          alt={img.caption || `Facility photo ${idx + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        {img.caption && (
+                          <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-[9px] text-white line-clamp-1">
+                            {img.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* Clinical Team Preview with Photos */}
               {team.length > 0 && (
                 <section className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2">
@@ -489,25 +488,23 @@ export function StorefrontLivePreview({
                     </div>
                     <span className="text-[10px] text-slate-400 font-normal">{team.length} specialists</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {team.map((member, idx) => (
-                      <div key={idx} className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-2">
+                      <div key={idx} className="flex flex-col items-center text-center rounded-xl bg-slate-50 p-3 border border-slate-100">
                         {member.photoUrl ? (
-                          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white">
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white mb-2">
                             <img src={member.photoUrl} alt={member.name} className="h-full w-full object-cover" />
                           </div>
                         ) : (
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sm font-bold text-sky-700 mb-2">
                             {member.name.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-semibold text-slate-900">{member.name}</div>
-                          <div className="truncate text-[10px] text-sky-700">{member.role}</div>
-                          {member.qualifications && (
-                            <div className="truncate text-[9px] text-slate-400">{member.qualifications}</div>
-                          )}
-                        </div>
+                        <div className="truncate text-xs font-bold text-slate-900 w-full">{member.name}</div>
+                        <div className="truncate text-[10px] font-semibold text-sky-700 w-full">{member.role}</div>
+                        {member.qualifications && (
+                          <div className="truncate text-[9px] text-slate-500 w-full mt-0.5">{member.qualifications}</div>
+                        )}
                       </div>
                     ))}
                   </div>

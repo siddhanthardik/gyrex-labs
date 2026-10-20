@@ -24,6 +24,7 @@ interface PackageCardProps {
   estimatedTatHours?: number | null;
   isPopular?: boolean;
   homeCollectionAvailable?: boolean;
+  imageUrl?: string | null;
 }
 
 export function PackageCard({
@@ -38,6 +39,7 @@ export function PackageCard({
   estimatedTatHours = 24,
   isPopular = false,
   homeCollectionAvailable = true,
+  imageUrl,
 }: PackageCardProps) {
   const { items, addItem, removeItem, isHydrated } = useCart();
   const [showTests, setShowTests] = useState(false);
@@ -65,21 +67,33 @@ export function PackageCard({
 
   return (
     <div
-      className={`no-tap-highlight relative flex flex-col rounded-2xl border transition ${
+      className={`no-tap-highlight relative flex flex-col rounded-2xl border transition overflow-hidden ${
         isPopular
           ? "border-sky-400/60 bg-gradient-to-b from-sky-50 to-white shadow-md shadow-sky-100"
           : "border-slate-200 bg-white shadow-sm hover:border-slate-300"
       }`}
     >
+      {/* 16:9 Responsive Package Image Banner */}
+      {imageUrl && (
+        <div className="relative aspect-video w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+          <img
+            src={imageUrl}
+            alt={name}
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+            loading="lazy"
+          />
+        </div>
+      )}
+
       {/* Popular badge */}
       {isPopular && (
-        <div className="absolute -top-3 left-4 flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow">
+        <div className="absolute top-3 left-4 z-10 flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
           <Sparkles className="h-2.5 w-2.5" />
           Popular
         </div>
       )}
 
-      <div className="flex-1 px-4 pt-5 pb-3">
+      <div className="flex-1 px-4 pt-4 pb-3">
         {/* Test count + savings + collection badge */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">

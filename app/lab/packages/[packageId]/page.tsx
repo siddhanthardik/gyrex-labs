@@ -21,6 +21,7 @@ export default function EditPackagePage() {
     fastingRequired: boolean;
     estimatedTatHours: number;
     isActive: boolean;
+    imageUrl?: string | null;
     tests: PackageTestItem[];
   } | null>(null);
 
@@ -55,6 +56,7 @@ export default function EditPackagePage() {
           fastingRequired: pkg.fastingRequired,
           estimatedTatHours: pkg.estimatedTatHours || 24,
           isActive: pkg.isActive,
+          imageUrl: pkg.imageUrl || null,
           tests: mappedTests,
         });
       } catch (err: any) {

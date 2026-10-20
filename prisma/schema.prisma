@@ -303,6 +303,7 @@ model Lab {
   whatsAppReservations    LabWhatsAppReservation[]
   branches                LabBranch[]
   serviceAreas            LabServiceArea[]
+  galleryImages           LabGalleryImage[]
 
   @@index([slug])
   @@index([status])
@@ -415,6 +416,7 @@ model Package {
   isActive                   Boolean        @default(true)
   isHomeCollectionAvailable  Boolean        @default(true)
   isPopular                  Boolean        @default(false)
+  imageUrl                   String?        // optional package banner/thumbnail photo
   templateId                 String?        // optional reference to platform package template
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
@@ -1090,4 +1092,23 @@ model LabServiceArea {
   @@index([pincode])
   @@index([labId, pincode, isActive])
   @@index([branchId, pincode, isActive])
+}
+
+// ============================================================
+// 13. CLINICAL FACILITY GALLERY
+// ============================================================
+
+model LabGalleryImage {
+  id           String    @id @default(cuid())
+  labId        String
+  imageUrl     String
+  caption      String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  lab          Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([labId, displayOrder])
+  @@index([labId])
 }

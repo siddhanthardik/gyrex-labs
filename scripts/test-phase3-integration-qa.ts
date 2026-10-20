@@ -243,6 +243,14 @@ async function runPhase3QA() {
 
     // ── Test Group 7: Clinical Team Specialists & Privacy ──
     console.log("\n── Test Group 7: Clinical Team Specialists & Privacy ──");
+    await updateLabStoreSettings(pilotLab.id, {
+      workingHours: {
+        ...(pilotLab.storeSettings?.workingHours as Record<string, any> || {}),
+        team: [
+          { name: "Dr. A. K. Sharma", role: "Chief Pathologist", qualifications: "MD Pathology" },
+        ],
+      },
+    });
     const storefront = await getLabStorefront(pilotSlug);
     assert(storefront !== null, "Storefront resolves successfully");
     const specialists = storefront?.settings.team || [];

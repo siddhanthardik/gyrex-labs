@@ -77,6 +77,12 @@ export async function PATCH(
         preparationInstructions: body.preparationInstructions?.trim(),
         estimatedTatHours:
           body.estimatedTatHours !== undefined ? Number(body.estimatedTatHours) : undefined,
+        imageUrl:
+          body.imageUrl !== undefined
+            ? body.imageUrl
+              ? String(body.imageUrl).trim()
+              : null
+            : undefined,
         testIds: Array.isArray(body.testIds) ? body.testIds : undefined,
       },
       user.userId

@@ -32,6 +32,9 @@ import {
   Smartphone,
   Monitor,
   FileText,
+  Camera,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IndiaLocationSelector } from "@/components/common/IndiaLocationSelector";
@@ -51,6 +54,7 @@ import { BranchManagementSettings } from "@/components/lab/branch-management-set
 type SettingsSection =
   | "profile"
   | "storefront"
+  | "gallery"
   | "about_services"
   | "team"
   | "contact"
@@ -59,6 +63,13 @@ type SettingsSection =
   | "whatsapp"
   | "payment"
   | "publishing";
+
+interface GalleryImage {
+  id: string;
+  imageUrl: string;
+  caption?: string | null;
+  displayOrder: number;
+}
 
 interface TeamMember {
   name: string;
@@ -202,6 +213,11 @@ function LabSettingsContent() {
   const [certificateUploading, setCertificateUploading] = useState(false);
   const certInputRef = useRef<HTMLInputElement>(null);
 
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
   const [initialFormData, setInitialFormData] = useState<any>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -298,24 +314,17 @@ function LabSettingsContent() {
             services = rawWorkingHours.services.map((s: any) => String(s).trim()).filter(Boolean);
           }
 
-          // Resolve Team
+          // Resolve Team (Zero fake doctors: real authentic team members only)
           let team: TeamMember[] = [];
           if (Array.isArray(rawWorkingHours.team) && rawWorkingHours.team.length > 0) {
-            team = rawWorkingHours.team.map((m: any) => ({
-              name: String(m.name || "").trim(),
-              role: String(m.role || "").trim(),
-              qualifications: String(m.qualifications || "").trim(),
-              photoUrl: m.photoUrl ? String(m.photoUrl).trim() : null,
-            }));
-          } else {
-            team = [
-              {
-                name: "Dr. Medical Director",
-                role: "Chief Pathologist & Laboratory Director",
-                qualifications: "MBBS, MD (Pathology)",
-                photoUrl: null,
-              },
-            ];
+            team = rawWorkingHours.team
+              .map((m: any) => ({
+                name: String(m.name || "").trim(),
+                role: String(m.role || "").trim(),
+                qualifications: String(m.qualifications || "").trim(),
+                photoUrl: m.photoUrl ? String(m.photoUrl).trim() : null,
+              }))
+              .filter((m: any) => m.name && m.role);
           }
 
           const loadedData = {
@@ -388,6 +397,7 @@ function LabSettingsContent() {
               name: p.name || "Health Package",
               price: p.price || 0,
               testCount: p.packageTests?.length || p.tests?.length,
+              imageUrl: p.imageUrl || null,
             }));
           }
           setCatalogueStats({
@@ -396,6 +406,12 @@ function LabSettingsContent() {
             activePackagesCount: pkgCount,
             popularPackages: activePkgs,
           });
+
+          // Fetch Facility Gallery
+          const galRes = await safeApiRequest("/api/lab/profile/gallery");
+          if (galRes.ok && galRes.data?.images) {
+            setGalleryImages(galRes.data.images);
+          }
         } catch {
           // Non-blocking for settings display
         }
@@ -735,6 +751,105 @@ function LabSettingsContent() {
     }));
   };
 
+  const handleMoveTeamMember = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= formData.team.length) return;
+    const updated = [...formData.team];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(target, 0, moved);
+    setFormData((prev) => ({ ...prev, team: updated }));
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({ type: "error", message: "Facility photo exceeds 5MB size limit." });
+      return;
+    }
+
+    setGalleryUploading(true);
+    setNotification(null);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/lab/profile/gallery", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload facility photo.");
+      }
+
+      setGalleryImages((prev) => [...prev, data.image]);
+      setNotification({ type: "success", message: "Facility photo uploaded successfully." });
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Upload failed." });
+    } finally {
+      setGalleryUploading(false);
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
+    }
+  };
+
+  const handleUpdateCaption = async (imageId: string, caption: string) => {
+    try {
+      const res = await safeApiRequest(`/api/lab/profile/gallery/${imageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption }),
+      });
+      if (res.ok && res.data?.image) {
+        setGalleryImages((prev) =>
+          prev.map((img) => (img.id === imageId ? { ...img, caption: res.data.image.caption } : img))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update caption:", err);
+    }
+  };
+
+  const handleMoveGalleryImage = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= galleryImages.length) return;
+
+    const updated = [...galleryImages];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(target, 0, moved);
+    setGalleryImages(updated);
+
+    try {
+      const imageIds = updated.map((img) => img.id);
+      await safeApiRequest("/api/lab/profile/gallery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageIds }),
+      });
+    } catch (err) {
+      console.error("Failed to persist gallery reorder:", err);
+    }
+  };
+
+  const handleDeleteGalleryImage = async (imageId: string) => {
+    try {
+      const res = await safeApiRequest(`/api/lab/profile/gallery/${imageId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setGalleryImages((prev) => prev.filter((img) => img.id !== imageId));
+        setNotification({ type: "success", message: "Facility photo deleted successfully." });
+      } else {
+        throw new Error(res.error || "Failed to delete image.");
+      }
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Failed to delete photo." });
+    }
+  };
+
   const isDirty =
     initialFormData !== null &&
     (JSON.stringify(formData) !== JSON.stringify(initialFormData) ||
@@ -838,6 +953,7 @@ function LabSettingsContent() {
   const navItems: Array<{ id: SettingsSection; label: string; icon: React.ReactNode }> = [
     { id: "profile", label: "Laboratory Profile", icon: <Building2 className="h-4 w-4" /> },
     { id: "storefront", label: "Storefront Presentation", icon: <Store className="h-4 w-4" /> },
+    { id: "gallery", label: "Facility Gallery", icon: <Camera className="h-4 w-4" /> },
     { id: "about_services", label: "About & Services", icon: <Stethoscope className="h-4 w-4" /> },
     { id: "team", label: "Clinical & Lab Team", icon: <Users className="h-4 w-4" /> },
     { id: "contact", label: "Contact & Location", icon: <MapPin className="h-4 w-4" /> },
@@ -1842,11 +1958,138 @@ function LabSettingsContent() {
                   schedule={formData.operatingHoursSchedule}
                   services={formData.services}
                   team={formData.team}
+                  galleryImages={galleryImages}
                   activeTestsCount={catalogueStats.activeTestsCount}
                   popularTests={catalogueStats.popularTests}
                   activePackagesCount={catalogueStats.activePackagesCount}
                   popularPackages={catalogueStats.popularPackages}
                 />
+              </div>
+            )}
+
+            {/* Section: Facility Gallery */}
+            {activeSection === "gallery" && (
+              <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs">
+                <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                      <Camera className="h-5 w-5 text-sky-600" />
+                      <span>Clinical Facility & Laboratory Gallery</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Upload and manage authentic photographs of your laboratory analyzers, sample collection bays, and patient facilities.
+                    </p>
+                  </div>
+
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleGalleryUpload}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={galleryUploading}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-sky-700 transition shadow-xs disabled:opacity-50 cursor-pointer shrink-0"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{galleryUploading ? "Uploading..." : "Upload Facility Photo"}</span>
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-sky-100 bg-sky-50/60 p-3.5 text-xs text-sky-800 flex items-start gap-2">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-sky-600 mt-0.5" />
+                  <span>
+                    Photos are displayed in a responsive gallery on your patient storefront and in the live preview dock. Maximum 5MB per photo (PNG, JPG, or WebP).
+                  </span>
+                </div>
+
+                {galleryImages.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-500 space-y-2">
+                    <Camera className="h-8 w-8 mx-auto text-slate-400 stroke-[1.5]" />
+                    <p className="text-xs font-semibold text-slate-800">No Facility Photos Uploaded</p>
+                    <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                      Add photographs of your clinical testing equipment, waiting lounge, and phlebotomy stations to build patient credibility.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      disabled={galleryUploading}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 transition cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Upload First Photo</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryImages.map((image, index) => (
+                      <div
+                        key={image.id}
+                        className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 flex flex-col justify-between space-y-3"
+                      >
+                        <div className="relative aspect-4/3 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                          <img
+                            src={image.imageUrl}
+                            alt={image.caption || `Facility photo ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute top-2 left-2 rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] font-mono text-white">
+                            #{index + 1}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                            Caption / Description
+                          </label>
+                          <input
+                            type="text"
+                            defaultValue={image.caption || ""}
+                            onBlur={(e) => handleUpdateCaption(image.id, e.target.value)}
+                            placeholder="e.g. Fully automated biochemistry analyzer"
+                            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 focus:border-sky-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveGalleryImage(index, -1)}
+                              className="p-1 rounded text-slate-500 hover:text-slate-800 disabled:opacity-30 hover:bg-slate-200 transition cursor-pointer"
+                              title="Move photo earlier"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === galleryImages.length - 1}
+                              onClick={() => handleMoveGalleryImage(index, 1)}
+                              className="p-1 rounded text-slate-500 hover:text-slate-800 disabled:opacity-30 hover:bg-slate-200 transition cursor-pointer"
+                              title="Move photo later"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGalleryImage(image.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2051,14 +2294,34 @@ function LabSettingsContent() {
                           <span className="text-xs font-bold text-slate-700">
                             Expert #{index + 1}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTeamMember(index)}
-                            className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition"
-                            title="Remove expert"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveTeamMember(index, -1)}
+                              className="text-slate-400 hover:text-slate-700 disabled:opacity-30 p-1 rounded transition cursor-pointer"
+                              title="Move expert up"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === formData.team.length - 1}
+                              onClick={() => handleMoveTeamMember(index, 1)}
+                              className="text-slate-400 hover:text-slate-700 disabled:opacity-30 p-1 rounded transition cursor-pointer"
+                              title="Move expert down"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTeamMember(index)}
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition cursor-pointer ml-1"
+                              title="Remove expert"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 items-start pt-1">

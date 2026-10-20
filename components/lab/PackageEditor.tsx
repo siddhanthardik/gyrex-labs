@@ -17,6 +17,8 @@ import {
   Home,
   Save,
   ArrowLeft,
+  ImageIcon,
+  Upload,
 } from "lucide-react";
 
 export interface PackageTestItem {
@@ -42,6 +44,7 @@ export interface PackageEditorProps {
     fastingRequired: boolean;
     estimatedTatHours: number;
     isActive: boolean;
+    imageUrl?: string | null;
     tests: PackageTestItem[];
   };
 }
@@ -82,6 +85,83 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
   const [selectedTests, setSelectedTests] = useState<PackageTestItem[]>(
     initialData?.tests || []
   );
+
+  // Package Cover Image State
+  const [imageUrl, setImageUrl] = useState<string | null>(initialData?.imageUrl || null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({ type: "error", message: "Package image exceeds the 5MB size limit." });
+      return;
+    }
+
+    if (!packageId) {
+      setNotification({
+        type: "error",
+        message: "Please save the package first before uploading a cover image.",
+      });
+      return;
+    }
+
+    setImageUploading(true);
+    setNotification(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`/api/lab/packages/${packageId}/image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload package image.");
+      }
+
+      setImageUrl(data.imageUrl);
+      setNotification({ type: "success", message: "Package image updated successfully!" });
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Upload failed." });
+    } finally {
+      setImageUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
+  };
+
+  const handleImageRemove = async () => {
+    if (!packageId) {
+      setImageUrl(null);
+      return;
+    }
+
+    setImageUploading(true);
+    setNotification(null);
+
+    try {
+      const res = await fetch(`/api/lab/packages/${packageId}/image`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to remove package image.");
+      }
+
+      setImageUrl(null);
+      setNotification({ type: "success", message: "Package image removed successfully." });
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Removal failed." });
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   // Search & Filter state for test catalogue
   const [searchTerm, setSearchTerm] = useState("");
@@ -273,6 +353,7 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
       fastingRequired,
       estimatedTatHours: Number(estimatedTatHours) || 24,
       isActive,
+      imageUrl: imageUrl || null,
       testIds: selectedTests.map((t) => t.id),
     };
 
@@ -490,6 +571,80 @@ export function PackageEditor({ packageId, initialData }: PackageEditorProps) {
                     Active / Visible in Patient Store
                   </span>
                 </label>
+              </div>
+
+              {/* Package Cover Image (16:9 Responsive) */}
+              <div className="sm:col-span-2 pt-4 border-t border-slate-100 space-y-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                    <ImageIcon className="h-4 w-4 text-sky-600" />
+                    <span>Package Cover Image (16:9 Display)</span>
+                  </label>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Upload a high-quality clinical package photograph or illustration. PNG, JPG, or WebP up to 5MB.
+                  </p>
+                </div>
+
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+
+                {imageUrl ? (
+                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                      <img
+                        src={imageUrl}
+                        alt="Package cover preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={imageUploading || !packageId}
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5 text-sky-600" />
+                        <span>{imageUploading ? "Uploading..." : "Replace Image"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleImageRemove}
+                        disabled={imageUploading || !packageId}
+                        className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50 cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
+                    {packageId ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-slate-500">No cover image uploaded yet.</p>
+                        <button
+                          type="button"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={imageUploading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition cursor-pointer"
+                        >
+                          <Upload className="h-3.5 w-3.5 text-sky-600" />
+                          <span>{imageUploading ? "Uploading..." : "Upload Cover Image (PNG, JPG, WebP up to 5MB)"}</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500">
+                        Save package first to upload and manage custom cover photographs.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
