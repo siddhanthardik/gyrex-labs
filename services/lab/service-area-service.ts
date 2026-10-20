@@ -7,12 +7,22 @@ export interface AddPincodeInput {
   branchId?: string | null;
 }
 
+export interface BulkPincodeItem {
+  pincode: string;
+  localityName?: string | null;
+}
+
 export interface BulkAddPincodesInput {
-  pincodes: Array<{
-    pincode: string;
-    localityName?: string | null;
-  }>;
+  pincodes: Array<BulkPincodeItem | string>;
   branchId?: string | null;
+}
+
+export interface BulkAddPincodesResult {
+  addedCount: number;
+  skippedCount: number;
+  invalidPincodes: string[];
+  addedPincodes: string[];
+  skippedDetails: Array<{ pincode: string; reason: string }>;
 }
 
 const PINCODE_REGEX = /^[1-9][0-9]{5}$/;
@@ -66,6 +76,13 @@ export async function getLabServiceAreas(labId: string, branchId?: string | null
     branchId: a.branchId,
     branchName: a.branch?.name || null,
     branchCode: a.branch?.code || null,
+    branch: a.branch
+      ? {
+          id: a.branch.id,
+          name: a.branch.name,
+          code: a.branch.code,
+        }
+      : null,
     pincode: a.pincode,
     localityName: a.localityName,
     isActive: a.isActive,
@@ -164,7 +181,10 @@ export async function removePincodeCoverage(labId: string, serviceAreaId: string
  * Bulk imports multiple PIN codes at once.
  * Skips duplicates and returns summary.
  */
-export async function bulkAddPincodes(labId: string, input: BulkAddPincodesInput) {
+export async function bulkAddPincodes(
+  labId: string,
+  input: BulkAddPincodesInput
+): Promise<BulkAddPincodesResult> {
   const cleanLabId = labId.trim();
   let cleanBranchId: string | null = null;
 
@@ -181,23 +201,71 @@ export async function bulkAddPincodes(labId: string, input: BulkAddPincodesInput
   let addedCount = 0;
   let skippedCount = 0;
   const invalidPincodes: string[] = [];
+  const addedPincodes: string[] = [];
+  const skippedDetails: Array<{ pincode: string; reason: string }> = [];
+  const seenInBatch = new Set<string>();
 
-  for (const item of input.pincodes) {
-    const pin = (item.pincode || "").trim();
-    if (!isValidIndianPincode(pin)) {
-      invalidPincodes.push(pin);
+  for (const rawItem of input.pincodes || []) {
+    let pin = "";
+    let localityName: string | null = null;
+
+    if (typeof rawItem === "string") {
+      const trimmed = rawItem.trim();
+      const delimiterMatch = trimmed.match(/^(\d{1,10})\s*[-:–—|;\t]\s*(.*)$/);
+      if (delimiterMatch && isValidIndianPincode(delimiterMatch[1].trim())) {
+        pin = delimiterMatch[1].trim();
+        localityName = delimiterMatch[2].trim().slice(0, 100) || null;
+      } else {
+        const commaMatch = trimmed.match(/^(\d{1,10})\s*,\s*(.*)$/);
+        if (
+          commaMatch &&
+          !/^\d{6}/.test(commaMatch[2].trim()) &&
+          isValidIndianPincode(commaMatch[1].trim())
+        ) {
+          pin = commaMatch[1].trim();
+          localityName = commaMatch[2].trim().slice(0, 100) || null;
+        } else {
+          pin = trimmed;
+        }
+      }
+    } else if (rawItem && typeof rawItem === "object") {
+      pin = (rawItem.pincode || "").trim();
+      localityName = rawItem.localityName ? rawItem.localityName.trim().slice(0, 100) : null;
+    } else {
       continue;
     }
+
+    if (!isValidIndianPincode(pin)) {
+      if (pin) {
+        invalidPincodes.push(pin);
+      }
+      continue;
+    }
+
+    if (seenInBatch.has(pin)) {
+      skippedCount++;
+      skippedDetails.push({
+        pincode: pin,
+        reason: `Duplicate PIN ${pin} within bulk batch.`,
+      });
+      continue;
+    }
+    seenInBatch.add(pin);
 
     try {
       await addPincodeCoverage(cleanLabId, {
         pincode: pin,
-        localityName: item.localityName || null,
+        localityName,
         branchId: cleanBranchId,
       });
       addedCount++;
-    } catch {
+      addedPincodes.push(pin);
+    } catch (err: any) {
       skippedCount++;
+      skippedDetails.push({
+        pincode: pin,
+        reason: err.message || `PIN code ${pin} could not be added.`,
+      });
     }
   }
 
@@ -205,5 +273,7 @@ export async function bulkAddPincodes(labId: string, input: BulkAddPincodesInput
     addedCount,
     skippedCount,
     invalidPincodes,
+    addedPincodes,
+    skippedDetails,
   };
 }

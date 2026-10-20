@@ -123,12 +123,16 @@ export async function clearSessionCookie(): Promise<void> {
  * Retrieves and validates the current session from incoming HTTP-only cookies.
  */
 export async function getSessionFromCookies(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
-  if (!token) {
+    if (!token) {
+      return null;
+    }
+
+    return verifySessionToken(token);
+  } catch {
     return null;
   }
-
-  return verifySessionToken(token);
 }

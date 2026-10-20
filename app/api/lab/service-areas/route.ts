@@ -37,6 +37,12 @@ export async function POST(request: NextRequest) {
 
     // Check if bulk import or single item
     if (Array.isArray(body.pincodes)) {
+      if (body.pincodes.length === 0) {
+        return NextResponse.json(
+          { error: "At least one PIN code must be provided." },
+          { status: 400 }
+        );
+      }
       const result = await bulkAddPincodes(labId, {
         pincodes: body.pincodes,
         branchId: body.branchId || null,

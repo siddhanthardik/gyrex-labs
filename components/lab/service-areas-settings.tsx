@@ -32,6 +32,81 @@ interface BranchOption {
   code: string;
 }
 
+export interface ParsedPincodeEntry {
+  pincode: string;
+  localityName?: string | null;
+}
+
+export function parseBulkPincodes(input: string): {
+  entries: ParsedPincodeEntry[];
+  invalidTokens: string[];
+} {
+  const lines = input.split(/\r?\n/);
+  const entries: ParsedPincodeEntry[] = [];
+  const invalidTokens: string[] = [];
+  const PIN_REGEX = /^[1-9][0-9]{5}$/;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // Check delimiter format like "560038 - Indiranagar", "560038: Indiranagar", "560038\tIndiranagar"
+    const delimiterMatch = line.match(/^(\d{1,10})\s*[-:–—|;\t]\s*(.*)$/);
+    if (delimiterMatch) {
+      const pinCandidate = delimiterMatch[1].trim();
+      const localityCandidate = delimiterMatch[2].trim();
+
+      if (PIN_REGEX.test(pinCandidate)) {
+        if (PIN_REGEX.test(localityCandidate)) {
+          entries.push({ pincode: pinCandidate, localityName: null });
+          entries.push({ pincode: localityCandidate, localityName: null });
+        } else {
+          entries.push({
+            pincode: pinCandidate,
+            localityName: localityCandidate.length > 0 ? localityCandidate.slice(0, 100) : null,
+          });
+        }
+      } else {
+        invalidTokens.push(pinCandidate);
+      }
+      continue;
+    }
+
+    // Check comma delimiter format like "560001, MG Road"
+    const commaMatch = line.match(/^(\d{1,10})\s*,\s*(.*)$/);
+    if (commaMatch) {
+      const firstToken = commaMatch[1].trim();
+      const rest = commaMatch[2].trim();
+
+      if (!/^\d{6}/.test(rest) && !rest.includes(",")) {
+        if (PIN_REGEX.test(firstToken)) {
+          entries.push({
+            pincode: firstToken,
+            localityName: rest.length > 0 ? rest.slice(0, 100) : null,
+          });
+        } else {
+          invalidTokens.push(firstToken);
+        }
+        continue;
+      }
+    }
+
+    // Otherwise, split line by commas, spaces, tabs, or semicolons
+    const tokens = line.split(/[,\s;]+/).filter(Boolean);
+    for (const token of tokens) {
+      const cleanToken = token.trim();
+      if (!cleanToken) continue;
+      if (PIN_REGEX.test(cleanToken)) {
+        entries.push({ pincode: cleanToken, localityName: null });
+      } else {
+        invalidTokens.push(cleanToken);
+      }
+    }
+  }
+
+  return { entries, invalidTokens };
+}
+
 export function ServiceAreasSettings() {
   const [serviceAreas, setServiceAreas] = useState<ServiceArea[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
@@ -87,6 +162,7 @@ export function ServiceAreasSettings() {
 
   const handleAddSingle = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setNotification(null);
     const cleaned = singlePin.trim();
 
@@ -117,7 +193,7 @@ export function ServiceAreasSettings() {
       setLocality("");
       setNotification({
         type: "success",
-        message: `Service area PIN code ${cleaned} added successfully.`,
+        message: `Service area PIN code ${cleaned}${locality.trim() ? ` (${locality.trim()})` : ""} added successfully.`,
       });
       await loadData();
     } catch (err: unknown) {
@@ -132,33 +208,23 @@ export function ServiceAreasSettings() {
 
   const handleAddBulk = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setNotification(null);
-    const rawTokens = bulkInput.split(/[\s,;\n]+/);
-    const validPins: string[] = [];
-    const invalidPins: string[] = [];
 
-    for (const token of rawTokens) {
-      const trimmed = token.trim();
-      if (!trimmed) continue;
-      if (/^[1-9][0-9]{5}$/.test(trimmed)) {
-        if (!validPins.includes(trimmed)) validPins.push(trimmed);
-      } else {
-        invalidPins.push(trimmed);
-      }
-    }
+    const { entries, invalidTokens } = parseBulkPincodes(bulkInput);
 
-    if (invalidPins.length > 0) {
+    if (entries.length === 0 && invalidTokens.length === 0) {
       setNotification({
         type: "error",
-        message: `Invalid 6-digit PIN codes detected: ${invalidPins.slice(0, 5).join(", ")}${invalidPins.length > 5 ? "..." : ""}`,
+        message: "Please enter at least one valid 6-digit Indian PIN code.",
       });
       return;
     }
 
-    if (validPins.length === 0) {
+    if (entries.length === 0 && invalidTokens.length > 0) {
       setNotification({
         type: "error",
-        message: "Please enter at least one valid 6-digit PIN code.",
+        message: `Invalid 6-digit PIN codes detected: ${invalidTokens.slice(0, 5).join(", ")}${invalidTokens.length > 5 ? "..." : ""}`,
       });
       return;
     }
@@ -169,7 +235,7 @@ export function ServiceAreasSettings() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pincodes: validPins,
+          pincodes: entries,
           branchId: assignedBranchId || undefined,
         }),
       });
@@ -178,9 +244,27 @@ export function ServiceAreasSettings() {
         throw new Error(data.error || "Failed to save bulk PIN codes.");
       }
       setBulkInput("");
+
+      const parts: string[] = [];
+      if (data.addedCount > 0) {
+        parts.push(`Added ${data.addedCount} new serviceable PIN code${data.addedCount > 1 ? "s" : ""}`);
+      }
+      if (data.skippedCount > 0) {
+        parts.push(`${data.skippedCount} skipped (already existing)`);
+      }
+      const allInvalid = [
+        ...invalidTokens,
+        ...(Array.isArray(data.invalidPincodes) ? data.invalidPincodes : []),
+      ];
+      const uniqueInvalid = Array.from(new Set(allInvalid));
+      if (uniqueInvalid.length > 0) {
+        parts.push(`${uniqueInvalid.length} invalid (${uniqueInvalid.slice(0, 3).join(", ")}${uniqueInvalid.length > 3 ? "…" : ""})`);
+      }
+
+      const isSuccess = data.addedCount > 0;
       setNotification({
-        type: "success",
-        message: `Added ${data.addedCount} new serviceable PIN codes (${data.skippedCount} skipped as already existing).`,
+        type: isSuccess ? "success" : "error",
+        message: parts.join(", ") || "No PIN codes were updated.",
       });
       await loadData();
     } catch (err: unknown) {
@@ -382,14 +466,14 @@ export function ServiceAreasSettings() {
                 Paste Multiple Indian PIN Codes *
               </label>
               <p className="text-[11px] text-slate-500 mb-2">
-                Separate PIN codes by commas, spaces, or newlines. Example: 560001, 560038, 560095
+                Enter one per line as &quot;PIN - Locality&quot; (e.g. 560038 - Indiranagar), or paste multiple PINs separated by commas, spaces, or newlines.
               </p>
               <textarea
-                rows={3}
+                rows={4}
                 required
                 value={bulkInput}
                 onChange={(e) => setBulkInput(e.target.value)}
-                placeholder="560001, 560008, 560025, 560038, 560047..."
+                placeholder={"560038 - Indiranagar\n560001, MG Road\n560095: Koramangala\nor: 560001, 560038, 560095"}
                 className="w-full rounded-lg border border-slate-300 bg-white p-3 font-mono text-xs text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
             </div>

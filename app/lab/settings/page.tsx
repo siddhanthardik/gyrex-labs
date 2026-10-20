@@ -1082,8 +1082,9 @@ function LabSettingsContent() {
 
         {/* Right Content Area (9 cols) */}
         <div className="lg:col-span-9">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Section: Profile & Identity */}
+          {["profile", "storefront", "gallery", "about_services", "team", "contact"].includes(activeSection) ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Section: Profile & Identity */}
             {activeSection === "profile" && (
               <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs">
                 <div className="border-b border-slate-100 pb-4">
@@ -2505,7 +2506,9 @@ function LabSettingsContent() {
                 </div>
               </div>
             )}
-
+          </form>
+        ) : (
+          <div className="space-y-6">
             {/* Section: Service Areas */}
             {activeSection === "service_areas" && <ServiceAreasSettings />}
 
@@ -2617,8 +2620,9 @@ function LabSettingsContent() {
                 </div>
               </div>
             )}
-          </form>
-        </div>
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );
