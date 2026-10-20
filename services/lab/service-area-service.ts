@@ -23,6 +23,8 @@ export interface BulkAddPincodesResult {
   invalidPincodes: string[];
   addedPincodes: string[];
   skippedDetails: Array<{ pincode: string; reason: string }>;
+  failedCount: number;
+  failedPincodes: Array<{ pincode: string; reason: string }>;
 }
 
 const PINCODE_REGEX = /^[1-9][0-9]{5}$/;
@@ -200,9 +202,11 @@ export async function bulkAddPincodes(
 
   let addedCount = 0;
   let skippedCount = 0;
+  let failedCount = 0;
   const invalidPincodes: string[] = [];
   const addedPincodes: string[] = [];
   const skippedDetails: Array<{ pincode: string; reason: string }> = [];
+  const failedPincodes: Array<{ pincode: string; reason: string }> = [];
   const seenInBatch = new Set<string>();
 
   for (const rawItem of input.pincodes || []) {
@@ -261,11 +265,20 @@ export async function bulkAddPincodes(
       addedCount++;
       addedPincodes.push(pin);
     } catch (err: any) {
-      skippedCount++;
-      skippedDetails.push({
-        pincode: pin,
-        reason: err.message || `PIN code ${pin} could not be added.`,
-      });
+      const msg = err.message || "";
+      if (msg.includes("already configured")) {
+        skippedCount++;
+        skippedDetails.push({
+          pincode: pin,
+          reason: msg,
+        });
+      } else {
+        failedCount++;
+        failedPincodes.push({
+          pincode: pin,
+          reason: msg || `PIN code ${pin} failed to save.`,
+        });
+      }
     }
   }
 
@@ -275,5 +288,7 @@ export async function bulkAddPincodes(
     invalidPincodes,
     addedPincodes,
     skippedDetails,
+    failedCount,
+    failedPincodes,
   };
 }

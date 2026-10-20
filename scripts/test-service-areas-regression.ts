@@ -178,6 +178,42 @@ async function runRegressionSuite() {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // 2b. Explicit Separators: Comma, Space, Newline with Duplicates & Invalids
+    // ─────────────────────────────────────────────────────────────
+    console.log("\n── 2b. Comma, Space & Newline Separators with Duplicates and Invalids ──");
+    {
+      // 1. Comma-separated
+      const commaInput = "560061, 560062, 560061, 12345, 056061, 560063";
+      const commaParsed = parseBulkPincodes(commaInput);
+      assert(commaParsed.entries.length === 4, `Comma-separated input extracted 4 total PIN entries, got ${commaParsed.entries.length}`);
+      assert(commaParsed.invalidTokens.includes("12345"), "Comma-separated input flagged 12345 as invalid");
+      assert(commaParsed.invalidTokens.includes("056061"), "Comma-separated input flagged 056061 as invalid");
+      const commaRes = await bulkAddPincodes(labA.id, { pincodes: commaParsed.entries });
+      assert(commaRes.addedCount === 3, `Comma-separated bulk added exactly 3 unique valid PINs, got ${commaRes.addedCount}`);
+      assert(commaRes.skippedCount === 1, `Comma-separated bulk skipped 1 duplicate in batch, got ${commaRes.skippedCount}`);
+
+      // 2. Space-separated
+      const spaceInput = "560071   560072   560071   99999   011001   560073";
+      const spaceParsed = parseBulkPincodes(spaceInput);
+      assert(spaceParsed.entries.length === 4, `Space-separated input extracted 4 total PIN entries, got ${spaceParsed.entries.length}`);
+      assert(spaceParsed.invalidTokens.includes("99999"), "Space-separated input flagged 99999 as invalid");
+      assert(spaceParsed.invalidTokens.includes("011001"), "Space-separated input flagged 011001 as invalid");
+      const spaceRes = await bulkAddPincodes(labA.id, { pincodes: spaceParsed.entries });
+      assert(spaceRes.addedCount === 3, `Space-separated bulk added exactly 3 unique valid PINs, got ${spaceRes.addedCount}`);
+      assert(spaceRes.skippedCount === 1, `Space-separated bulk skipped 1 duplicate in batch, got ${spaceRes.skippedCount}`);
+
+      // 3. Newline-separated
+      const newlineInput = "560081\n560082\n560081\nINVALID\n560083\n056081";
+      const newlineParsed = parseBulkPincodes(newlineInput);
+      assert(newlineParsed.entries.length === 4, `Newline-separated input extracted 4 total PIN entries, got ${newlineParsed.entries.length}`);
+      assert(newlineParsed.invalidTokens.includes("INVALID"), "Newline-separated input flagged INVALID as invalid");
+      assert(newlineParsed.invalidTokens.includes("056081"), "Newline-separated input flagged 056081 as invalid");
+      const newlineRes = await bulkAddPincodes(labA.id, { pincodes: newlineParsed.entries });
+      assert(newlineRes.addedCount === 3, `Newline-separated bulk added exactly 3 unique valid PINs, got ${newlineRes.addedCount}`);
+      assert(newlineRes.skippedCount === 1, `Newline-separated bulk skipped 1 duplicate in batch, got ${newlineRes.skippedCount}`);
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // 3. Successful Single PIN Creation
     // ─────────────────────────────────────────────────────────────
     console.log("\n── 3. Successful Single PIN Creation ──");

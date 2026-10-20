@@ -11,6 +11,7 @@ import {
   Search,
   Building2,
   Info,
+  Loader2,
 } from "lucide-react";
 
 interface ServiceArea {
@@ -247,10 +248,10 @@ export function ServiceAreasSettings() {
 
       const parts: string[] = [];
       if (data.addedCount > 0) {
-        parts.push(`Added ${data.addedCount} new serviceable PIN code${data.addedCount > 1 ? "s" : ""}`);
+        parts.push(`${data.addedCount} successfully added`);
       }
       if (data.skippedCount > 0) {
-        parts.push(`${data.skippedCount} skipped (already existing)`);
+        parts.push(`${data.skippedCount} duplicate${data.skippedCount > 1 ? "s" : ""} skipped`);
       }
       const allInvalid = [
         ...invalidTokens,
@@ -258,13 +259,17 @@ export function ServiceAreasSettings() {
       ];
       const uniqueInvalid = Array.from(new Set(allInvalid));
       if (uniqueInvalid.length > 0) {
-        parts.push(`${uniqueInvalid.length} invalid (${uniqueInvalid.slice(0, 3).join(", ")}${uniqueInvalid.length > 3 ? "…" : ""})`);
+        parts.push(`${uniqueInvalid.length} invalid rejected (${uniqueInvalid.slice(0, 3).join(", ")}${uniqueInvalid.length > 3 ? "…" : ""})`);
+      }
+      const failed = Array.isArray(data.failedPincodes) ? data.failedPincodes : [];
+      if (failed.length > 0) {
+        parts.push(`${failed.length} failed to save`);
       }
 
       const isSuccess = data.addedCount > 0;
       setNotification({
-        type: isSuccess ? "success" : "error",
-        message: parts.join(", ") || "No PIN codes were updated.",
+        type: isSuccess ? "success" : (failed.length > 0 || uniqueInvalid.length > 0 ? "error" : "success"),
+        message: parts.length > 0 ? `Import Summary: ${parts.join(" • ")}` : "No PIN codes were updated.",
       });
       await loadData();
     } catch (err: unknown) {
@@ -499,10 +504,19 @@ export function ServiceAreasSettings() {
             <button
               type="submit"
               disabled={actionLoading || !bulkInput.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 disabled:opacity-50 transition cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Import PIN Codes</span>
+              {actionLoading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Save PIN Codes</span>
+                </>
+              )}
             </button>
           </form>
         )}
