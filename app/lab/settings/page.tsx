@@ -50,6 +50,7 @@ import {
 } from "@/components/lab/storefront-live-preview";
 import { ServiceAreasSettings } from "@/components/lab/service-areas-settings";
 import { BranchManagementSettings } from "@/components/lab/branch-management-settings";
+import { BrandedDomainSettings } from "@/components/lab/branded-domain-settings";
 
 type SettingsSection =
   | "profile"
@@ -60,6 +61,7 @@ type SettingsSection =
   | "contact"
   | "service_areas"
   | "branches"
+  | "branded_domain"
   | "whatsapp"
   | "payment"
   | "publishing";
@@ -181,11 +183,13 @@ function LabSettingsContent() {
   const initialSection: SettingsSection = [
     "profile",
     "storefront",
+    "gallery",
     "about_services",
     "team",
     "contact",
     "service_areas",
     "branches",
+    "branded_domain",
     "whatsapp",
     "payment",
     "publishing",
@@ -959,6 +963,7 @@ function LabSettingsContent() {
     { id: "contact", label: "Contact & Location", icon: <MapPin className="h-4 w-4" /> },
     { id: "service_areas", label: "Service Areas (PINs)", icon: <MapPin className="h-4 w-4" /> },
     { id: "branches", label: "Branches & Hubs (Enterprise)", icon: <Building2 className="h-4 w-4" /> },
+    { id: "branded_domain", label: "Branded Domain (Paid)", icon: <Globe className="h-4 w-4" /> },
   ];
 
   if (loading) {
@@ -2514,6 +2519,9 @@ function LabSettingsContent() {
 
             {/* Section: Enterprise Branches */}
             {activeSection === "branches" && <BranchManagementSettings />}
+
+            {/* Section: Branded Custom Domain (Paid) */}
+            {activeSection === "branded_domain" && <BrandedDomainSettings />}
 
             {/* Cross-Link Section: WhatsApp */}
             {activeSection === "whatsapp" && (

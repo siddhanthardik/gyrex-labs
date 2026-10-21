@@ -87,6 +87,23 @@ enum SubscriptionStatus {
   PAUSED
 }
 
+enum DomainStatus {
+  PENDING_VERIFICATION
+  VERIFYING
+  ACTIVE
+  FAILED
+  SUSPENDED
+  REMOVED
+}
+
+enum DomainSslStatus {
+  INITIALIZING
+  PENDING_VALIDATION
+  ACTIVE
+  EXPIRED
+  FAILED
+}
+
 enum BillingCycle {
   MONTHLY
   YEARLY
@@ -304,6 +321,7 @@ model Lab {
   branches                LabBranch[]
   serviceAreas            LabServiceArea[]
   galleryImages           LabGalleryImage[]
+  domains                 LabDomain[]
 
   @@index([slug])
   @@index([status])
@@ -769,6 +787,7 @@ model SubscriptionPlan {
   maxOrdersPerMonth           Int?           // null = unlimited
   maxStaffAccounts            Int            @default(5)
   customBrandingEnabled       Boolean        @default(true)
+  customDomainEnabled         Boolean        @default(false)
   geminiPrescriptionAiEnabled Boolean        @default(true)
   canUseSharedWhatsApp        Boolean        @default(false)
   monthlySharedWhatsAppQuota  Int            @default(0)
@@ -1111,4 +1130,43 @@ model LabGalleryImage {
 
   @@index([labId, displayOrder])
   @@index([labId])
+}
+
+// ============================================================
+// 14. CUSTOM BRANDED DOMAINS
+// ============================================================
+
+model LabDomain {
+  id                      String          @id @default(cuid())
+  labId                   String
+  domain                  String          @unique // Normalized lowercase FQDN e.g. "sharmadiagnostics.in"
+  isApex                  Boolean         @default(false)
+  status                  DomainStatus    @default(PENDING_VERIFICATION)
+  sslStatus               DomainSslStatus @default(INITIALIZING)
+
+  // Verification details
+  verificationToken       String          // Cryptographic random token for TXT challenge
+  verificationRecordName  String          // e.g. "_gyrex-challenge.sharmadiagnostics.in"
+  verificationRecordValue String          // e.g. "gyrex-domain-verification=a8f9c2d1e0..."
+  cnameTarget             String          @default("fallback.gyrex.in")
+
+  // Cloudflare for SaaS Integration
+  cloudflareHostnameId    String?         // Cloudflare custom hostname identifier
+  cloudflareSslStatus     String?         // Raw provider SSL status
+  verificationErrors      String?         // Actionable diagnostic error messages
+
+  // Timestamps
+  lastCheckedAt           DateTime?
+  verifiedAt              DateTime?
+  activatedAt             DateTime?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  lab                     Lab             @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  // Single active domain per lab constraint enforced via migration partial unique index:
+  // CREATE UNIQUE INDEX "LabDomain_active_labId_key" ON "LabDomain"("labId") WHERE status != 'REMOVED';
+  @@index([labId])
+  @@index([domain, status])
+  @@index([status])
 }

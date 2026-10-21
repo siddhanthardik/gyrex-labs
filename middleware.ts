@@ -1,11 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE_NAME } from "./lib/auth/session";
 import { isPlatformRole } from "./lib/auth/permissions";
+import {
+  evaluateCustomDomainRouting,
+  isCustomDomainRoutingEnabled,
+} from "./services/lab/domain-routing-service";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", pathname);
+
+  // Defense-in-depth: Strip untrusted tenant context headers from incoming external requests
+  requestHeaders.delete("x-custom-domain");
+  requestHeaders.delete("x-lab-slug");
+  requestHeaders.delete("x-lab-id");
+
+  // 0. Custom Branded Domain Routing (Feature-Flagged; disabled by default in production)
+  if (isCustomDomainRoutingEnabled()) {
+    const routingDecision = await evaluateCustomDomainRouting(request);
+
+    if (routingDecision.action === "redirect" && routingDecision.redirectUrl) {
+      return NextResponse.redirect(
+        new URL(routingDecision.redirectUrl, request.url),
+        routingDecision.statusCode || 302
+      );
+    }
+
+    if (routingDecision.action === "not_found") {
+      const notFoundUrl = request.nextUrl.clone();
+      notFoundUrl.pathname = "/_not-found";
+      return NextResponse.rewrite(notFoundUrl, { status: 404 });
+    }
+
+    if (routingDecision.headers) {
+      for (const [key, value] of Object.entries(routingDecision.headers)) {
+        requestHeaders.set(key, value);
+      }
+    }
+
+    if (routingDecision.action === "rewrite" && routingDecision.rewrittenPath) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = routingDecision.rewrittenPath;
+      requestHeaders.set("x-pathname", routingDecision.rewrittenPath);
+      return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
+    }
+  }
 
   // 1. Skip static assets, Next internal files, and public auth endpoints
   if (
